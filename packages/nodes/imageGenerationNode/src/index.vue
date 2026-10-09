@@ -11,14 +11,14 @@
     :style="{ width: previewUrl && imageWidth ? `${imageWidth + 18}px` : undefined }">
     <template v-if="editor?.mode" #top><div ref="paintToolbar" /></template>
     <template #topActions>
-      <el-button :icon="IconBrush" :disabled="generating || deleting || uploading || !previewUrl || gridSplit?.splitting" text title="局部重绘" aria-label="局部重绘" @click.stop="editor?.start('inpaint')">局部重绘</el-button>
-      <el-button :icon="IconLayoutGrid" :disabled="generating || deleting || uploading || !previewUrl" :loading="gridSplit?.splitting" text title="宫格切分" aria-label="宫格切分" @click.stop="gridSplit?.open($event)">宫格切分</el-button>
+      <el-button :icon="IconBrush" :disabled="generating || deleting || uploading || !previewUrl || gridSplit?.splitting" text title="Inpaint" aria-label="Inpaint" @click.stop="editor?.start('inpaint')">Inpaint</el-button>
+      <el-button :icon="IconLayoutGrid" :disabled="generating || deleting || uploading || !previewUrl" :loading="gridSplit?.splitting" text title="Grid split" aria-label="Grid split" @click.stop="gridSplit?.open($event)">Grid split</el-button>
       <mediaHistory mediaType="image" :current="outputFile" :disabled="generating || deleting || uploading" @select="outputs.image = { dataType: 'IMAGE', value: $event }" />
-      <el-button :icon="IconTransfer" :loading="uploading" :disabled="generating || deleting" text title="替换图片" aria-label="替换图片" @click.stop="fileInput?.click()">替换图片</el-button>
-      <input ref="fileInput" type="file" accept="image/*" hidden aria-label="选择替换图片" :disabled="generating || deleting || uploading" @change="replaceOutput" />
+      <el-button :icon="IconTransfer" :loading="uploading" :disabled="generating || deleting" text title="Replace image" aria-label="Replace image" @click.stop="fileInput?.click()">Replace image</el-button>
+      <input ref="fileInput" type="file" accept="image/*" hidden aria-label="Select replacement image" :disabled="generating || deleting || uploading" @change="replaceOutput" />
     </template>
     <template #topRightActions>
-      <el-button :icon="IconPencil" :disabled="generating || deleting || uploading || !previewUrl || gridSplit?.splitting" text title="标记" aria-label="标记" @click.stop="editor?.start('mark')" />
+      <el-button :icon="IconPencil" :disabled="generating || deleting || uploading || !previewUrl || gridSplit?.splitting" text title="Mark" aria-label="Mark" @click.stop="editor?.start('mark')" />
     </template>
     <div v-loading="generating || uploading" class="imageContent nopan" :aria-busy="generating || uploading">
       <imageEditor
@@ -27,10 +27,10 @@
         :src="previewUrl"
         :toolbarTarget="paintToolbar"
         :disabled="generating || deleting || uploading"
-        alt="生成图片"
+        alt="Generated image"
         @load="resizeImage"
-        @error="showNodeError('无法预览该图片', '图片预览失败')" />
-      <div v-else class="imageEmpty" role="img" aria-label="暂无生成图片">
+        @error="showNodeError('Cannot preview this image', 'Image preview failed')" />
+      <div v-else class="imageEmpty" role="img" aria-label="No generated image yet">
         <icon-photo-ai :size="48" stroke="1.25" aria-hidden="true" />
       </div>
     </div>
@@ -50,11 +50,11 @@
             filterable
             :loading="modelsLoading"
             :disabled="generating || deleting"
-            placeholder="选择模型"
-            aria-label="生成模型"
-            noDataText="请先在设置中添加图片模型"
+            placeholder="Select model"
+            aria-label="Generation model"
+            noDataText="Please add image models in settings first"
             placement="top-start"
-            @visible-change="(visible) => visible && loadModels().catch((error) => showNodeError(error, '模型读取失败'))">
+            @visible-change="(visible) => visible && loadModels().catch((error) => showNodeError(error, 'Failed to load models'))">
             <template #prefix><icon-sparkles :size="17" /></template>
             <el-option-group v-for="provider in modelGroups" :key="provider.id" :label="provider.label">
               <el-option
@@ -74,9 +74,9 @@
             class="sendButton"
             :icon="generating ? IconPlayerStop : IconArrowUp"
             :disabled="deleting || uploading || (!generating && (editor?.busy || !generationPrompt || !selectedModel))"
-            :title="generating ? '停止生成' : editor?.mode === 'inpaint' ? '局部重绘' : '生成图片'"
-            :aria-label="generating ? '停止生成' : editor?.mode === 'inpaint' ? '局部重绘' : '生成图片'"
-            @click="generating ? generationController?.abort() : startGeneration(editor?.mode === 'inpaint').catch((error) => showNodeError(error, '图片生成失败'))" />
+            :title="generating ? 'Stop generation' : editor?.mode === 'inpaint' ? 'Inpaint' : 'Generate image'"
+            :aria-label="generating ? 'Stop generation' : editor?.mode === 'inpaint' ? 'Inpaint' : 'Generate image'"
+            @click="generating ? generationController?.abort() : startGeneration(editor?.mode === 'inpaint').catch((error) => showNodeError(error, 'Image generation failed'))" />
         </div>
       </el-card>
     </template>
@@ -105,8 +105,8 @@ defineOptions({
   inheritAttrs: false,
   icon: IconPhotoAi,
   handles: [
-    { id: "in", type: "target", dataType: ["IMAGE", "STRING"], label: "图片、文本输入" },
-    { id: "image", type: "source", dataType: "IMAGE", label: "图片输出" },
+    { id: "in", type: "target", dataType: ["IMAGE", "STRING"], label: "Image and text input" },
+    { id: "image", type: "source", dataType: "IMAGE", label: "Image output" },
   ] satisfies NodeHandle[],
 });
 const vLoading = ElLoading.directive;

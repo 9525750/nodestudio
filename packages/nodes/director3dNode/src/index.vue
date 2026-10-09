@@ -1,7 +1,7 @@
 <template>
   <nodeSkeleton v-bind="nodeProps" style="width: 320px">
-    <button v-loading="modelLoading" type="button" class="directorContent nopan" :disabled="modelLoading" :title="modelError || undefined" aria-label="打开导演台" @dblclick.stop @click.stop="openEditor">
-      <img v-if="preview" class="scenePreview" :src="preview" alt="最后镜头" draggable="false" />
+    <button v-loading="modelLoading" type="button" class="directorContent nopan" :disabled="modelLoading" :title="modelError || undefined" aria-label="Open 3D Director" @dblclick.stop @click.stop="openEditor">
+      <img v-if="preview" class="scenePreview" :src="preview" alt="Last shot" draggable="false" />
       <div v-else class="emptyPreview">
         <icon-cube3d-sphere :size="38" stroke="1.2" />
       </div>
@@ -46,9 +46,9 @@ type ModelDocument = z.infer<typeof modelDocumentSchema>;
 defineOptions({
   inheritAttrs: false,
   icon: IconCube3dSphere,
-  handles: [{ id: "in", type: "target", dataType: ["STRING", "IMAGE", "VIDEO"], label: "文本、图片、视频输入" }] satisfies NodeHandle[],
+  handles: [{ id: "in", type: "target", dataType: ["STRING", "IMAGE", "VIDEO"], label: "Text, image, video input" }] satisfies NodeHandle[],
 });
-const { node, nodeProps, previewReady, ai, files, nodeEvent } = useNode({ label: "3D导演台" });
+const { node, nodeProps, previewReady, ai, files, nodeEvent } = useNode({ label: "3D Director" });
 const vLoading = ElLoading.directive;
 const { addNodes, findNode, getNodes, nodeTypes, removeNodes } = useVueFlow();
 const mediaFiles = useNodeFiles();
@@ -56,7 +56,7 @@ const exportingVideo = ref(false);
 const exportingImage = ref("");
 const exportProgress = ref(0);
 const exportController = new AbortController();
-nodeEvent.on("delete", () => { if (exportingVideo.value || exportingImage.value) throw new Error("正在导出，请完成后再删除导演节点"); });
+nodeEvent.on("delete", () => { if (exportingVideo.value || exportingImage.value) throw new Error("Export in progress, please finish before deleting the director node"); });
 const data = computed(() => node.data as typeof node.data & {
   modelPath?: string;
   modelSnapshot?: ModelDocument;
@@ -73,7 +73,7 @@ const promptModel = computed({ get: () => data.value.promptModel ?? [], set: (va
 const anchors = computed({ get: () => data.value.anchors ?? [], set: (value: CameraAnchor[]) => { data.value.anchors = value; } });
 const prompt = computed({ get: () => data.value.prompt ?? "", set: (value: string) => { data.value.prompt = value; } });
 const model = computed({ get: () => data.value.model ?? "", set: (value: string) => { data.value.model = value; } });
-// ACT: 场景和动画只在节点内部持有，画布数据仅保存文件引用，避免拖动时遍历大量关键帧。
+// ACT: Scene and animation data are held only inside the node; canvas data stores file references only, avoiding traversal of many keyframes during drag.
 const modelDocument = shallowRef<ModelDocument>({ version: 1, scene: createEmptyScene(), plans: [] });
 const plans = computed(() => modelDocument.value.plans);
 const selectedPlan = computed(() => plans.value.find(plan => plan.id === data.value.selectedPlanId));
@@ -92,10 +92,10 @@ const modelError = ref("");
 const addingMannequin = ref(false);
 let modelSaving = Promise.resolve();
 let disposed = false;
-onBeforeUnmount(() => { disposed = true; exportController.abort(new Error("导演节点已关闭，导出已停止")); });
+onBeforeUnmount(() => { disposed = true; exportController.abort(new Error("Director node closed, export stopped")); });
 
 function getModelPath() {
-  if (!node.id || /[\\/]/.test(node.id) || node.id === "." || node.id === "..") throw new Error("节点 ID 不能作为文件夹名称");
+  if (!node.id || /[\\/]/.test(node.id) || node.id === "." || node.id === "..") throw new Error("Node ID cannot be used as a folder name");
   return `assets/${node.id}/model.json`;
 }
 
@@ -117,10 +117,10 @@ async function loadModel() {
     const { modelPath, modelSnapshot } = data.value;
     if (!modelPath && !modelSnapshot) return;
     const workspaceFiles = files.getWorkspaceFiles();
-    if (modelPath && modelPath !== getModelPath()) throw new Error("导演台模型文件路径无效");
+    if (modelPath && modelPath !== getModelPath()) throw new Error("Director model file path is invalid");
     const value = modelDocumentSchema.parse(modelSnapshot ?? await workspaceFiles.readJson(modelPath!));
     if (disposed) return;
-    // 复制、跨画布粘贴时只传递一次快照，写入新节点目录成功后才移除快照。
+    // Copy/cross-canvas paste passes the snapshot once; the snapshot is removed only after writing to the new node directory succeeds.
     if (modelSnapshot) {
       const path = await writeModel(workspaceFiles, value);
       if (disposed) return;
@@ -130,8 +130,8 @@ async function loadModel() {
     modelDocument.value = value;
     if (!selectedPlan.value) data.value.selectedPlanId = value.plans[0]?.id;
   } catch (error) {
-    modelError.value = error instanceof Error ? error.message : "模型文件读取失败";
-    if (!disposed) ElMessage.error(`导演台加载失败：${modelError.value}`);
+    modelError.value = error instanceof Error ? error.message : "Failed to read model file";
+    if (!disposed) ElMessage.error(`3D Director failed to load: ${modelError.value}`);
   } finally {
     modelLoading.value = false;
   }
@@ -172,7 +172,7 @@ async function addMannequin() {
     modelSaving = saving.catch(() => {});
     await saving;
   } catch (error) {
-    if (!disposed) ElMessage.error(error instanceof Error ? error.message : "人偶添加失败");
+    if (!disposed) ElMessage.error(error instanceof Error ? error.message : "Failed to add mannequin");
   } finally {
     addingMannequin.value = false;
   }
@@ -180,7 +180,7 @@ async function addMannequin() {
 
 nodeEvent.on("copy", async () => {
   await nodeEvent.emit("save");
-  if (modelError.value) throw new Error(`导演台模型未加载，无法复制：${modelError.value}`);
+  if (modelError.value) throw new Error(`Director model not loaded, cannot copy: ${modelError.value}`);
   return { modelPath: undefined, modelSnapshot: modelDocument.value };
 });
 
@@ -192,14 +192,14 @@ nodeEvent.on("save", async (reason) => {
     await pending;
   } while (pending !== modelSaving);
   if (reason === "reload" && (exportingVideo.value || exportingImage.value || tasks.value.some(task => !task.error))) {
-    throw new Error("导演台正在生成或导出，请完成后再刷新节点");
+    throw new Error("Director is generating or exporting, please finish before refreshing the node");
   }
 });
 
 async function exportToCanvas(kind: "image" | "video", key: string, aspect: number, render: (signal: AbortSignal) => Promise<File>) {
   if (kind === "video" ? exportingVideo.value : exportingImage.value) return;
   const type = `remote-${kind}Node`;
-  if (!nodeTypes?.value?.[type]) return void ElMessage.error(`请先启用${kind === "image" ? "图片" : "视频"}节点插件`);
+  if (!nodeTypes?.value?.[type]) return void ElMessage.error(`Please enable the ${kind === "image" ? "image" : "video"} node plugin first`);
   if (kind === "video") { exportingVideo.value = true; exportProgress.value = 0; }
   else exportingImage.value = key;
   const id = crypto.randomUUID();
@@ -225,8 +225,8 @@ async function exportToCanvas(kind: "image" | "video", key: string, aspect: numb
   try {
     workspaceFiles = files.getWorkspaceFiles();
     if (kind === "video") {
-      exportNode = addExportNode(selectedPlan.value?.name ?? "视频");
-      // ACT: 导出进度只在当前运行中使用，不能写入画布或复制到另一个节点。
+      exportNode = addExportNode(selectedPlan.value?.name ?? "Video");
+      // ACT: Export progress is only used in the current run; it must not be written to the canvas or copied to another node.
       Object.defineProperty(exportNode.data, "exportProgress", { value: 0, writable: true, configurable: true });
       stopWatching = watch([() => findNode(id), exportProgress], ([current, progress]) => {
         if (current !== exportNode) discarded = true;
@@ -240,17 +240,17 @@ async function exportToCanvas(kind: "image" | "video", key: string, aspect: numb
     const path = await mediaFiles.uploadFile(id, file);
     exportController.signal.throwIfAborted();
     if (discarded) return;
-    if (findNode(node.id) !== node || !nodeTypes?.value?.[type]) throw new Error("画布节点已变化，请重新导出");
+    if (findNode(node.id) !== node || !nodeTypes?.value?.[type]) throw new Error("Canvas nodes have changed, please re-export");
     exportNode ??= addExportNode(file.name.replace(/\.[^.]+$/, ""));
-    // 更新已有输出对象，让已挂载的视频节点及连接它的节点同步收到结果。
+    // Update the existing output object so that mounted video nodes and connected nodes receive the result.
     (exportNode.data.outputs ??= {})[kind] = {
       dataType: kind === "image" ? "IMAGE" : "VIDEO", value: { url: path, mimeType: file.type },
     };
     committed = true;
     if (kind === "video") exportProgress.value = 100;
-    ElMessage.success(`${kind === "image" ? "图片" : "视频"}已导出到画布`);
+    ElMessage.success(`${kind === "image" ? "Image" : "Video"} exported to canvas`);
   } catch (error) {
-    if (!disposed && !discarded) ElMessage.error(error instanceof Error ? error.message : "导出失败，请重试");
+    if (!disposed && !discarded) ElMessage.error(error instanceof Error ? error.message : "Export failed, please try again");
     if (exportNode && findNode(id) === exportNode) removeNodes(id);
   } finally {
     stopWatching();

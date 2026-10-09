@@ -7,10 +7,10 @@ export type AudioProcessingOptions = { outputPath: string } & (
 
 function normalizePath(path: string) {
   if (!path || /[\x00-\x1f]/.test(path) || /^(?:[\\/]|[a-z][a-z\d+.-]*:)/i.test(path) || path.split(/[\\/]+/).includes("..")) {
-    throw new Error("音频处理必须使用工作区相对路径");
+    throw new Error("Audio processing must use a workspace-relative path");
   }
   const normalized = path.split(/[\\/]+/).filter(part => part && part !== ".").join("/").toLowerCase();
-  if (!normalized) throw new Error("音频处理路径不能为空");
+  if (!normalized) throw new Error("Audio processing path cannot be empty");
   return normalized;
 }
 
@@ -40,23 +40,23 @@ function runCommand(command: BrowserFfmpegCommand, signal?: AbortSignal) {
   }).finally(() => signal?.removeEventListener("abort", cancel));
 }
 
-/** 调用方负责输出目录、唯一文件名和失败清理，处理结果不会覆盖原音频。 */
+/** Caller is responsible for output directory, unique filename, and failure cleanup; result does not overwrite original audio. */
 export async function processAudio(ffmpeg: BrowserFfmpegFactory, source: string, options: AudioProcessingOptions, signal?: AbortSignal) {
   signal?.throwIfAborted();
-  if (normalizePath(source) === normalizePath(options.outputPath)) throw new Error("输出文件不能覆盖原音频");
-  if (!["speed", "clip"].includes(options.action)) throw new Error("未知的音频处理操作");
+  if (normalizePath(source) === normalizePath(options.outputPath)) throw new Error("Output file cannot overwrite original audio");
+  if (!["speed", "clip"].includes(options.action)) throw new Error("Unknown audio processing action");
   if (options.action === "speed" && (!Number.isFinite(options.speed) || options.speed < 0.1 || options.speed > 4)) {
-    throw new Error("音频速度须在 0.1 至 4 倍之间");
+    throw new Error("Audio speed must be between 0.1x and 4x");
   }
   const media = await probeAudio(ffmpeg, source, signal);
   const audio = media.streams.find(stream => stream.codec_type === "audio");
-  if (!audio) throw new Error("文件不包含音轨");
+  if (!audio) throw new Error("File does not contain an audio track");
   const duration = Math.max(...[audio.duration, media.format.duration].map(Number).filter(value => Number.isFinite(value) && value > 0));
-  if (!Number.isFinite(duration) || duration <= 0) throw new Error("无法读取有效的音频时长");
+  if (!Number.isFinite(duration) || duration <= 0) throw new Error("Cannot read a valid audio duration");
   if (options.action === "clip" && (!Array.isArray(options.segments) || options.segments.length === 0
     || options.segments.some(segment => !segment || !Number.isFinite(segment.start) || !Number.isFinite(segment.end)
       || segment.start < 0 || segment.end <= segment.start || segment.end > duration))) {
-    throw new Error("每个片段须满足 0 ≤ 开始时间 < 结束时间 ≤ 音频时长");
+    throw new Error("Each segment must satisfy 0 <= start < end <= audio duration");
   }
 
   const command = ffmpeg(source).output(options.outputPath).noVideo().audioCodec("aac").audioBitrate(192).format("ipod")
@@ -64,7 +64,7 @@ export async function processAudio(ffmpeg: BrowserFfmpegFactory, source: string,
   if (options.action === "speed") {
     let tempo = options.speed;
     const filters: string[] = [];
-    // ACT: 每级保持在 0.5–2 倍，避免高倍 atempo 跳过采样，并覆盖最低 0.1 倍速度。
+    // ACT: Each stage stays within 0.5-2x to avoid high-ratio atempo skipping samples, covering down to 0.1x speed.
     while (tempo < 0.5) { filters.push("atempo=0.5"); tempo /= 0.5; }
     while (tempo > 2) { filters.push("atempo=2"); tempo /= 2; }
     command.audioFilters([...filters, `atempo=${tempo}`]).outputOptions("-map", "0:a:0");
@@ -78,7 +78,7 @@ export async function processAudio(ffmpeg: BrowserFfmpegFactory, source: string,
   const result = await probeAudio(ffmpeg, options.outputPath, signal);
   const resultDuration = Number(result.format.duration);
   if (!Number.isFinite(resultDuration) || resultDuration <= 0 || !result.streams.some(stream => stream.codec_type === "audio")) {
-    throw new Error("生成的音频文件无效");
+    throw new Error("Generated audio file is invalid");
   }
   return { duration: resultDuration };
 }

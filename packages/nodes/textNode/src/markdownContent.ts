@@ -21,9 +21,9 @@ export interface MarkdownProps {
 }
 export function resolveMarkdownPath(source: string, documentPath = "") {
   if (/^(?:https?:|mailto:|#)/i.test(source)) return;
-  if (/^(?:[a-z][a-z\d+.-]*:|[\\/])/i.test(source)) throw new Error("文件路径必须位于工作区内");
+  if (/^(?:[a-z][a-z\d+.-]*:|[\\/])/i.test(source)) throw new Error("File path must be within the workspace");
   const path = decodeURIComponent(source.split(/[?#]/)[0]!).replaceAll("\\", "/");
-  if (!path || /^(?:[a-z][a-z\d+.-]*:|\/)/i.test(path) || path.includes("\0")) throw new Error("文件路径无效");
+  if (!path || /^(?:[a-z][a-z\d+.-]*:|\/)/i.test(path) || path.includes("\0")) throw new Error("Invalid file path");
   const parts = documentPath.replaceAll("\\", "/").split("/").slice(0, -1);
   for (const part of path.split("/")) {
     if (!part || part === ".") continue;

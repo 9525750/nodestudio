@@ -11,18 +11,18 @@
     :style="{ width: previewUrl && imageWidth ? `${imageWidth + 18}px` : undefined }">
     <template v-if="editor?.mode" #top><div ref="paintToolbar" /></template>
     <template #topActions>
-      <el-button :icon="IconBrush" :disabled="uploading || !previewUrl || gridSplit?.splitting" text title="局部重绘" aria-label="局部重绘" @click.stop="editor?.start('inpaint')">局部重绘</el-button>
-      <el-button :icon="IconLayoutGrid" :disabled="uploading || !previewUrl" :loading="gridSplit?.splitting" text title="宫格切分" aria-label="宫格切分" @click.stop="gridSplit?.open($event)">宫格切分</el-button>
+      <el-button :icon="IconBrush" :disabled="uploading || !previewUrl || gridSplit?.splitting" text title="Inpaint" aria-label="Inpaint" @click.stop="editor?.start('inpaint')">Inpaint</el-button>
+      <el-button :icon="IconLayoutGrid" :disabled="uploading || !previewUrl" :loading="gridSplit?.splitting" text title="Grid split" aria-label="Grid split" @click.stop="gridSplit?.open($event)">Grid split</el-button>
       <el-button
         :icon="IconTransfer"
         :loading="uploading"
         text
-        title="替换图片"
-        aria-label="替换图片"
-        @click.stop="fileInput?.click()">替换图片</el-button>
+        title="Replace image"
+        aria-label="Replace image"
+        @click.stop="fileInput?.click()">Replace image</el-button>
     </template>
     <template #topRightActions>
-      <el-button :icon="IconPencil" :disabled="uploading || !previewUrl || gridSplit?.splitting" text title="标记" aria-label="标记" @click.stop="editor?.start('mark')" />
+      <el-button :icon="IconPencil" :disabled="uploading || !previewUrl || gridSplit?.splitting" text title="Mark" aria-label="Mark" @click.stop="editor?.start('mark')" />
     </template>
     <div class="imageContent nopan">
       <imageEditor
@@ -31,17 +31,17 @@
         :src="previewUrl"
         :toolbarTarget="paintToolbar"
         :disabled="uploading"
-        alt="节点图片"
+        alt="Node image"
         @load="resizeImage"
-        @error="ElMessage.error('无法预览该图片')" />
-      <input ref="fileInput" class="fileInput" type="file" accept="image/*" aria-label="选择图片" :disabled="uploading" @change="uploadImage" />
+        @error="ElMessage.error('Cannot preview this image')" />
+      <input ref="fileInput" class="fileInput" type="file" accept="image/*" aria-label="Select image" :disabled="uploading" @change="uploadImage" />
       <el-button
         v-if="!outputFile"
         class="uploadButton"
         text
         :loading="uploading"
-        title="上传图片"
-        aria-label="上传图片"
+        title="Upload image"
+        aria-label="Upload image"
         @dblclick.stop
         @click="fileInput?.click()">
         <icon-upload v-if="!uploading" :size="48" stroke="1.5" />
@@ -73,12 +73,12 @@ defineOptions({
   inheritAttrs: false,
   icon: IconPhoto,
   handles: [
-    { id: "in", type: "target", dataType: "IMAGE", label: "来源图片" },
-    { id: "image", type: "source", dataType: "IMAGE", label: "图片输出" },
+    { id: "in", type: "target", dataType: "IMAGE", label: "Source image" },
+    { id: "image", type: "source", dataType: "IMAGE", label: "Image output" },
   ] satisfies NodeHandle[],
 });
 const { node, nodeProps, outputs, nodeEvent, files, updateNodeInternals } = useNode({
-  label: "图片",
+  label: "Image",
 });
 const fileInput = ref<HTMLInputElement>();
 const gridSplit = ref<InstanceType<typeof imageGridSplit>>();
@@ -93,14 +93,14 @@ const imageWidth = ref(0);
 const outputFile = computed(() => outputs.value.image?.dataType === "IMAGE" ? outputs.value.image.value : undefined);
 const previewUrl = files.useFileUrl(
   outputFile,
-  (error) => showError(error, "图片读取失败")
+  (error) => showError(error, "Image read failed")
 );
 
 nodeEvent.on("save", () => {
-  if (uploading.value || editor.value?.busy || inpaintPrompt.value?.generating) throw new Error("图片处理中，请完成后再切换或刷新节点");
+  if (uploading.value || editor.value?.busy || inpaintPrompt.value?.generating) throw new Error("Image processing in progress, please finish before switching or refreshing the node");
 });
 nodeEvent.on("delete", () => {
-  if (uploading.value || editor.value?.busy || inpaintPrompt.value?.generating) throw new Error("图片处理中，请稍后删除节点");
+  if (uploading.value || editor.value?.busy || inpaintPrompt.value?.generating) throw new Error("Image processing in progress, please delete the node later");
   uploading.value = true;
   return files.removeNodeFiles().finally(() => {
     uploading.value = false;
@@ -109,19 +109,19 @@ nodeEvent.on("delete", () => {
 
 nodeTools.register({
   name: "setImage",
-  description: "选择工作区内已有的图片文件作为此节点的输出，path 使用工作区相对路径",
+  description: "Select an existing image file in the workspace as this node's output; path uses workspace-relative path",
   parameters: z.strictObject({
     path: z.string().min(1).max(4096),
     mimeType: z.string().regex(/^image\/[a-zA-Z0-9.+-]+$/),
   }),
   async execute({ path, mimeType }, { signal }) {
     signal?.throwIfAborted();
-    if (uploading.value || editor.value?.busy || inpaintPrompt.value?.generating) throw new Error("图片处理中，请稍后重试");
+    if (uploading.value || editor.value?.busy || inpaintPrompt.value?.generating) throw new Error("Image processing in progress, please try again later");
     uploading.value = true;
     try {
       const content = await files.getWorkspaceFiles().read(path);
       signal?.throwIfAborted();
-      if (!content.byteLength || content.byteLength > 100 * 1024 * 1024) throw new Error("图片不能为空且不能超过 100 MB");
+      if (!content.byteLength || content.byteLength > 100 * 1024 * 1024) throw new Error("Image cannot be empty and cannot exceed 100 MB");
       outputs.value.image = { dataType: "IMAGE", value: { url: path, mimeType } };
       return outputs.value.image;
     } finally {
@@ -139,7 +139,7 @@ async function resizeImage(event: Event) {
 }
 
 async function generateInpaint(input: Omit<NodeImageRequest, "directory" | "outputDirectory" | "images">, signal: AbortSignal) {
-  if (!editor.value) throw new Error("请先进入局部重绘");
+  if (!editor.value) throw new Error("Enter inpaint mode first");
   const value = await editor.value.generate(input, signal);
   signal.throwIfAborted();
   outputs.value.image = { dataType: "IMAGE", value };
@@ -151,15 +151,15 @@ async function uploadImage(event: Event) {
   const file = input.files?.[0];
   input.value = "";
   if (!file || uploading.value) return;
-  if (!file.type.startsWith("image/")) return void ElMessage.error("请选择图片文件");
-  if (!file.size || file.size > 100 * 1024 * 1024) return void ElMessage.error("图片不能为空且不能超过 100 MB");
+  if (!file.type.startsWith("image/")) return void ElMessage.error("Please select an image file");
+  if (!file.size || file.size > 100 * 1024 * 1024) return void ElMessage.error("Image cannot be empty and cannot exceed 100 MB");
   uploading.value = true;
   try {
     const url = await files.uploadFile(file);
-    // ACT: 复制节点可能仍引用旧图片，替换输出不删除共享文件。
+    // ACT: Copied nodes may still reference the old image; replacing output does not delete shared files.
     outputs.value.image = { dataType: "IMAGE", value: { url, mimeType: file.type } };
   } catch (error) {
-    showError(error, "图片替换失败");
+    showError(error, "Image replacement failed");
   } finally {
     uploading.value = false;
   }

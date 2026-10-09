@@ -2,29 +2,29 @@
   <teleport v-if="mode === 'speed' && target" :to="target">
     <el-card class="speedPanel" shadow="never" :bodyStyle="{ padding: '8px' }">
       <div class="speedControls nodrag nopan nowheel" @pointerdown.stop @mousedown.stop @dblclick.stop @keydown.stop>
-        <el-button class="exitButton" :icon="IconX" text :disabled="cancelling" :title="processing ? '取消处理' : '关闭变速'" :aria-label="processing ? '取消变速处理' : '关闭变速'" @click="close">变速</el-button>
+        <el-button class="exitButton" :icon="IconX" text :disabled="cancelling" :title="processing ? 'Cancel processing' : 'Close speed change'" :aria-label="processing ? 'Cancel speed processing' : 'Close speed change'" @click="close">Speed</el-button>
         <span class="speedLimit">0.1×</span>
-        <el-slider v-model="speed" class="speedSlider" :min="0.1" :max="4" :step="0.1" :disabled="processing" :formatTooltip="value => `${value.toFixed(2)}×`" aria-label="音频变速滑块" />
+        <el-slider v-model="speed" class="speedSlider" :min="0.1" :max="4" :step="0.1" :disabled="processing" :formatTooltip="value => `${value.toFixed(2)}×`" aria-label="Audio speed slider" />
         <span class="speedLimit">4×</span>
-        <el-input-number :key="String(processing)" v-model="speed" class="speedInput" :min="0.1" :max="4" :step="0.1" :precision="2" :disabled="processing" controlsPosition="right" aria-label="音频变速倍数" />
-        <el-button class="generateButton" :icon="IconArrowUp" type="primary" :loading="processing" :disabled="disabled || !validSpeed" title="生成变速音频" aria-label="生成变速音频" @click="run" />
+        <el-input-number :key="String(processing)" v-model="speed" class="speedInput" :min="0.1" :max="4" :step="0.1" :precision="2" :disabled="processing" controlsPosition="right" aria-label="Audio speed multiplier" />
+        <el-button class="generateButton" :icon="IconArrowUp" type="primary" :loading="processing" :disabled="disabled || !validSpeed" title="Generate speed-adjusted audio" aria-label="Generate speed-adjusted audio" @click="run" />
       </div>
-      <div v-if="processing" class="processingStatus" role="status">{{ cancelling ? '正在取消并清理…' : '正在生成变速音频…' }}</div>
+      <div v-if="processing" class="processingStatus" role="status">{{ cancelling ? 'Cancelling and cleaning up...' : 'Generating speed-adjusted audio...' }}</div>
     </el-card>
   </teleport>
   <el-dialog class="clipDialog" :modelValue="mode === 'clip'" width="900px" alignCenter appendToBody destroyOnClose :showClose="false" :closeOnClickModal="!processing" :closeOnPressEscape="!processing" :style="{ maxWidth: 'calc(100vw - 24px)', maxHeight: '84vh', display: 'flex', flexDirection: 'column' }" @update:modelValue="value => !value && close()">
     <template #header>
       <div class="clipHeader">
-        <el-button :icon="IconX" text :disabled="cancelling" :aria-label="processing ? '取消截取处理' : '关闭音频截取'" :title="processing ? '取消处理' : '关闭'" @click="close" />
-        <span>截取与拼接</span>
+        <el-button :icon="IconX" text :disabled="cancelling" :aria-label="processing ? 'Cancel clip processing' : 'Close audio clip'" :title="processing ? 'Cancel processing' : 'Close'" @click="close" />
+        <span>Clip &amp; Join</span>
       </div>
     </template>
     <audioClipEditor v-if="mode === 'clip'" ref="clipEditor" v-model="segments" :src="src" :disabled="processing" />
     <template #footer>
       <div class="clipFooter">
-        <span v-if="processing" class="processingStatus" role="status">{{ cancelling ? '正在取消并清理…' : '正在导出音频…' }}</span>
-        <el-button :disabled="cancelling" @click="close">{{ processing ? '取消处理' : '取消' }}</el-button>
-        <el-button type="primary" :loading="processing" :disabled="disabled || !clipEditor?.valid" @click="run">导出音频</el-button>
+        <span v-if="processing" class="processingStatus" role="status">{{ cancelling ? 'Cancelling and cleaning up...' : 'Exporting audio...' }}</span>
+        <el-button :disabled="cancelling" @click="close">{{ processing ? 'Cancel processing' : 'Cancel' }}</el-button>
+        <el-button type="primary" :loading="processing" :disabled="disabled || !clipEditor?.valid" @click="run">Export audio</el-button>
       </div>
     </template>
   </el-dialog>
@@ -100,14 +100,14 @@ function run() {
 }
 
 async function process() {
-  if (!nodeTypes?.value?.["remote-audioNode"]) return void ElMessage.error("请先启用音频节点插件");
+  if (!nodeTypes?.value?.["remote-audioNode"]) return void ElMessage.error("Please enable the audio node plugin first");
   const source = props.file!.url;
   const id = crypto.randomUUID();
   const outputPath = `assets/${id}/audio.m4a`;
   const options: AudioProcessingOptions = mode.value === "speed"
     ? { action: "speed", outputPath, speed: speed.value }
     : { action: "clip", outputPath, segments: segments.value.map(segment => ({ ...segment })) };
-  const label = options.action === "speed" ? `${options.speed.toFixed(2)}×` : "拼接";
+  const label = options.action === "speed" ? `${options.speed.toFixed(2)}×` : "Joined";
   const current = controller = new AbortController();
   processing.value = true;
   cancelling.value = false;
@@ -135,17 +135,17 @@ async function process() {
     }
     await batchHistory(async () => {
       current.signal.throwIfAborted();
-      if (findNode(node.id) !== node || !nodeTypes?.value?.["remote-audioNode"]) throw new Error("画布节点已变化，请重新处理");
-      addNodes([{ id, type: "remote-audioNode", position: { x, y }, data: { label: `${node.data.label || "音频"} · ${label}`, outputs: { audio: { dataType: "AUDIO", value: { url: outputPath, mimeType: "audio/mp4" } } } } }]);
+      if (findNode(node.id) !== node || !nodeTypes?.value?.["remote-audioNode"]) throw new Error("Canvas node has changed, please process again");
+      addNodes([{ id, type: "remote-audioNode", position: { x, y }, data: { label: `${node.data.label || "Audio"} · ${label}`, outputs: { audio: { dataType: "AUDIO", value: { url: outputPath, mimeType: "audio/mp4" } } } } }]);
       committed = true;
     });
     mode.value = undefined;
-    ElMessage.success("已在右侧生成新的音频节点");
+    ElMessage.success("A new audio node has been created on the right");
   } catch (error) {
-    if (!current.signal.aborted) showNodeError(error, "音频处理失败");
+    if (!current.signal.aborted) showNodeError(error, "Audio processing failed");
   } finally {
     if (!committed && created && workspace) await workspace.remove(`assets/${id}`, true).catch(error => {
-      if (error?.response?.data?.data?.code !== "ENOENT") showNodeError(error, "临时音频清理失败");
+      if (error?.response?.data?.data?.code !== "ENOENT") showNodeError(error, "Failed to clean up temporary audio");
     });
     if (current.signal.aborted) mode.value = undefined;
     processing.value = cancelling.value = false;

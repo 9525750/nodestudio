@@ -10,16 +10,16 @@
     :fullscreenVisible="false"
     style="width: 360px">
     <template #topActions>
-      <el-button :icon="IconScissors" :disabled="!previewUrl || uploading || actions?.processing" text title="截取音频" aria-label="截取音频" @click.stop="actions?.open('clip')">截取</el-button>
-      <el-button :icon="IconGauge" :disabled="!previewUrl || uploading || actions?.processing" text title="音频变速" aria-label="音频变速" @click.stop="actions?.open('speed')">变速</el-button>
+      <el-button :icon="IconScissors" :disabled="!previewUrl || uploading || actions?.processing" text title="Clip audio" aria-label="Clip audio" @click.stop="actions?.open('clip')">Clip</el-button>
+      <el-button :icon="IconGauge" :disabled="!previewUrl || uploading || actions?.processing" text title="Speed change" aria-label="Speed change" @click.stop="actions?.open('speed')">Speed</el-button>
       <el-button
         :icon="IconTransfer"
         :loading="uploading"
         :disabled="actions?.processing"
         text
-        title="替换音频"
-        aria-label="替换音频"
-        @click.stop="fileInput?.click()">替换音频</el-button>
+        title="Replace audio"
+        aria-label="Replace audio"
+        @click.stop="fileInput?.click()">Replace audio</el-button>
     </template>
     <div class="audioContent nopan">
       <audioPlayer
@@ -28,14 +28,14 @@
         class="audioPreview"
         :src="previewUrl"
         @loadedmetadata="updateNodeInternals" />
-      <input ref="fileInput" class="fileInput" type="file" accept="audio/*" aria-label="选择音频" :disabled="uploading || actions?.processing" @change="uploadAudio" />
+      <input ref="fileInput" class="fileInput" type="file" accept="audio/*" aria-label="Select audio" :disabled="uploading || actions?.processing" @change="uploadAudio" />
       <el-button
         v-if="!outputs.audio"
         class="uploadButton"
         text
         :loading="uploading"
-        title="上传音频"
-        aria-label="上传音频"
+        title="Upload audio"
+        aria-label="Upload audio"
         @dblclick.stop
         @click="fileInput?.click()">
         <icon-upload v-if="!uploading" :size="48" stroke="1.5" />
@@ -57,10 +57,10 @@ import audioActions from "./components/audioActions.vue";
 defineOptions({
   inheritAttrs: false,
   icon: IconMusic,
-  handles: [{ id: "audio", type: "source", dataType: "AUDIO", label: "音频输出" }] satisfies NodeHandle[],
+  handles: [{ id: "audio", type: "source", dataType: "AUDIO", label: "Audio output" }] satisfies NodeHandle[],
 });
 const { node, nodeProps, outputs, nodeEvent, files, updateNodeInternals } = useNode({
-  label: "音频",
+  label: "Audio",
 });
 const fileInput = ref<HTMLInputElement>();
 const uploading = ref(false);
@@ -71,15 +71,15 @@ const speedTarget = ref<HTMLElement>();
 const outputFile = computed(() => outputs.value.audio?.dataType === "AUDIO" ? outputs.value.audio.value : undefined);
 const previewUrl = files.useFileUrl(
   outputFile,
-  (error) => showError(error, "音频读取失败")
+  (error) => showError(error, "Failed to read audio")
 );
 
 nodeEvent.on("save", reason => {
-  if (uploading.value) throw new Error("音频处理中，请完成后再切换或刷新节点");
-  if (reason === "reload" && actions.value?.processing) throw new Error("音频处理中，请完成或取消后再刷新节点");
+  if (uploading.value) throw new Error("Audio is processing, please finish before switching or refreshing the node");
+  if (reason === "reload" && actions.value?.processing) throw new Error("Audio is processing, please finish or cancel before refreshing the node");
 });
 nodeEvent.on("delete", async () => {
-  if (uploading.value) throw new Error("音频上传中，请稍后删除节点");
+  if (uploading.value) throw new Error("Audio is uploading, please try deleting the node later");
   uploading.value = true;
   try {
     await actions.value?.cancelAndWait();
@@ -91,19 +91,19 @@ nodeEvent.on("delete", async () => {
 
 nodeTools.register({
   name: "setAudio",
-  description: "选择工作区内已有的音频文件作为此节点的输出，path 使用工作区相对路径",
+  description: "Select an existing audio file in the workspace as this node's output; path uses workspace-relative path",
   parameters: z.strictObject({
     path: z.string().min(1).max(4096),
     mimeType: z.string().regex(/^audio\/[a-zA-Z0-9.+-]+$/),
   }),
   async execute({ path, mimeType }, { signal }) {
     signal?.throwIfAborted();
-    if (uploading.value || actions.value?.processing) throw new Error("音频处理中，请稍后重试");
+    if (uploading.value || actions.value?.processing) throw new Error("Audio is processing, please try again later");
     uploading.value = true;
     try {
       const content = await files.getWorkspaceFiles().read(path);
       signal?.throwIfAborted();
-      if (!content.byteLength || content.byteLength > 100 * 1024 * 1024) throw new Error("音频不能为空且不能超过 100 MB");
+      if (!content.byteLength || content.byteLength > 100 * 1024 * 1024) throw new Error("Audio cannot be empty and cannot exceed 100 MB");
       outputs.value.audio = { dataType: "AUDIO", value: { url: path, mimeType } };
       return outputs.value.audio;
     } finally {
@@ -117,15 +117,15 @@ async function uploadAudio(event: Event) {
   const file = input.files?.[0];
   input.value = "";
   if (!file || uploading.value || actions.value?.processing) return;
-  if (!file.type.startsWith("audio/")) return void ElMessage.error("请选择音频文件");
-  if (!file.size || file.size > 100 * 1024 * 1024) return void ElMessage.error("音频不能为空且不能超过 100 MB");
+  if (!file.type.startsWith("audio/")) return void ElMessage.error("Please select an audio file");
+  if (!file.size || file.size > 100 * 1024 * 1024) return void ElMessage.error("Audio cannot be empty and cannot exceed 100 MB");
   uploading.value = true;
   try {
     const url = await files.uploadFile(file);
-    // ACT: 复制节点可能仍引用旧音频，替换输出不删除共享文件。
+    // ACT: Copied nodes may still reference old audio; replacing output does not delete shared files.
     outputs.value.audio = { dataType: "AUDIO", value: { url, mimeType: file.type } };
   } catch (error) {
-    showError(error, "音频替换失败");
+    showError(error, "Failed to replace audio");
   } finally {
     uploading.value = false;
   }

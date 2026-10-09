@@ -1,30 +1,30 @@
 <template>
   <div class="audioClipEditor nodrag nopan nowheel" @pointerdown.stop @mousedown.stop @dblclick.stop @keydown.capture="handleKeydown" @keydown.stop>
-    <audioPlayer ref="player" :src="src" label="音频剪辑预览" :inert="disabled || !segments.length" @loadedmetadata="readDuration" @play="startPlayback">
+    <audioPlayer ref="player" :src="src" label="Audio clip preview" :inert="disabled || !segments.length" @loadedmetadata="readDuration" @play="startPlayback">
       <template #track="{ peaks }">
         <div class="timeline">
           <div class="timeRuler" @click="seekTimeline">
             <span v-for="tick in 6" :key="tick" :style="{ left: `${(tick - 1) * 20}%` }">{{ formatTime((tick - 1) * timelineDuration / 5) }}</span>
           </div>
-          <div class="segmentTrack" role="group" aria-label="音频剪辑轨道">
-            <button v-for="(clip, index) in clips" :key="index" class="segmentItem" :class="{ selected: selectedIndex === index }" :style="{ left: `${clip.offset / timelineDuration * 100}%`, width: `${clip.length / timelineDuration * 100}%` }" type="button" :disabled="disabled" :aria-pressed="selectedIndex === index" :aria-label="`片段 ${index + 1}，时长 ${clip.length.toFixed(2)} 秒`" @click="selectSegment(index, $event)" @keydown.left.prevent="seekAt(playhead - 0.1)" @keydown.right.prevent="seekAt(playhead + 0.1)" @keydown.delete.prevent="selectedIndex = index; removeSegment()">
-              <span class="segmentName">片段 {{ index + 1 }}</span>
+          <div class="segmentTrack" role="group" aria-label="Audio clip track">
+            <button v-for="(clip, index) in clips" :key="index" class="segmentItem" :class="{ selected: selectedIndex === index }" :style="{ left: `${clip.offset / timelineDuration * 100}%`, width: `${clip.length / timelineDuration * 100}%` }" type="button" :disabled="disabled" :aria-pressed="selectedIndex === index" :aria-label="`Segment ${index + 1}, duration ${clip.length.toFixed(2)} seconds`" @click="selectSegment(index, $event)" @keydown.left.prevent="seekAt(playhead - 0.1)" @keydown.right.prevent="seekAt(playhead + 0.1)" @keydown.delete.prevent="selectedIndex = index; removeSegment()">
+              <span class="segmentName">Segment {{ index + 1 }}</span>
               <template v-if="peaks.length"><svg v-for="(part, partIndex) in clip.parts" :key="partIndex" class="segmentWaveform" :style="{ left: `${part.offset / clip.length * 100}%`, width: `${part.length / clip.length * 100}%` }" :viewBox="`${part.start / duration * 512} 0 ${part.length / duration * 512} 100`" preserveAspectRatio="none" aria-hidden="true"><rect v-for="(peak, bar) in peaks" :key="bar" :x="bar * 4 + 1" :y="50 - Math.max(2, peak * 78) / 2" width="2" :height="Math.max(2, peak * 78)" rx="1" /></svg></template>
-              <span class="segmentDuration">{{ clip.length.toFixed(2) }} 秒</span>
+              <span class="segmentDuration">{{ clip.length.toFixed(2) }}s</span>
             </button>
           </div>
           <span v-if="segments.length" class="playhead" :style="{ left: `${playhead / timelineDuration * 100}%` }" aria-hidden="true" />
-          <input class="cursorInput" type="range" min="0" :max="totalDuration || 1" step="0.01" :value="playhead" :disabled="disabled || !valid" aria-label="剪辑游标" :aria-valuetext="`${formatTime(playhead)} / ${formatTime(totalDuration)}`" @pointerdown.stop @input="seekCursor" />
+          <input class="cursorInput" type="range" min="0" :max="totalDuration || 1" step="0.01" :value="playhead" :disabled="disabled || !valid" aria-label="Clip cursor" :aria-valuetext="`${formatTime(playhead)} / ${formatTime(totalDuration)}`" @pointerdown.stop @input="seekCursor" />
         </div>
       </template>
       <template #time><span>{{ formatTime(playhead) }}</span><span>/</span><span>{{ formatTime(totalDuration) }}</span></template>
     </audioPlayer>
     <div class="editActions">
-      <el-button :icon="IconArrowBackUp" :disabled="disabled || !undoStack.length" title="撤销（Ctrl+Z）" @click="undo">撤销</el-button>
-      <el-button :icon="IconArrowForwardUp" :disabled="disabled || !redoStack.length" title="恢复（Ctrl+Y）" @click="redo">恢复</el-button>
-      <el-button :icon="IconScissors" :disabled="disabled || !canSplit" @click="splitSegment">分割</el-button>
-      <el-button :icon="IconLink" :disabled="disabled || !canMerge" :title="selectedIndex > 0 ? '与前一片段粘合' : '与后一片段粘合'" @click="mergeSegment">粘合</el-button>
-      <el-button :icon="IconTrash" :disabled="disabled || !activeSegment" @click="removeSegment">删除选中片段</el-button>
+      <el-button :icon="IconArrowBackUp" :disabled="disabled || !undoStack.length" title="Undo (Ctrl+Z)" @click="undo">Undo</el-button>
+      <el-button :icon="IconArrowForwardUp" :disabled="disabled || !redoStack.length" title="Redo (Ctrl+Y)" @click="redo">Redo</el-button>
+      <el-button :icon="IconScissors" :disabled="disabled || !canSplit" @click="splitSegment">Split</el-button>
+      <el-button :icon="IconLink" :disabled="disabled || !canMerge" :title="selectedIndex > 0 ? 'Merge with previous segment' : 'Merge with next segment'" @click="mergeSegment">Merge</el-button>
+      <el-button :icon="IconTrash" :disabled="disabled || !activeSegment" @click="removeSegment">Delete selected segment</el-button>
     </div>
   </div>
 </template>
@@ -43,7 +43,7 @@ const player = ref<InstanceType<typeof audioPlayer>>();
 const duration = ref(0);
 const selectedIndex = ref(0);
 const playhead = ref(0);
-// ACT: 分组只用于编辑器的粘合显示，导出仍展开为原始区间，保留删除造成的缺口。
+// ACT: Groups are only for the editor's merge display; export still expands to raw ranges, preserving gaps caused by deletions.
 const groups = ref<AudioSegment[][]>([]);
 const undoStack = ref<EditState[]>([]);
 const redoStack = ref<EditState[]>([]);
@@ -227,7 +227,7 @@ function updatePlayback(time: number | undefined) {
   if (!clip || !part || time === undefined || !Number.isFinite(time)) return;
   playhead.value = clip.offset + part.offset + Math.min(part.length, Math.max(0, time - part.start));
   if (!player.value?.playing || time < part.end) return;
-  // ACT: 复用播放器帧更新跳过已删除片段；试听切点受帧率限制，导出由 FFmpeg 精确裁剪。
+  // ACT: Reuses player frame updates to skip deleted segments; preview cut points are limited by frame rate, export uses FFmpeg for precise trimming.
   let next = clip.parts[++playbackPartIndex];
   if (!next) {
     next = clips.value[++playbackClipIndex]?.parts[0];
@@ -262,7 +262,7 @@ function updatePlayback(time: number | undefined) {
     .playhead { position: absolute; top: 22px; bottom: 0; width: 1px; background: var(--el-color-danger); pointer-events: none; &::before { content: ""; position: absolute; top: -4px; left: -4px; width: 9px; height: 9px; background: inherit; clip-path: polygon(0 0, 100% 0, 100% 60%, 50% 100%, 0 60%); } }
     .cursorInput {
       position: absolute; inset: 0 -6px; width: calc(100% + 12px); height: 100%; margin: 0; opacity: 0; appearance: none; pointer-events: none; touch-action: none;
-      // ACT: 仅游标附近的滑块接收拖动，其余区域用于选择片段。
+      // ACT: Only the slider near the cursor receives drag; the rest of the area is for segment selection.
       &::-webkit-slider-thumb { appearance: none; width: 12px; height: 148px; pointer-events: auto; cursor: ew-resize; }
       &::-moz-range-thumb { width: 12px; height: 148px; border: 0; pointer-events: auto; cursor: ew-resize; }
       &:disabled::-webkit-slider-thumb, &:disabled::-moz-range-thumb { pointer-events: none; }

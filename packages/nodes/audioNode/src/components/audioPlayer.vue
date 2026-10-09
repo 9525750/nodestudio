@@ -9,7 +9,7 @@
               <rect v-for="(peak, index) in peaks" :key="index" :x="index * 4 + 1" :y="50 - Math.max(2, peak * 78) / 2" width="2" :height="Math.max(2, peak * 78)" rx="1" />
             </svg>
           </template>
-          <span v-else class="waveformStatus">{{ failed ? '无法播放音频' : waveformLoading ? '正在读取波形…' : '当前音频无法显示波形' }}</span>
+          <span v-else class="waveformStatus">{{ failed ? 'Unable to play audio' : waveformLoading ? 'Loading waveform...' : 'Cannot display waveform for this audio' }}</span>
           <span v-if="duration && !failed" class="playhead" :style="{ left: `${progress}%` }" aria-hidden="true" />
           <input
             class="seekInput nodrag nopan nowheel"

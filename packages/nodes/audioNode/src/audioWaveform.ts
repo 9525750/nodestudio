@@ -1,11 +1,11 @@
 export function getWaveformPeaks(channels: readonly Float32Array[], barCount = 128): number[] {
-  if (!Number.isInteger(barCount) || barCount <= 0) throw new RangeError("波形条数必须为正整数");
+  if (!Number.isInteger(barCount) || barCount <= 0) throw new RangeError("Waveform bar count must be a positive integer");
   const peaks = Array<number>(barCount).fill(0);
   const sampleCount = channels.reduce((length, channel) => Math.max(length, channel.length), 0);
   let maximum = 0;
   for (let bar = 0; bar < barCount && sampleCount > 0; bar++) {
     const start = Math.floor(bar * sampleCount / barCount);
-    // ACT: 极短音频复用当前样本填满显示条数，不插值或合并声道，避免反相抵消。
+    // ACT: Very short audio reuses current samples to fill display bars; no interpolation or channel merging to avoid phase cancellation.
     const end = Math.max(start + 1, Math.floor((bar + 1) * sampleCount / barCount));
     for (const channel of channels) {
       for (let sample = start; sample < Math.min(end, channel.length); sample++) {
