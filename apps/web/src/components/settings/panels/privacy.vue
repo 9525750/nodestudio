@@ -2,29 +2,29 @@
   <div class="privacy">
     <section class="settingSection" aria-labelledby="collectionTitle">
       <div class="settingHeader">
-        <h3 id="collectionTitle">匿名使用统计</h3>
+        <h3 id="collectionTitle">Anonymous Usage Statistics</h3>
         <el-switch
           :modelValue="privacySettings.dataCollectionEnabled"
-          aria-label="匿名使用统计"
+          aria-label="Anonymous usage statistics"
           @change="(value) => settings.privacy = { ...privacySettings, dataCollectionEnabled: value === true }" />
       </div>
-      <p class="description">帮助我们了解常用功能，改进使用体验。默认开启，可随时关闭。</p>
+      <p class="description">Help us understand frequently used features and improve the experience. Enabled by default; can be turned off at any time.</p>
     </section>
 
     <section class="settingSection" aria-labelledby="metricsTitle">
-      <h3 id="metricsTitle">统计内容</h3>
+      <h3 id="metricsTitle">Collected Metrics</h3>
       <dl class="metricList">
         <div v-for="metric in metrics" :key="metric.label" class="metricItem">
           <dt>{{ metric.label }}</dt>
           <dd>{{ metric.description }}</dd>
         </div>
       </dl>
-      <p class="description">统计不包含提示词、对话、文件内容、项目名称、路径、账号或密钥。</p>
+      <p class="description">Statistics do not include prompts, conversations, file contents, project names, paths, accounts, or keys.</p>
     </section>
 
     <section class="settingSection" aria-labelledby="anonymousIdTitle">
-      <h3 id="anonymousIdTitle">匿名 ID</h3>
-      <code class="anonymousId">{{ privacySettings.anonymousId || "开启后自动生成" }}</code>
+      <h3 id="anonymousIdTitle">Anonymous ID</h3>
+      <code class="anonymousId">{{ privacySettings.anonymousId || "Auto-generated when enabled" }}</code>
     </section>
   </div>
 </template>

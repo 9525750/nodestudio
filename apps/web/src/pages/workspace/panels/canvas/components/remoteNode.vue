@@ -6,11 +6,11 @@
       <strong>{{ node.data.label || node.type }}</strong>
       <span class="stateLabel">error</span>
       <div class="stateActions nodrag nopan" @pointerdown.stop @mousedown.stop @dblclick.stop>
-        <el-button :icon="IconRefresh" text :loading="reloading" title="重新加载节点" aria-label="重新加载节点" @click.stop="retry" />
-        <el-button :icon="IconX" text title="移除节点" aria-label="移除节点" @click.stop="removeNodes(node.id)" />
+        <el-button :icon="IconRefresh" text :loading="reloading" title="Reload node" aria-label="Reload node" @click.stop="retry" />
+        <el-button :icon="IconX" text title="Remove node" aria-label="Remove node" @click.stop="removeNodes(node.id)" />
       </div>
     </div>
-    <p>{{ error || runtimeError || "远程节点未加载，请确认插件已安装并启用" }}</p>
+    <p>{{ error || runtimeError || "Remote node not loaded. Please verify plugin is installed and enabled" }}</p>
   </el-card>
 </template>
 
@@ -31,7 +31,7 @@ const reloading = ref(false);
 
 onErrorCaptured(error => {
   runtimeError.value = error instanceof Error ? error.message : String(error);
-  console.error(`远程节点 ${node.type} (${node.id}) 运行失败`, error);
+  console.error(`Remote node ${node.type} (${node.id}) runtime error`, error);
   return false;
 });
 watch(() => props.component, () => { runtimeError.value = ""; });

@@ -1,5 +1,5 @@
 <template>
-  <section ref="panelElement" class="documentPanel" aria-label="文档工作区">
+  <section ref="panelElement" class="documentPanel" aria-label="Document workspace">
     <dockview-vue class="documentLayout" :theme="theme" :disableAutoResizing="true" :disableFloatingGroups="true" @ready="onLayoutReady" />
     <openWithDialog ref="openWithRef" />
     <quickOpen v-if="directory" ref="quickOpenRef" :directory="directory" @open="selection => openSelection(selection).catch(reportError)" />
@@ -73,7 +73,7 @@ type SavedLayout = { layout: ReturnType<DockviewApi["toJSON"]>; tabs: SavedTab[]
 const closedTabs: SavedTab[] = [];
 const extensionVersions = new Map<string, string | undefined>();
 let savedLayout: SavedLayout | undefined;
-try { savedLayout = JSON.parse(settingsStorage.getItem(layoutKey) ?? "null") ?? undefined; } catch { /* 旧布局损坏时从空工作区开始。 */ }
+try { savedLayout = JSON.parse(settingsStorage.getItem(layoutKey) ?? "null") ?? undefined; } catch { /* Start with an empty workspace when the old layout is corrupted. */ }
 if (savedLayout?.treeWidth && Number.isFinite(savedLayout.treeWidth)) treeWidth = Math.max(180, Math.min(600, savedLayout.treeWidth));
 
 function editorParams(id: string, session: DocumentSession): EditorParams {
@@ -97,7 +97,7 @@ function keepOpen(id: string) {
 }
 
 function addView(id: string, session: DocumentSession, preview = false, position?: { referencePanel: string; direction: "right" | "below" }) {
-  if (sessions.has(id) || editorApi.value?.getPanel(id)) throw new Error("标签已打开，请重新选择");
+  if (sessions.has(id) || editorApi.value?.getPanel(id)) throw new Error("Tab already open, please choose again");
   sessions.set(id, session);
   views.set(id, shallowReactive({ preview, description: "" }));
   try {
@@ -110,12 +110,12 @@ function saveLayout() {
   clearTimeout(layoutTimer);
   if (restoring || changingFiles || !editorApi.value) return;
   const layout = editorApi.value.toJSON();
-  // 仅保存布局与文件身份，不序列化运行中的组件、闭包或未保存正文。
+  // Only save layout and file identity; do not serialize running components, closures, or unsaved content.
   const panels = Object.fromEntries(Object.entries(layout.panels).map(([id, panel]) => [id, { ...panel, params: undefined }]));
   try {
     settingsStorage.setItem(layoutKey, JSON.stringify({ layout: { ...layout, panels }, treeWidth,
       tabs: [...sessions].map(([id, session]) => ({ id, preview: views.get(id)?.preview, selection: selectionOf(session.context.resource), extensionId: session.extension.id })) }));
-  } catch { /* 存储满或被禁用时仍允许正常编辑。 */ }
+  } catch { /* Allow normal editing even when storage is full or disabled. */ }
 }
 
 function scheduleLayoutSave() {
@@ -131,7 +131,7 @@ async function restoreLayout() {
   try {
     for (const tab of saved.tabs) {
       try { await openSelection(tab.selection, lifetime.signal, false, tab.extensionId, tab.preview, tab.id); }
-      catch { /* 已删除的文件或扩展不阻止其余标签恢复。 */ }
+      catch { /* Deleted files or extensions do not prevent remaining tabs from being restored. */ }
     }
     const api = editorApi.value!;
     if (saved.layout && Object.keys(saved.layout.panels).length === sessions.size && Object.keys(saved.layout.panels).every(id => sessions.has(id))) {
@@ -146,7 +146,7 @@ async function restoreLayout() {
 
 async function chooseExtension(resource: ExtResource, force: boolean) {
   const options = await extensionCandidates(resource);
-  if (!options.length) throw new Error(`尚未启用支持此文件的扩展，请到插件市场安装或启用：${resource.label}`);
+  if (!options.length) throw new Error(`No enabled extension supports this file. Please install or enable one from the extension marketplace: ${resource.label}`);
   const key = resource.kind === "canvasNode" ? "canvasNode" : resource.path.split(".").at(-1)!.toLowerCase();
   const associations = settings.value.documentExtensions as Record<string, string> | undefined;
   const defaultId = options.find(option => option.id === associations?.[key])?.id;
@@ -221,7 +221,7 @@ function reportError(error: unknown) { ElMessage.error(documentError(error)); }
 function relativePath(path: string) {
   const parts = path.replaceAll("\\", "/").split("/").filter(part => part && part !== ".");
   if (!parts.length || /^[\\/]/.test(path) || /^[a-z][a-z\d+.-]*:/i.test(path) || path.includes("\0") || parts.includes("..")) {
-    throw new Error("请选择工作区内的文件或目录");
+    throw new Error("Please select a file or directory within the workspace");
   }
   return parts.join("/");
 }
@@ -233,7 +233,7 @@ function pathIdentity(path: string) {
 
 function openSelection(selection: TreeSelection, signal = lifetime.signal, forceChoice = false, extensionId?: string, preview = false, restoredId?: string) {
   const request = ++openRevision;
-  // 打开方式选择、关闭旧扩展和登记视图共用顺序队列，避免异步保存时同一资源重复登记。
+  // Extension selection, closing old extensions, and view registration share a sequential queue to avoid duplicate registration of the same resource during async saving.
   const result = opening.then(() => openSelectionNow(selection, signal, forceChoice, extensionId, preview, restoredId, request));
   opening = result.then(() => {}, () => {});
   return result;
@@ -242,17 +242,17 @@ function openSelection(selection: TreeSelection, signal = lifetime.signal, force
 async function openSelectionNow(selection: TreeSelection, signal: AbortSignal, forceChoice: boolean, extensionId: string | undefined, preview: boolean, restoredId: string | undefined, request: number) {
   const revision = fileRevision;
   signal.throwIfAborted();
-  if (changingFiles) throw new Error("文件操作尚未完成，请稍后再打开");
-  if (!directory || workspace.project?.directory !== directory) throw new Error("工作目录已切换");
+  if (changingFiles) throw new Error("File operation not yet complete, please try opening later");
+  if (!directory || workspace.project?.directory !== directory) throw new Error("The working directory has changed");
   const api = await waitForControlValue(() => editorApi.value, signal);
   const resource: ExtResource = "filePath" in selection
     ? { kind: "file", directory, path: relativePath(selection.filePath), label: selection.label }
     : { kind: "canvasNode", directory, path: relativePath(selection.canvasPath), nodeId: selection.nodeId, label: selection.label };
   if (resource.kind === "file" && /\.json$/i.test(resource.path) && await isCanvasFile(useWorkspaceFiles(directory), resource.path)) {
-    throw new Error("画布文件请展开后打开节点，不能作为普通文本编辑");
+    throw new Error("Canvas files should be expanded to open nodes; they cannot be edited as plain text");
   }
   signal.throwIfAborted();
-  if (changingFiles || revision !== fileRevision || workspace.project?.directory !== directory) throw new Error("文件或工作目录已变更，请重新打开");
+  if (changingFiles || revision !== fileRevision || workspace.project?.directory !== directory) throw new Error("File or working directory changed, please reopen");
   const resourceId = JSON.stringify([resource.kind, directory, pathIdentity(resource.path), resource.kind === "canvasNode" ? resource.nodeId : ""]);
   const matching = [...sessions].filter(([, session]) => {
     const current = session.context.resource;
@@ -280,10 +280,10 @@ async function openSelectionNow(selection: TreeSelection, signal: AbortSignal, f
   if (!extension) return;
   if (preview && request !== openRevision) return;
   const olderSession = [...sessions.values()].find(session => session.extension.id === extension!.id && session.extensionChanged && session.component);
-  // 同一扩展的旧标签仍打开时共用旧组件，避免新版样式提前替换旧编辑器的样式。
+  // When older tabs of the same extension are still open, share the old component to avoid the new version's styles prematurely replacing the old editor's styles.
   if (olderSession) extension = { ...olderSession.extension, load: async () => ({ default: olderSession.component! }) };
-  if (changingFiles || revision !== fileRevision) throw new Error("文件已变更，请重新打开");
-  // 等待选择期间可能已从其他入口打开同一文件。
+  if (changingFiles || revision !== fileRevision) throw new Error("File changed, please reopen");
+  // The same file may have been opened from another entry point during the wait for selection.
   const concurrent = [...sessions].find(([, session]) => session.context.resource.kind === resource.kind
     && pathIdentity(session.context.resource.path) === pathIdentity(resource.path)
     && (resource.kind === "file" || session.context.resource.kind === "canvasNode" && session.context.resource.nodeId === resource.nodeId));
@@ -296,7 +296,7 @@ async function openSelectionNow(selection: TreeSelection, signal: AbortSignal, f
     for (const [viewId, current] of [...sessions]) if (current === concurrent[1]) await closeEditor(viewId);
   }
   signal.throwIfAborted();
-  if (changingFiles || revision !== fileRevision || workspace.project?.directory !== directory) throw new Error("文件或工作目录已变更，请重新打开");
+  if (changingFiles || revision !== fileRevision || workspace.project?.directory !== directory) throw new Error("File or working directory changed, please reopen");
   if (preview && !restoring && !restoredId) {
     for (const panel of [...(api.activeGroup?.panels ?? [])]) {
       if (!views.get(panel.id)?.preview) continue;
@@ -313,7 +313,7 @@ async function openSelectionNow(selection: TreeSelection, signal: AbortSignal, f
     nodeResource ? onState => props.observeNode(nodeResource.directory, nodeResource.path, nodeResource.nodeId, onState) : undefined,
     () => {
       editorApi.value?.getPanel(id)?.api.close();
-      // 节点删除先落盘，再重读 JSON 文件树，避免立即刷新读到删除前的节点。
+      // Persist the node deletion first, then re-read the JSON file tree, so an immediate refresh does not read the node from before the deletion.
       if (!changingFiles && !lifetime.signal.aborted) void props.flushNodes().then(refreshFileTree).catch(reportError);
     }, async path => {
       await openSelection({ filePath: path, label: path.split("/").at(-1)! });
@@ -340,7 +340,7 @@ async function openSelectionNow(selection: TreeSelection, signal: AbortSignal, f
 async function closeEditor(id: string, remember = true) {
   const session = sessions.get(id);
   if (!session) return;
-  if (session.closing) throw new Error("文档正在关闭，请稍后再试");
+  if (session.closing) throw new Error("The document is closing, please try again later");
   session.closing = true;
   const release = session.lock();
   try {
@@ -366,8 +366,8 @@ async function tabAction(id: string, action: TabAction) {
     const session = sessions.get(id)!;
     keepOpen(id);
     if (session.context.resource.kind === "canvasNode") {
-      // ACT: 画布节点保留唯一运行实例，分屏只移动，不能复制 Teleport 的挂载目标。
-      if (panel.group.panels.length < 2) { ElMessage.info("画布节点只有一个视图，请先打开另一标签再移动到分屏"); return; }
+      // ACT: A canvas node keeps a single running instance; split screen only moves it and cannot duplicate the Teleport mount target.
+      if (panel.group.panels.length < 2) { ElMessage.info("A canvas node has only one view, please open another tab first and then move it to the split screen"); return; }
       panel.api.moveTo({ group: panel.group, position: action === "splitRight" ? "right" : "bottom" });
     } else {
       const viewId = `${id}:${crypto.randomUUID()}`;
@@ -414,7 +414,7 @@ function getDocument(includeText = true) {
   const session = currentSession();
   if (!includeText || !session) return snapshot(session, includeText);
   return readSession(session).then(() => {
-    if (currentSession() !== session) throw new Error("文档已切换，请重新读取");
+    if (currentSession() !== session) throw new Error("The document has changed, please read it again");
     return snapshot(session, true);
   });
 }
@@ -423,36 +423,36 @@ async function openDocument(args: Record<string, unknown>, signal: AbortSignal) 
   let selection: TreeSelection;
   if (typeof args.path === "string") selection = { filePath: args.path, label: args.path.split(/[\\/]/).at(-1)! };
   else if (typeof args.canvasPath === "string" && typeof args.nodeId === "string") selection = { canvasPath: args.canvasPath, nodeId: args.nodeId, label: args.nodeId };
-  else throw new Error("请指定文件 path，或画布 canvasPath 和 nodeId");
+  else throw new Error("Specify a file path, or a canvas canvasPath and nodeId");
   const session = await openSelection(selection, signal);
-  if (!session) throw new Error("已取消选择打开方式");
+  if (!session) throw new Error("Cancelled choosing how to open");
   if (typeof args.handleId === "string" && session.context.resource.kind === "canvasNode") {
     const resource = session.context.resource;
     const node = await props.readNode(resource.directory, resource.path, resource.nodeId);
-    if (!node.outputs.some(output => output.id === args.handleId)) throw new Error("文本输出不存在");
+    if (!node.outputs.some(output => output.id === args.handleId)) throw new Error("The text output does not exist");
     session.handleId = args.handleId;
   }
   signal.throwIfAborted();
-  if (currentSession() !== session) throw new Error("文档已切换，请重新读取");
+  if (currentSession() !== session) throw new Error("The document has changed, please read it again");
 }
 
 async function writeDocument(args: Record<string, unknown>, signal: AbortSignal) {
   signal.throwIfAborted();
   const session = currentSession();
-  if (!session || session.closing || session.context.loading) throw new Error("请先打开需要编辑的文档");
-  if (typeof args.text !== "string" || typeof args.expectedText !== "string") throw new Error("需要 text 和读取时的 expectedText");
+  if (!session || session.closing || session.context.loading) throw new Error("Open the document to edit first");
+  if (typeof args.text !== "string" || typeof args.expectedText !== "string") throw new Error("text and the expectedText from the read are required");
   await readSession(session);
   signal.throwIfAborted();
-  if (currentSession() !== session) throw new Error("文档已切换，请重新读取");
-  if (session.closing || session.context.loading) throw new Error("文档正在关闭或加载，请稍后再试");
-  if (session.context.text !== args.expectedText) throw new Error("文档内容已变化，请重新读取后编辑");
+  if (currentSession() !== session) throw new Error("The document has changed, please read it again");
+  if (session.closing || session.context.loading) throw new Error("The document is closing or loading, please try again later");
+  if (session.context.text !== args.expectedText) throw new Error("The document content has changed, please read it again before editing");
   const resource = session.context.resource;
   if (resource.kind === "canvasNode") {
-    if (!session.handleId) throw new Error("当前节点没有可编辑的文本输出");
+    if (!session.handleId) throw new Error("The current node has no editable text output");
     await props.saveNode(resource.directory, resource.path, resource.nodeId, session.handleId, args.text, args.expectedText);
     await readSession(session);
   } else {
-    if (!session.extension.text) throw new Error("当前文件扩展不支持文本编辑");
+    if (!session.extension.text) throw new Error("The current file extension does not support text editing");
     session.context.updateText(args.text);
     await session.context.flushSave();
   }
@@ -468,18 +468,18 @@ async function openSearchResult(location: { path: string; line: number; column: 
 }
 
 async function replaceSearchFile(path: string, expectedText: string, nextText: string) {
-  if (!directory || workspace.project?.directory !== directory || changingFiles) throw new Error("工作区或文件正在变更，请重新搜索");
+  if (!directory || workspace.project?.directory !== directory || changingFiles) throw new Error("The workspace or files are changing, please search again");
   path = relativePath(path);
   changingFiles = true;
   fileRevision++;
   try {
     const files = useWorkspaceFiles(directory);
-    if (/\.json$/i.test(path) && await isCanvasFile(files, path)) throw new Error("画布 JSON 不支持全文替换，请编辑节点内容");
+    if (/\.json$/i.test(path) && await isCanvasFile(files, path)) throw new Error("Canvas JSON does not support full-text replacement, please edit the node content");
     const node = await props.resolveNodeFile(directory, path);
     if (node) {
       const document = await props.readNode(directory, node.canvasPath, node.nodeId);
       const output = document.outputs.find(output => output.text === expectedText);
-      if (!output) throw new Error("节点内容已变化，请重新搜索");
+      if (!output) throw new Error("The node content has changed, please search again");
       await props.saveNode(directory, node.canvasPath, node.nodeId, output.id, nextText, expectedText);
       await props.flushNodes();
       return;
@@ -487,13 +487,13 @@ async function replaceSearchFile(path: string, expectedText: string, nextText: s
     const session = uniqueSessions().find(session => session.context.resource.kind === "file" && pathIdentity(session.context.resource.path) === pathIdentity(path));
     if (session) {
       await session.ready;
-      if (!session.extension.text || session.context.loading || session.context.text !== expectedText) throw new Error("打开的文档内容已变化或不可编辑，请重新搜索");
+      if (!session.extension.text || session.context.loading || session.context.text !== expectedText) throw new Error("The open document content has changed or is not editable, please search again");
       session.context.updateText(nextText);
       const release = session.lock();
       try { await session.context.flushSave(); } finally { release(); }
     } else {
       const snapshot = await files.readTextSnapshot(path);
-      if (snapshot.text !== expectedText) throw new Error("磁盘内容已变化，请重新搜索");
+      if (snapshot.text !== expectedText) throw new Error("The content on disk has changed, please search again");
       await files.writeTextSnapshot(path, nextText, snapshot);
     }
   } finally { changingFiles = false; }
@@ -506,7 +506,7 @@ async function refreshExtensions() {
       if (!enabled.has(session.extension.id)) {
         session.extensionDisabled = true;
         try { await closeEditor(id); }
-        catch (error) { session.context.error = `扩展已停用；为保留未保存内容，此标签仍保持打开。${documentError(error)}`; reportError(error); }
+        catch (error) { session.context.error = `The extension has been disabled; this tab stays open to preserve unsaved content. ${documentError(error)}`; reportError(error); }
       } else {
         session.extensionDisabled = false;
         if (extensionVersions.get(id) !== extensionRevision(session.extension.id)) session.extensionChanged = true;
@@ -516,7 +516,7 @@ async function refreshExtensions() {
 }
 
 async function executeFileAction(action: FileAction, item: FileTreeItem, target?: string) {
-  if (!directory || workspace.project?.directory !== directory) throw new Error("工作目录已切换");
+  if (!directory || workspace.project?.directory !== directory) throw new Error("The working directory has changed");
   if (action === "openWith") {
     await openSelection({ filePath: item.path, label: item.name }, lifetime.signal, true);
     return;
@@ -525,11 +525,11 @@ async function executeFileAction(action: FileAction, item: FileTreeItem, target?
   if (action === "reveal") return files.reveal(item.path);
   if (action === "create") return files.write(item.path, "", true);
   if (action === "mkdir") return files.mkdir(item.path);
-  if (changingFiles) throw new Error("文件操作尚未完成，请稍后再试");
-  if (!item.path || (item.type === "node" && (action !== "delete" || !item.nodeId))) throw new Error("不能修改这个文件树条目");
+  if (changingFiles) throw new Error("The file operation has not finished, please try again later");
+  if (!item.path || (item.type === "node" && (action !== "delete" || !item.nodeId))) throw new Error("This file tree entry cannot be modified");
   const sourcePath = relativePath(item.path);
   if (target !== undefined) target = relativePath(target);
-  if (item.type === "canvas" && ["rename", "move"].includes(action) && !target?.toLowerCase().endsWith(".json")) throw new Error("画布文件须保留 .json 后缀");
+  if (item.type === "canvas" && ["rename", "move"].includes(action) && !target?.toLowerCase().endsWith(".json")) throw new Error("Canvas files must keep the .json extension");
   changingFiles = true;
   fileRevision++;
   const pending = [...sessions.entries()].map(([id, session]) => ({ id, session, release: session.lock() }));
@@ -570,7 +570,7 @@ async function executeFileAction(action: FileAction, item: FileTreeItem, target?
   }
   const remappedIds = new Map(renamed.map(entry => [entry.id, entry.nextId]));
   const expectedIds = previousLayout && Object.keys(previousLayout.panels).map(id => remappedIds.get(id) ?? id);
-  // 重开期间用户可能继续关闭或打开标签，此时以当前布局为准，不恢复过时的布局快照。
+  // The user may keep closing or opening tabs during the reopen; the current layout takes precedence and a stale layout snapshot is not restored.
   if (renamed.length && previousLayout && expectedIds?.length === sessions.size && expectedIds.every(id => sessions.has(id))) {
     const layout: SavedLayout["layout"] = JSON.parse(JSON.stringify({ ...previousLayout, panels: {} }, (_key, value) => typeof value === "string" ? remappedIds.get(value) ?? value : value));
     layout.panels = Object.fromEntries(Object.entries(previousLayout.panels).map(([oldId, panel]) => {
@@ -584,7 +584,7 @@ async function executeFileAction(action: FileAction, item: FileTreeItem, target?
   saveLayout();
 }
 async function performFileAction(currentDirectory: string, action: "copy" | "rename" | "delete", path: string, target?: string) {
-  if (currentDirectory !== directory) throw new Error("工作目录已切换");
+  if (currentDirectory !== directory) throw new Error("The working directory has changed");
   await executeFileAction(action, { key: path, path, name: path.split(/[\\/]/).at(-1)!, type: "canvas" }, target);
   refreshFileTree();
 }
@@ -597,7 +597,7 @@ function beforeUnload(event: BeforeUnloadEvent) {
 }
 function drainRefreshQueue() {
   if (!active.value || lifetime.signal.aborted) { refreshQueue.clear(); return; }
-  // ACT: 只检查可见分组中的文档，最多同时读两个文件；隐藏标签切回来时再读取。
+  // ACT: Only check documents in visible groups, reading at most two files at a time; hidden tabs are read when switched back.
   for (const session of refreshQueue) {
     if (refreshing.size >= 2) break;
     refreshQueue.delete(session);
@@ -654,7 +654,7 @@ onBeforeUnmount(() => {
   window.removeEventListener("keydown", onDocumentKeydown, true);
   clearTimeout(layoutTimer);
   saveLayout();
-  lifetime.abort(new Error("文档工作区已关闭"));
+  lifetime.abort(new Error("The document workspace has been closed"));
   cancelSave();
   sessionWatchers.forEach(stop => stop());
   disposables.forEach(disposable => disposable.dispose());

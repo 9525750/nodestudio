@@ -90,7 +90,7 @@ export default function useWorkspaceFiles(directory?: MaybeRefOrGetter<string | 
   }
 
   async function readTextSnapshot(path: string, options?: { maxBytes?: number; signal?: AbortSignal }): Promise<TextSnapshot> {
-    if (options?.maxBytes !== undefined && (!Number.isSafeInteger(options.maxBytes) || options.maxBytes < 1)) throw new Error("读取字节数必须为正整数");
+    if (options?.maxBytes !== undefined && (!Number.isSafeInteger(options.maxBytes) || options.maxBytes < 1)) throw new Error("Read byte count must be a positive integer");
     const { data } = await client.get<{ data: TextSnapshot }>("/read", {
       params: { directory: getDirectory(), path, snapshot: true, maxBytes: options?.maxBytes }, signal: options?.signal,
     });
@@ -144,6 +144,6 @@ export default function useWorkspaceFiles(directory?: MaybeRefOrGetter<string | 
     await client.post("/mkdir", { directory: getDirectory(), path });
   }
 
-  // ACT: 当前目录逐次读取；跨 await 或防抖的操作传入目录字符串，固定本次目标。
+  // ACT: Directory is read on each call; operations spanning await or debounce pass a directory string to pin the target.
   return { list, read, acquireUrl, readText, readJson, readTextSnapshot, writeTextSnapshot, write, writeJson, rename, copy, reveal, remove, mkdir };
 }

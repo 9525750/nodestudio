@@ -21,11 +21,11 @@ export function loadNodeComponent(name: string, url: string, force = false): Pro
     return Promise.resolve(cached);
   }
   components.delete(name);
-  // ACT: 同名节点只加载一份脚本，所有画布共享进行中的重载，避免互相清除全局导出。
+  // ACT: Same-name nodes load one script; all canvases share in-progress reloads, avoiding clearing each other's global exports.
   const request = (async () => {
     const scriptUrl = force ? `${url}${url.includes("?") ? "&" : "?"}reload=${crypto.randomUUID()}` : url;
     const response = await fetch(scriptUrl);
-    if (!response.ok) throw new Error(`节点脚本加载失败（HTTP ${response.status}）`);
+    if (!response.ok) throw new Error(`Node script load failed(HTTP ${response.status})`);
     const code = await response.text();
     if (code.includes("toonflowTiptapHost")) await import("@/lib/tiptapHost");
     return new Promise<NodeComponent>((resolve, reject) => {
@@ -36,7 +36,7 @@ export function loadNodeComponent(name: string, url: string, force = false): Pro
         script.remove();
         const component = nodeWindow.toonflowNodes?.[name];
         if (!Object.hasOwn(nodeWindow.toonflowNodes ?? {}, name) || !component || (typeof component !== "object" && typeof component !== "function")) {
-          reject(new Error(`节点脚本未导出 ${name} 组件`));
+          reject(new Error(`Node script did not export ${name} component`));
           return;
         }
         resolve(component);
@@ -44,7 +44,7 @@ export function loadNodeComponent(name: string, url: string, force = false): Pro
       script.onerror = () => {
         script.remove();
         delete nodeWindow.toonflowNodes?.[name];
-        reject(new Error("节点脚本加载失败"));
+        reject(new Error("Node script load failed"));
       };
       document.head.append(script);
     });

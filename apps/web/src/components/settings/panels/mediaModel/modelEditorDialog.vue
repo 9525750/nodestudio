@@ -1,7 +1,7 @@
 <template>
   <el-dialog
     v-model="visible"
-    :title="model ? '编辑模型' : '添加模型'"
+    :title="model ? 'Edit model' : 'Add model'"
     width="min(640px, calc(100vw - 32px))"
     alignCenter
     appendToBody
@@ -9,25 +9,25 @@
     :closeOnClickModal="false">
     <div class="dialogContent">
       <el-form labelPosition="top" @submit.prevent>
-        <el-form-item label="显示名称" required>
-          <el-input v-model="draft.label" clearable aria-label="模型显示名称" />
+        <el-form-item label="Display name" required>
+          <el-input v-model="draft.label" clearable aria-label="Model display name" />
         </el-form-item>
-        <el-form-item label="模型 ID" required>
-          <el-input v-model="draft.id" clearable aria-label="模型 ID" />
+        <el-form-item label="Model ID" required>
+          <el-input v-model="draft.id" clearable aria-label="Model ID" />
         </el-form-item>
-        <el-form-item label="模型类型">
-          <el-select v-model="draft.type" aria-label="模型类型">
-            <el-option v-if="model?.type === 'text'" value="text" label="文本（旧配置）" disabled />
+        <el-form-item label="Model type">
+          <el-select v-model="draft.type" aria-label="Model type">
+            <el-option v-if="model?.type === 'text'" value="text" label="Text (legacy configuration)" disabled />
             <el-option v-for="item in modelTypes" :key="item.value" :value="item.value" :label="item.label" />
           </el-select>
         </el-form-item>
-        <el-form-item v-if="draft.type === 'image'" label="图片生成模式" required>
+        <el-form-item v-if="draft.type === 'image'" label="Image generation modes" required>
           <el-checkbox-group v-model="draft.imageMode">
             <el-checkbox v-for="item in imageModes" :key="item.value" :value="item.value">{{ item.label }}</el-checkbox>
           </el-checkbox-group>
         </el-form-item>
         <template v-if="draft.type === 'video'">
-          <el-form-item label="视频生成模式" required>
+          <el-form-item label="Video generation modes" required>
             <div class="videoModes">
               <el-checkbox-group v-model="draft.videoMode">
                 <el-checkbox v-for="item in videoModes" :key="item.value" :value="item.value">{{ item.label }}</el-checkbox>
@@ -43,48 +43,48 @@
                     :precision="0"
                     controlsPosition="right"
                     size="small"
-                    :aria-label="`${item.label}数量`" />
+                    :aria-label="`${item.label} count`" />
                 </div>
               </el-checkbox-group>
             </div>
           </el-form-item>
-          <el-form-item label="音频输出">
+          <el-form-item label="Audio output">
             <el-radio-group v-model="draft.audio">
-              <el-radio value="optional">可选音频</el-radio>
-              <el-radio :value="true">始终输出音频</el-radio>
-              <el-radio :value="false">无音频</el-radio>
+              <el-radio value="optional">Optional audio</el-radio>
+              <el-radio :value="true">Always output audio</el-radio>
+              <el-radio :value="false">No audio</el-radio>
             </el-radio-group>
           </el-form-item>
-          <el-form-item label="时长与分辨率" required>
+          <el-form-item label="Duration and resolution" required>
             <div class="mappingEditor">
-              <div class="mappingHeader"><span>时长（秒）</span><span>分辨率</span></div>
+              <div class="mappingHeader"><span>Duration (seconds)</span><span>Resolution</span></div>
               <div v-for="(row, index) in draft.durationResolutionMap" :key="index" class="mappingRow">
                 <span class="rowIndex">{{ index + 1 }}</span>
-                <el-input-tag v-model="row.duration" placeholder="输入后按回车" :aria-label="`第 ${index + 1} 组时长`" />
+                <el-input-tag v-model="row.duration" placeholder="Type and press Enter" :aria-label="`Duration of group ${index + 1}`" />
                 <icon-arrow-right :size="16" aria-hidden="true" />
-                <el-input-tag v-model="row.resolution" placeholder="输入后按回车" :aria-label="`第 ${index + 1} 组分辨率`" />
+                <el-input-tag v-model="row.resolution" placeholder="Type and press Enter" :aria-label="`Resolution of group ${index + 1}`" />
                 <el-button
                   text
                   type="danger"
                   :icon="IconTrash"
                   :disabled="draft.durationResolutionMap.length === 1"
-                  :aria-label="`删除第 ${index + 1} 组时长与分辨率`"
+                  :aria-label="`Delete duration and resolution group ${index + 1}`"
                   @click="draft.durationResolutionMap.splice(index, 1)" />
               </div>
-              <el-button class="addMapping" :icon="IconPlus" @click="draft.durationResolutionMap.push({ duration: [], resolution: [] })">添加时长与分辨率</el-button>
+              <el-button class="addMapping" :icon="IconPlus" @click="draft.durationResolutionMap.push({ duration: [], resolution: [] })">Add duration and resolution</el-button>
             </div>
           </el-form-item>
         </template>
         <details class="modelOptions">
-          <summary>更多配置（JSON）</summary>
-          <el-input v-model="options" type="textarea" dir="ltr" :rows="6" resize="vertical" aria-label="模型的更多配置" />
+          <summary>More settings (JSON)</summary>
+          <el-input v-model="options" type="textarea" dir="ltr" :rows="6" resize="vertical" aria-label="More model settings" />
         </details>
       </el-form>
     </div>
     <el-alert v-if="formError" class="formError" :title="formError" type="error" :closable="false" showIcon />
     <template #footer>
-      <el-button @click="visible = false">取消</el-button>
-      <el-button type="primary" @click="confirmModel">确定</el-button>
+      <el-button @click="visible = false">Cancel</el-button>
+      <el-button type="primary" @click="confirmModel">OK</el-button>
     </template>
   </el-dialog>
 </template>
@@ -98,27 +98,27 @@ const { model, models } = defineProps<{ model?: MediaProviderModel; models: Medi
 const visible = defineModel<boolean>({ default: false });
 const emit = defineEmits<{ confirmed: [model: MediaProviderModel] }>();
 const modelTypes = [
-  { value: "image", label: "图片" },
-  { value: "video", label: "视频" },
-  { value: "audio", label: "音频" },
+  { value: "image", label: "Image" },
+  { value: "video", label: "Video" },
+  { value: "audio", label: "Audio" },
 ];
 const imageModes = [
-  { value: "text", label: "文生图" },
-  { value: "singleImage", label: "单图参考" },
-  { value: "multiReference", label: "多图参考" },
+  { value: "text", label: "Text to image" },
+  { value: "singleImage", label: "Single image reference" },
+  { value: "multiReference", label: "Multi-image reference" },
 ];
 const videoModes = [
-  { value: "singleImage", label: "单图参考" },
-  { value: "startEndRequired", label: "首尾帧必填" },
-  { value: "endFrameOptional", label: "尾帧可选" },
-  { value: "startFrameOptional", label: "首帧可选" },
-  { value: "text", label: "文生视频" },
-  { value: "multiReference", label: "混合参考" },
+  { value: "singleImage", label: "Single image reference" },
+  { value: "startEndRequired", label: "Start/end frames required" },
+  { value: "endFrameOptional", label: "End frame optional" },
+  { value: "startFrameOptional", label: "Start frame optional" },
+  { value: "text", label: "Text to video" },
+  { value: "multiReference", label: "Mixed reference" },
 ];
 const referenceModes = [
-  { value: "videoReference", label: "视频参考" },
-  { value: "imageReference", label: "图片参考" },
-  { value: "audioReference", label: "音频参考" },
+  { value: "videoReference", label: "Video reference" },
+  { value: "imageReference", label: "Image reference" },
+  { value: "audioReference", label: "Audio reference" },
 ];
 const draft = ref(createDraft());
 const options = ref("{}");
@@ -142,7 +142,7 @@ watch(visible, (isVisible) => {
   draft.value = createDraft();
   formError.value = "";
   original = JSON.parse(JSON.stringify(model ?? {}));
-  // ACT: 旧文本模型的扩展字段按原值保留，不再提供专用配置。
+  // ACT: Extra fields of legacy text models are kept as-is; no dedicated settings are provided anymore.
   const { id, label, type, ...extra } = original;
   Object.assign(draft.value, { id: id ?? "", label: label ?? "", type: type ?? "image" });
   if (draft.value.type === "image" || draft.value.type === "video") {
@@ -187,14 +187,14 @@ function confirmModel() {
   try {
     const id = draft.value.id.trim();
     const label = draft.value.label.trim();
-    if (!label || !id) throw new Error("请填写显示名称和模型 ID");
-    if (models.some(item => item !== model && item.id.trim() === id)) throw new Error(`模型 ID 已存在：${id}`);
+    if (!label || !id) throw new Error("Please enter the display name and model ID");
+    if (models.some(item => item !== model && item.id.trim() === id)) throw new Error(`Model ID already exists: ${id}`);
     let extra: Record<string, unknown>;
     try { extra = JSON.parse(options.value); }
-    catch { throw new Error("更多配置不是有效的 JSON"); }
-    if (!extra || typeof extra !== "object" || Array.isArray(extra)) throw new Error("更多配置必须是 JSON 对象");
+    catch { throw new Error("More settings is not valid JSON"); }
+    if (!extra || typeof extra !== "object" || Array.isArray(extra)) throw new Error("More settings must be a JSON object");
     const fields = ["id", "label", "type", ...(draft.value.type === "video" ? ["audio", "durationResolutionMap"] : [])];
-    if (fields.some(field => field in extra)) throw new Error("已有表单项请直接在上方编辑");
+    if (fields.some(field => field in extra)) throw new Error("Fields that have a form control above should be edited there");
     const value: MediaProviderModel = { ...extra, id, label, type: draft.value.type };
     const typeChanged = !model || value.type !== model.type;
     const changed = (...fields: (keyof typeof initialDraft)[]) => typeChanged || fields.some(field => JSON.stringify(draft.value[field]) !== JSON.stringify(initialDraft[field]));
@@ -202,35 +202,35 @@ function confirmModel() {
     if (!typeChanged) for (const field of modelFields) if (field in original) value[field] = original[field];
     const modeChanged = changed(value.type === "image" ? "imageMode" : "videoMode", "mixedMode", "mixedModeCount") || JSON.stringify(extra.mode) !== JSON.stringify(initialExtraMode);
     if ((value.type === "image" || value.type === "video") && modeChanged) {
-      if (extra.mode !== undefined && !Array.isArray(extra.mode)) throw new Error("更多配置中的 mode 必须是数组");
+      if (extra.mode !== undefined && !Array.isArray(extra.mode)) throw new Error("mode in more settings must be an array");
       const modes: unknown[] = value.type === "image" ? [...draft.value.imageMode] : draft.value.videoMode.filter(mode => mode !== "multiReference");
       if (value.type === "video" && draft.value.videoMode.includes("multiReference")) {
-        if (!draft.value.mixedMode.length) throw new Error("请选择混合参考的媒体类型");
+        if (!draft.value.mixedMode.length) throw new Error("Please select the media types for mixed reference");
         modes.push(draft.value.mixedMode.map(reference => {
           const count = draft.value.mixedModeCount[reference];
-          if (!Number.isSafeInteger(count) || !count || count < 1) throw new Error("参考数量必须是正整数");
+          if (!Number.isSafeInteger(count) || !count || count < 1) throw new Error("The reference count must be a positive integer");
           return `${reference}:${count}`;
         }));
       }
       modes.push(...(extra.mode as unknown[] ?? []));
-      if (!modes.length) throw new Error("请至少选择一种生成模式");
+      if (!modes.length) throw new Error("Please select at least one generation mode");
       value.mode = modes;
     }
     if (value.type === "video" && changed("audio")) value.audio = draft.value.audio;
     if (value.type === "video" && changed("durationResolutionMap")) {
-      if (!draft.value.durationResolutionMap.length) throw new Error("请至少添加一组时长与分辨率");
+      if (!draft.value.durationResolutionMap.length) throw new Error("Please add at least one duration and resolution group");
       value.durationResolutionMap = draft.value.durationResolutionMap.map((row, index) => {
         const duration = row.duration.map(Number);
         const resolution = row.resolution.map(value => value.trim());
-        if (!duration.length || duration.some(value => !Number.isFinite(value) || value <= 0)) throw new Error(`第 ${index + 1} 组时长必须是正数`);
-        if (!resolution.length || resolution.some(value => !value)) throw new Error(`请填写第 ${index + 1} 组分辨率`);
+        if (!duration.length || duration.some(value => !Number.isFinite(value) || value <= 0)) throw new Error(`Duration of group ${index + 1} must be a positive number`);
+        if (!resolution.length || resolution.some(value => !value)) throw new Error(`Please enter the resolution of group ${index + 1}`);
         return { duration, resolution };
       });
     }
     emit("confirmed", value);
     visible.value = false;
   } catch (error) {
-    formError.value = error instanceof Error ? error.message : "模型配置无效";
+    formError.value = error instanceof Error ? error.message : "Invalid model settings";
   }
 }
 </script>

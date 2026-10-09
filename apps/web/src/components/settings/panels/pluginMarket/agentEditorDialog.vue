@@ -2,8 +2,8 @@
   <el-dialog v-model="visible" :title="`Agent · ${agent.displayName}`" width="min(1080px, calc(100vw - 32px))" alignCenter appendToBody :beforeClose="close" @closed="emit('closed')">
     <el-alert v-if="error" :title="error" type="error" :closable="false" showIcon />
     <div v-loading="loading" class="agentEditor">
-      <nav class="fileList" aria-label="Agent 文件">
-        <el-button v-if="readme" text :type="selectedPath === '' ? 'primary' : undefined" @click="selectFile('')"><icon-book :size="15" />说明</el-button>
+      <nav class="fileList" aria-label="Agent files">
+        <el-button v-if="readme" text :type="selectedPath === '' ? 'primary' : undefined" @click="selectFile('')"><icon-book :size="15" />Readme</el-button>
         <el-button v-for="file in files" :key="file.path" text :type="selectedPath === file.path ? 'primary' : undefined" :disabled="saving" @click="selectFile(file.path)">
           <icon-file :size="15" /><span class="fileName">{{ file.path }}</span><span v-if="file.content !== file.original" class="dirtyMark">●</span>
         </el-button>
@@ -14,8 +14,8 @@
       </div>
     </div>
     <template #footer>
-      <el-button :disabled="saving || confirming" @click="close()">关闭</el-button>
-      <el-button v-if="canManage" type="primary" :loading="saving" :disabled="loading || !selectedFile || selectedFile.content === selectedFile.original" @click="save">保存当前文件</el-button>
+      <el-button :disabled="saving || confirming" @click="close()">Close</el-button>
+      <el-button v-if="canManage" type="primary" :loading="saving" :disabled="loading || !selectedFile || selectedFile.content === selectedFile.original" @click="save">Save current file</el-button>
     </template>
   </el-dialog>
 </template>
@@ -46,7 +46,7 @@ onMounted(async () => {
   try {
     const { data } = await axios.get("/api/agents/read", { params: { name: agent.name }, headers, signal: controller.signal });
     if (data.code !== 200 || !Array.isArray(data.data?.files) || !data.data.files.every((file: { path?: unknown; content?: unknown }) => typeof file.path === "string" && typeof file.content === "string")) {
-      throw new Error(data.message || "Agent 文件列表无效");
+      throw new Error(data.message || "Invalid agent file list");
     }
     files.value = data.data.files.map((file: { path: string; content: string }) => ({ ...file, original: file.content }));
     readme.value = typeof data.data.readme === "string" ? data.data.readme : agent.readme ?? "";
@@ -57,7 +57,7 @@ onMounted(async () => {
 });
 
 function errorMessage(cause: unknown) {
-  return axios.isAxiosError(cause) ? cause.response?.data?.message || cause.message : cause instanceof Error ? cause.message : "操作失败";
+  return axios.isAxiosError(cause) ? cause.response?.data?.message || cause.message : cause instanceof Error ? cause.message : "Operation failed";
 }
 
 function selectFile(path: string) {
@@ -68,7 +68,7 @@ async function close(done?: () => void) {
   if (saving.value || confirming.value) return;
   if (files.value.some(file => file.content !== file.original)) {
     confirming.value = true;
-    try { await ElMessageBox.confirm("修改尚未保存，确定放弃修改并关闭吗？", "未保存的修改", { confirmButtonText: "放弃修改", cancelButtonText: "继续编辑", type: "warning" }); }
+    try { await ElMessageBox.confirm("You have unsaved changes. Discard them and close?", "Unsaved changes", { confirmButtonText: "Discard changes", cancelButtonText: "Keep editing", type: "warning" }); }
     catch { return; }
     finally { confirming.value = false; }
   }
@@ -84,10 +84,10 @@ async function save() {
   const content = file.content;
   try {
     const { data } = await axios.put("/api/agents/save", { name: agent.name, path: file.path, content }, { headers });
-    if (data.code !== 200) throw new Error(data.message || "保存失败");
+    if (data.code !== 200) throw new Error(data.message || "Save failed");
     file.original = content;
     emit("saved");
-    ElMessage.success("已保存");
+    ElMessage.success("Saved");
   } catch (cause) { error.value = errorMessage(cause); }
   finally { saving.value = false; }
 }

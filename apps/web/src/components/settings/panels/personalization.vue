@@ -2,8 +2,8 @@
   <div class="personalization">
     <section class="settingSection" aria-labelledby="instructionsTitle">
       <div class="settingInfo">
-        <h3 id="instructionsTitle">Toonflow 说明</h3>
-        <p class="description">为所有聊天提供额外说明和上下文。支持 Markdown，保存后下一次发送消息时生效。</p>
+        <h3 id="instructionsTitle">Toonflow Instructions</h3>
+        <p class="description">Provide additional instructions and context for all chats. Markdown is supported; changes take effect the next time you send a message after saving.</p>
       </div>
       <el-alert v-if="document.error" :title="getDocumentError(document)" type="error" :closable="false" showIcon />
       <el-input
@@ -13,10 +13,10 @@
         :maxlength="maxLength"
         :disabled="!document.loaded || document.loading"
         resize="none"
-        aria-label="Toonflow 说明内容" />
+        aria-label="Toonflow instructions content" />
       <div class="editorFooter">
         <span class="editorStatus">
-          {{ document.loading ? "正在读取…" : isDirty(document) ? "有未保存的修改" : "" }}
+          {{ document.loading ? "Loading…" : isDirty(document) ? "Unsaved changes" : "" }}
           <span>{{ document.content.length }} / {{ maxLength }}</span>
         </span>
         <div class="editorActions">
@@ -24,18 +24,18 @@
             :icon="IconRefresh"
             :loading="document.loading"
             :disabled="document.saving"
-            aria-label="重新加载 Toonflow 说明"
+            aria-label="Reload Toonflow instructions"
             @click="reloadDocument(document, 'agents')">
-            {{ document.loaded ? "重新加载" : "重试" }}
+            {{ document.loaded ? "Reload" : "Retry" }}
           </el-button>
           <el-button
             type="primary"
             :icon="IconDeviceFloppy"
             :loading="document.saving"
             :disabled="!document.loaded || document.loading || document.conflict || !isDirty(document) || document.content.length > maxLength"
-            aria-label="保存 Toonflow 说明"
+            aria-label="Save Toonflow instructions"
             @click="saveDocument(document, 'agents')">
-            保存
+            Save
           </el-button>
         </div>
       </div>
@@ -44,39 +44,39 @@
       <div class="memoryOptions">
         <div class="settingHeader">
           <div class="settingInfo">
-            <h4>启用本地记忆</h4>
-            <p class="description">记住你的偏好，在后续聊天中使用。关闭后仍保留已保存的内容。</p>
+            <h4>Enable Local Memory</h4>
+            <p class="description">Remember your preferences and use them in later chats. Saved content is kept after turning this off.</p>
           </div>
           <el-switch
             :modelValue="memoryEnabled"
             :loading="savingMemorySetting"
-            aria-label="启用本地记忆"
+            aria-label="Enable local memory"
             @change="(value) => setMemoryEnabled(value === true)" />
         </div>
         <div class="settingHeader">
           <div class="settingInfo">
-            <h4>删除本地记忆</h4>
+            <h4>Delete Local Memory</h4>
           </div>
           <el-button
             :icon="IconTrash"
             :loading="memoryAction === 'delete'"
             :disabled="!!memoryAction || memoryDocument.loading || memoryDocument.saving"
-            aria-label="删除本地记忆"
+            aria-label="Delete local memory"
             @click="deleteMemory">
-            删除
+            Delete
           </el-button>
         </div>
         <div class="settingHeader">
           <div class="settingInfo">
-            <h4>查看本地记忆</h4>
+            <h4>View Local Memory</h4>
           </div>
-          <el-button :icon="IconEye" :loading="memoryAction === 'view'" :disabled="!!memoryAction || memoryDocument.loading || memoryDocument.saving" aria-label="查看本地记忆" @click="viewMemory">
-            查看
+          <el-button :icon="IconEye" :loading="memoryAction === 'view'" :disabled="!!memoryAction || memoryDocument.loading || memoryDocument.saving" aria-label="View local memory" @click="viewMemory">
+            View
           </el-button>
         </div>
       </div>
     </section>
-    <el-dialog v-model="memoryVisible" title="Toonflow 记忆" width="min(760px, calc(100vw - 32px))" alignCenter appendToBody>
+    <el-dialog v-model="memoryVisible" title="Toonflow Memory" width="min(760px, calc(100vw - 32px))" alignCenter appendToBody>
       <div class="memoryContent">
         <el-alert v-if="memoryDocument.error" :title="getDocumentError(memoryDocument)" type="error" :closable="false" showIcon />
         <el-input
@@ -87,23 +87,23 @@
           :maxlength="maxLength"
           :disabled="memoryDocument.loading"
           resize="none"
-          aria-label="本地记忆内容" />
+          aria-label="Local memory content" />
         <messageMarkdown v-else-if="memoryDocument.content.trim()" :content="memoryDocument.content" />
-        <el-empty v-else description="暂无本地记忆" :imageSize="80" />
+        <el-empty v-else description="No local memory yet" :imageSize="80" />
       </div>
       <template #footer>
         <div class="memoryFooter">
           <span class="editorStatus">
-            {{ isDirty(memoryDocument) ? "有未保存的修改 · " : "" }}{{ memoryDocument.content.length }} / {{ maxLength }}
+            {{ isDirty(memoryDocument) ? "Unsaved changes · " : "" }}{{ memoryDocument.content.length }} / {{ maxLength }}
           </span>
           <div class="editorActions">
             <el-button
               :icon="IconRefresh"
               :loading="memoryDocument.loading"
               :disabled="memoryDocument.saving"
-              aria-label="重新加载本地记忆"
+              aria-label="Reload local memory"
               @click="reloadDocument(memoryDocument, 'memory')">
-              重新加载
+              Reload
             </el-button>
             <el-button
               v-if="memoryEditing"
@@ -111,12 +111,12 @@
               :icon="IconDeviceFloppy"
               :loading="memoryDocument.saving"
               :disabled="memoryDocument.loading || memoryDocument.conflict || !isDirty(memoryDocument) || memoryDocument.content.length > maxLength"
-              aria-label="保存本地记忆"
+              aria-label="Save local memory"
               @click="saveMemory">
-              保存
+              Save
             </el-button>
-            <el-button v-else type="primary" :icon="IconEdit" :disabled="memoryDocument.loading" aria-label="编辑本地记忆" @click="memoryEditing = true">
-              编辑
+            <el-button v-else type="primary" :icon="IconEdit" :disabled="memoryDocument.loading" aria-label="Edit local memory" @click="memoryEditing = true">
+              Edit
             </el-button>
           </div>
         </div>
@@ -184,7 +184,7 @@ function errorMessage(error: unknown) {
     ? error.response?.data?.message || error.message
     : error instanceof Error
     ? error.message
-    : "操作失败，请重试";
+    : "Operation failed, please retry";
 }
 
 async function loadDocument(document: DocumentState, name: "agents" | "memory", discardChanges = false) {
@@ -194,7 +194,7 @@ async function loadDocument(document: DocumentState, name: "agents" | "memory", 
   document.error = "";
   try {
     const { data } = await axios.get<DocumentResponse>("/api/settings/personalization/get", { params: { document: name }, headers });
-    if (data.code !== 200) throw new Error(data.message || "读取失败，请重试");
+    if (data.code !== 200) throw new Error(data.message || "Load failed, please retry");
     if (document.content !== content) return;
     document.content = data.data.content;
     document.savedContent = data.data.content;
@@ -211,9 +211,9 @@ async function loadDocument(document: DocumentState, name: "agents" | "memory", 
 async function reloadDocument(document: DocumentState, name: "agents" | "memory") {
   if (isDirty(document)) {
     try {
-      await ElMessageBox.confirm("重新加载将放弃当前文档未保存的修改，读取最新内容。", "重新加载", {
-        confirmButtonText: "放弃修改并加载",
-        cancelButtonText: "继续编辑",
+      await ElMessageBox.confirm("Reloading will discard unsaved changes in the current document and load the latest content.", "Reload", {
+        confirmButtonText: "Discard changes and load",
+        cancelButtonText: "Keep editing",
         type: "warning",
       });
     } catch {
@@ -227,7 +227,7 @@ async function saveDocument(document: DocumentState, name: "agents" | "memory") 
   if (!document.loaded || document.loading || document.saving || document.conflict || !isDirty(document)) return;
   const content = document.content;
   if (content.length > maxLength) {
-    ElMessage.error(`内容不能超过 ${maxLength} 个字符`);
+    ElMessage.error(`Content cannot exceed ${maxLength} characters`);
     return;
   }
   document.saving = true;
@@ -242,11 +242,11 @@ async function saveDocument(document: DocumentState, name: "agents" | "memory") 
       document.conflict = true;
       throw new Error(conflictMessage.id);
     }
-    if (data.code !== 200) throw new Error(data.message || "保存失败，请重试");
+    if (data.code !== 200) throw new Error(data.message || "Save failed, please retry");
     document.savedContent = data.data.content;
     document.revision = data.data.revision;
     if (document.content === content) document.content = data.data.content;
-    ElMessage.success(`${name === "agents" ? "Toonflow 说明" : "本地记忆"}已保存`);
+    ElMessage.success(`${name === "agents" ? "Toonflow instructions" : "Local memory"} saved`);
     return true;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response?.status === 409) document.conflict = true;
@@ -274,7 +274,7 @@ async function setMemoryEnabled(memoryEnabled: boolean) {
 
 async function readMemory() {
   const { data } = await axios.get<DocumentResponse>("/api/settings/personalization/get", { params: { document: "memory" }, headers });
-  if (data.code !== 200) throw new Error(data.message || "读取本地记忆失败，请重试");
+  if (data.code !== 200) throw new Error(data.message || "Failed to load local memory, please retry");
   return data.data;
 }
 
@@ -302,13 +302,13 @@ async function deleteMemory() {
   try {
     const memory = await readMemory();
     if (!memory.content && !isDirty(memoryDocument)) {
-      ElMessage.info("暂无本地记忆");
+      ElMessage.info("No local memory yet");
       return;
     }
     try {
-      await ElMessageBox.confirm("将删除所有工作区共用的本地记忆及未保存的记忆修改，此操作无法撤销。Toonflow 说明会保留。", "删除本地记忆", {
-        confirmButtonText: "删除",
-        cancelButtonText: "取消",
+      await ElMessageBox.confirm("This will delete the local memory shared across all workspaces and any unsaved memory changes. This cannot be undone. Toonflow instructions will be kept.", "Delete Local Memory", {
+        confirmButtonText: "Delete",
+        cancelButtonText: "Cancel",
         type: "warning",
       });
     } catch {
@@ -319,14 +319,14 @@ async function deleteMemory() {
       { document: "memory", content: "", revision: memory.revision },
       { headers }
     );
-    if (data.code === 409) throw new Error("本地记忆已更新，未删除任何内容。请重新查看后重试。");
-    if (data.code !== 200) throw new Error(data.message || "删除本地记忆失败，请重试");
+    if (data.code === 409) throw new Error("Local memory has been updated and nothing was deleted. Please view it again and retry.");
+    if (data.code !== 200) throw new Error(data.message || "Failed to delete local memory, please retry");
     Object.assign(memoryDocument, data.data, { savedContent: data.data.content, loaded: true, conflict: false, error: "" });
     memoryEditing.value = false;
-    ElMessage.success("本地记忆已删除");
+    ElMessage.success("Local memory deleted");
   } catch (error) {
     ElMessage.error(
-      axios.isAxiosError(error) && error.response?.status === 409 ? "本地记忆已更新，未删除任何内容。请重新查看后重试。" : errorMessage(error)
+      axios.isAxiosError(error) && error.response?.status === 409 ? "Local memory has been updated and nothing was deleted. Please view it again and retry." : errorMessage(error)
     );
   } finally {
     memoryAction.value = "";

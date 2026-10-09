@@ -7,7 +7,7 @@
     class="selectionHandle nodrag nopan"
     :style="handleStyle"
     type="button"
-    :aria-label="nodes !== undefined ? '连接分组节点' : '连接选中节点'"
+    :aria-label="nodes !== undefined ? 'Connect group nodes' : 'Connect selected nodes'"
     @pointerdown.stop.prevent="startConnection"
     @pointermove="moveConnection"
     @pointerup.stop="finishConnection"

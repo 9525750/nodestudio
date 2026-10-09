@@ -21,7 +21,7 @@ export function useCanvasTools(options: {
   const getNodeTools = useNodeToolsContext();
   let nodeRevision = 0;
   let edgeRevision = 0;
-  // 只跟踪列表结构，不深读节点 data；批量更新合并到同一 tick。
+  // Only track list structure, don't deep-read node data; batch updates merge into same tick.
   watch(flow.nodes, () => nodeRevision++, { deep: 1 });
   watch(flow.edges, () => edgeRevision++, { deep: 1 });
   const readCanvas = createCanvasQueries({
@@ -39,7 +39,7 @@ export function useCanvasTools(options: {
 
   function findNode(nodeId: string) {
     const node = flow.findNode(nodeId);
-    if (!node) throw new Error(`节点不存在：${nodeId}`);
+    if (!node) throw new Error(`Node does not exist: ${nodeId}`);
     return node;
   }
 
@@ -58,7 +58,7 @@ export function useCanvasTools(options: {
     let redirected: CanvasContext | undefined;
     return {
       get id() { return redirected?.id ?? options.getCanvasBinding().id; },
-      // 函数定义通过 getNodeTools 按需发现，初始化消息不携带节点清单。
+      // Function definitions discovered on-demand via getNodeTools; init messages don't carry node list.
       tools: [],
       getNodeLabel(nodeId) {
         if (redirected) return redirected.getNodeLabel?.(nodeId);
@@ -87,7 +87,7 @@ export function useCanvasTools(options: {
                   return nextContext.call({ name: "getCanvas", args: {} }, callSignal);
                 }
                 const binding = options.getCanvasBinding();
-                if (binding.id !== result) throw new Error("画布已再次切换，请重新发送消息");
+                if (binding.id !== result) throw new Error("Canvas switched again, please resend message");
                 binding.signal.throwIfAborted();
                 id = binding.id;
                 canvasSignal = binding.signal;
@@ -136,7 +136,7 @@ export function useCanvasTools(options: {
       case "addNode": {
         const args = canvasSchemas.addNode.parse(request.args);
         const type = options.availableNodes.value.find(node => node.type === args.type);
-        if (!type) throw new Error("节点类型未启用或尚未加载，请先查询 getCanvas");
+        if (!type) throw new Error("Node type not enabled or not loaded, please query getCanvas first");
         const id = crypto.randomUUID();
         flow.addNodes({ id, type: type.type, position: nodePosition(args.position), data: { label: args.label ?? type.label } });
         await nextTick();
@@ -148,16 +148,16 @@ export function useCanvasTools(options: {
         const idSet = new Set(nodeIds);
         const nodes = nodeIds.map(findNode);
         nodes.forEach(node => {
-          if (node.deletable === false) throw new Error(`节点不允许删除：${node.id}`);
+          if (node.deletable === false) throw new Error(`Node cannot be deleted: ${node.id}`);
           if (flow.getNodes.value.some(item => item.parentNode === node.id && !idSet.has(item.id))) {
-            throw new Error(`请先删除此节点的子节点：${node.id}`);
+            throw new Error(`Please delete child nodes first: ${node.id}`);
           }
-          if (flow.getConnectedEdges(node.id).some(edge => edge.deletable === false)) throw new Error(`节点存在不可删除的连接：${node.id}`);
+          if (flow.getConnectedEdges(node.id).some(edge => edge.deletable === false)) throw new Error(`Node has non-deletable connections: ${node.id}`);
         });
         for (const node of nodes) {
           await useNodeEvent(node.id, flow).emit("delete");
           signal.throwIfAborted();
-          if (flow.findNode(node.id) !== node) throw new Error("节点已被替换，请重新查询画布");
+          if (flow.findNode(node.id) !== node) throw new Error("Node has been replaced, please query canvas again");
         }
         const edgeIds = flow.getEdges.value.filter(edge => idSet.has(edge.source) || idSet.has(edge.target)).map(edge => edge.id);
         flow.removeNodes(nodeIds, true);
@@ -166,7 +166,7 @@ export function useCanvasTools(options: {
       }
       case "moveNodes": {
         const { moves } = canvasSchemas.moveNodes.parse(request.args);
-        moves.forEach(move => { if (findNode(move.nodeId).draggable === false) throw new Error(`节点不允许移动：${move.nodeId}`); });
+        moves.forEach(move => { if (findNode(move.nodeId).draggable === false) throw new Error(`Nodecannot be moved: ${move.nodeId}`); });
         moves.forEach(move => flow.updateNode(move.nodeId, { position: nodePosition(move.position) }));
         await nextTick();
         return { nodes: moves.map(move => nodeInfo(move.nodeId)) };
@@ -185,16 +185,16 @@ export function useCanvasTools(options: {
           const sourceNode = findNode(connection.source);
           const targetNode = findNode(connection.target);
           if (!flow.nodesConnectable.value || sourceNode.connectable === false || targetNode.connectable === false) {
-            throw new Error(`节点不允许连接：${connection.source} -> ${connection.target}`);
+            throw new Error(`Node cannot be connected: ${connection.source} -> ${connection.target}`);
           }
           const existing = edges.find(edge => edge.source === connection.source && edge.target === connection.target
             && edge.sourceHandle === connection.sourceHandle && edge.targetHandle === connection.targetHandle);
           if (existing) return { id: existing.id, connection, isNew: false };
           if (!validateConnection(connection, { sourceNode, targetNode, nodes: flow.getNodes.value, edges })) {
-            throw new Error(`连接无效：${connection.source} -> ${connection.target}，请检查端口方向、数据类型以及目标节点的连接规则`);
+            throw new Error(`Invalid connection: ${connection.source} -> ${connection.target}, please check port direction, data type and target node connection rules`);
           }
           const id = crypto.randomUUID();
-          // ACT: 候选边只参与本批校验，全部通过后再一次提交画布。
+          // ACT: Candidate edges only participate in current batch validation; submit to canvas once all pass.
           edges.push({
             ...connection, id, type: "default", selected: false, data: {}, events: {}, sourceNode, targetNode,
             sourceX: sourceNode.computedPosition.x, sourceY: sourceNode.computedPosition.y,
@@ -210,8 +210,8 @@ export function useCanvasTools(options: {
         const { edgeIds } = canvasSchemas.deleteEdges.parse(request.args);
         edgeIds.forEach(edgeId => {
           const edge = flow.findEdge(edgeId);
-          if (!edge) throw new Error(`连线不存在：${edgeId}`);
-          if (edge.deletable === false) throw new Error(`连线不允许删除：${edgeId}`);
+          if (!edge) throw new Error(`Connection does not exist: ${edgeId}`);
+          if (edge.deletable === false) throw new Error(`Connection cannot be deleted: ${edgeId}`);
         });
         const nodeIds = [...new Set(edgeIds.flatMap(id => {
           const edge = flow.findEdge(id)!;
@@ -224,7 +224,7 @@ export function useCanvasTools(options: {
       case "selectNodes": {
         const { nodeIds } = canvasSchemas.selectNodes.parse(request.args);
         const nodes = nodeIds.map(findNode);
-        if (nodes.some(node => node.selectable === false)) throw new Error("节点不允许选择");
+        if (nodes.some(node => node.selectable === false)) throw new Error("Node cannot be selected");
         flow.removeSelectedElements();
         flow.addSelectedNodes(nodes);
         await nextTick();
@@ -250,7 +250,7 @@ export function useCanvasTools(options: {
         const args = canvasSchemas.nodeTools.parse(request.args);
         return getNodeTools().call(args, signal);
       }
-      default: throw new Error(`未知画布操作：${request.name}`);
+      default: throw new Error(`Unknown canvas operation: ${request.name}`);
     }
   }
 }

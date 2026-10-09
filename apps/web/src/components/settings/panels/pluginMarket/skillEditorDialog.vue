@@ -1,5 +1,5 @@
 <template>
-  <el-dialog v-model="visible" :title="`编辑技能 · ${skill.displayName}`" width="min(1080px, calc(100vw - 32px))" alignCenter appendToBody :beforeClose="close" @closed="emit('closed')">
+  <el-dialog v-model="visible" :title="`Edit Skill · ${skill.displayName}`" width="min(1080px, calc(100vw - 32px))" alignCenter appendToBody :beforeClose="close" @closed="emit('closed')">
     <div class="skillEditor" :aria-busy="filesLoading || fileLoading">
       <el-alert v-if="filesError" :title="filesError" type="error" :closable="false" showIcon />
       <template v-else>
@@ -12,7 +12,7 @@
             :loading="creating"
             :disabled="saving || moving"
             @click="createFile">
-            新建文件
+            New file
           </el-button>
           <el-tree
             :key="treeVersion"
@@ -41,7 +41,7 @@
         <div class="fileEditor">
           <el-alert v-if="fileError" :title="fileError" type="error" :closable="false" showIcon />
           <template v-else>
-            <el-text v-if="selectedPath === mainPath" size="small" type="info">name 为技能标识，不可修改</el-text>
+            <el-text v-if="selectedPath === mainPath" size="small" type="info">name is the skill identifier and cannot be changed</el-text>
             <el-input
               v-model="draft"
               class="sourceInput"
@@ -49,15 +49,15 @@
               :rows="20"
               resize="none"
               :disabled="fileLoading || saving"
-              :aria-label="`${selectedPath} 源码`"
+              :aria-label="`${selectedPath} source`"
               :spellcheck="false" />
           </template>
         </div>
       </template>
     </div>
     <template #footer>
-      <el-button :disabled="saving || moving || confirming" @click="close()">关闭</el-button>
-      <el-button type="primary" :loading="saving" :disabled="fileLoading || !!fileError || draft === original || confirming" @click="save">保存</el-button>
+      <el-button :disabled="saving || moving || confirming" @click="close()">Close</el-button>
+      <el-button type="primary" :loading="saving" :disabled="fileLoading || !!fileError || draft === original || confirming" @click="save">Save</el-button>
     </template>
   </el-dialog>
 </template>
@@ -98,7 +98,7 @@ const dirtyPaths = ref(new Set<string>());
 const headers = { "x-toonflow-workspace": "1" };
 let controller = new AbortController();
 
-// 单文件技能只有主文件本身，没有可管理的附属文件目录。
+// A single-file skill only has its main file and no manageable directory of auxiliary files.
 const isDirectorySkill = computed(() => files.value.length > 1 || files.value[0] !== mainPath.value);
 const treeRoot = computed<TreeNode>(() => {
   const root: TreeNode = { key: "", label: skill.displayName, type: "directory", children: [] };
@@ -129,14 +129,14 @@ async function loadFiles() {
   try {
     const { data } = await axios.get("/api/skills/list", { params: { name: skill.name }, headers, signal: controller.signal });
     if (data.code !== 200 || typeof data.data?.mainPath !== "string" || !Array.isArray(data.data.files) || !data.data.files.every((path: unknown) => typeof path === "string")) {
-      throw new Error(data.message || "技能文件列表格式错误");
+      throw new Error(data.message || "Invalid skill file list format");
     }
     mainPath.value = data.data.mainPath;
     files.value = data.data.files;
     treeVersion.value++;
     if (!selectedPath.value || !files.value.includes(selectedPath.value)) await selectFile(mainPath.value);
   } catch (error) {
-    if (!controller.signal.aborted) filesError.value = errorMessage(error, "读取技能文件列表失败，请重新打开重试");
+    if (!controller.signal.aborted) filesError.value = errorMessage(error, "Failed to read the skill file list. Please reopen and try again");
   } finally {
     filesLoading.value = false;
   }
@@ -175,11 +175,11 @@ async function selectFile(path: string) {
       signal: requestController.signal,
     });
     if (requestController.signal.aborted || selectedPath.value !== path) return;
-    if (data.code !== 200 || typeof data.data?.content !== "string") throw new Error(data.message || "技能内容格式错误");
+    if (data.code !== 200 || typeof data.data?.content !== "string") throw new Error(data.message || "Invalid skill content format");
     original.value = data.data.content;
     if (cached === undefined) draft.value = data.data.content;
   } catch (error) {
-    if (!requestController.signal.aborted && selectedPath.value === path) fileError.value = errorMessage(error, "读取文件失败，请重新选择重试");
+    if (!requestController.signal.aborted && selectedPath.value === path) fileError.value = errorMessage(error, "Failed to read the file. Please select it again and retry");
   } finally {
     if (selectedPath.value === path) fileLoading.value = false;
   }
@@ -201,7 +201,7 @@ function parentOf(path: string) {
 function allowDrop(draggingNode: { data: Record<string, unknown> }, dropNode: { data: Record<string, unknown> }, type: string) {
   const drop = dropNode.data as unknown as TreeNode;
   if (type === "inner") return drop.type === "directory";
-  // 仅允许拖到同目录内的兄弟文件前后调整顺序；跨目录移动统一走拖入目录节点。
+  // Only allow dragging before/after sibling files in the same directory to reorder; cross-directory moves always go through dropping onto a directory node.
   if (drop.type !== "file") return false;
   const dragging = draggingNode.data as unknown as TreeNode;
   return parentOf(dragging.key) === parentOf(drop.key);
@@ -219,20 +219,20 @@ async function handleNodeDrop(draggingNode: { data: Record<string, unknown> }, d
     moving.value = true;
     try {
       const { data } = await axios.put("/api/skills/move", { name: skill.name, path: sourcePath, target: targetPath }, { headers });
-      if (data.code !== 200) throw new Error(data.message || "移动文件失败");
+      if (data.code !== 200) throw new Error(data.message || "Failed to move the file");
       if (drafts.has(sourcePath)) { drafts.set(targetPath, drafts.get(sourcePath)!); drafts.delete(sourcePath); }
       if (dirtyPaths.value.has(sourcePath)) { dirtyPaths.value.add(targetPath); dirtyPaths.value.delete(sourcePath); }
       if (selectedPath.value === sourcePath) selectedPath.value = targetPath;
       await loadFiles();
     } catch (error) {
-      ElMessage.error(errorMessage(error, "移动文件失败，请重试"));
+      ElMessage.error(errorMessage(error, "Failed to move the file. Please try again"));
       treeVersion.value++;
     } finally {
       moving.value = false;
     }
     return;
   }
-  // 同目录内调整顺序（dropType 为 before/after），不改变文件路径。
+  // Reorder within the same directory (dropType is before/after) without changing file paths.
   const siblings = files.value.filter(path => path !== mainPath.value && path !== sourcePath);
   const dropIndex = siblings.indexOf(drop.key);
   const insertIndex = dropIndex < 0 ? siblings.length : dropType === "before" ? dropIndex : dropIndex + 1;
@@ -240,10 +240,10 @@ async function handleNodeDrop(draggingNode: { data: Record<string, unknown> }, d
   moving.value = true;
   try {
     const { data } = await axios.put("/api/skills/order", { name: skill.name, order: siblings }, { headers });
-    if (data.code !== 200) throw new Error(data.message || "保存顺序失败");
+    if (data.code !== 200) throw new Error(data.message || "Failed to save the order");
     await loadFiles();
   } catch (error) {
-    ElMessage.error(errorMessage(error, "保存顺序失败，请重试"));
+    ElMessage.error(errorMessage(error, "Failed to save the order. Please try again"));
     treeVersion.value++;
   } finally {
     moving.value = false;
@@ -255,12 +255,12 @@ async function createFile() {
   const directory = selectedPath.value.includes("/") ? selectedPath.value.slice(0, selectedPath.value.lastIndexOf("/")) : "";
   let fileName: string;
   try {
-    const { value } = await ElMessageBox.prompt(directory ? `新文件将创建在“${directory}”目录` : "新文件将创建在技能根目录", "新建文件", {
+    const { value } = await ElMessageBox.prompt(directory ? `The new file will be created in the "${directory}" directory` : "The new file will be created in the skill root directory", "New file", {
       inputPattern: /^[^\\/]+$/,
-      inputValidator: value => !!value?.trim() || "请输入文件名称",
-      inputErrorMessage: "名称不能包含斜杠",
-      confirmButtonText: "创建",
-      cancelButtonText: "取消",
+      inputValidator: value => !!value?.trim() || "Please enter a file name",
+      inputErrorMessage: "The name cannot contain slashes",
+      confirmButtonText: "Create",
+      cancelButtonText: "Cancel",
     });
     fileName = value.trim();
   } catch { return; }
@@ -268,11 +268,11 @@ async function createFile() {
   creating.value = true;
   try {
     const { data } = await axios.post("/api/skills/create", { name: skill.name, path }, { headers });
-    if (data.code !== 200) throw new Error(data.message || "创建文件失败");
+    if (data.code !== 200) throw new Error(data.message || "Failed to create the file");
     await loadFiles();
     await selectFile(path);
   } catch (error) {
-    ElMessage.error(errorMessage(error, "创建文件失败，请重试"));
+    ElMessage.error(errorMessage(error, "Failed to create the file. Please try again"));
   } finally {
     creating.value = false;
   }
@@ -283,7 +283,7 @@ async function close(done?: () => void) {
   if (draft.value !== original.value || dirtyPaths.value.size) {
     confirming.value = true;
     try {
-      await ElMessageBox.confirm("修改尚未保存，确定放弃修改并关闭吗？", "未保存的修改", { confirmButtonText: "放弃修改", cancelButtonText: "继续编辑", type: "warning" });
+      await ElMessageBox.confirm("You have unsaved changes. Discard them and close?", "Unsaved changes", { confirmButtonText: "Discard changes", cancelButtonText: "Keep editing", type: "warning" });
     } catch { return; }
     finally { confirming.value = false; }
   }
@@ -298,14 +298,14 @@ async function save() {
   const content = draft.value;
   try {
     const { data } = await axios.put("/api/skills/save", { name: skill.name, ...(path === mainPath.value ? {} : { path }), content }, { headers });
-    if (data.code !== 200) throw new Error(data.message || "保存文件失败");
+    if (data.code !== 200) throw new Error(data.message || "Failed to save the file");
     if (selectedPath.value === path) original.value = content;
     drafts.delete(path);
     dirtyPaths.value.delete(path);
     emit("saved");
-    ElMessage.success("已保存");
+    ElMessage.success("Saved");
   } catch (error) {
-    ElMessage.error(errorMessage(error, "保存文件失败，请重试"));
+    ElMessage.error(errorMessage(error, "Failed to save the file. Please try again"));
   } finally {
     saving.value = false;
   }

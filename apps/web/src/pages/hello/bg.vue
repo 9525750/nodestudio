@@ -38,7 +38,7 @@ let splice: { y: number; life: number } | null = null;
 function getSourceRect(index: number) {
   const column = index % 4;
   const row = Math.floor(index / 4);
-  // 原图各行的地面分隔带不等高，按实际边界避开帧号和相邻画格。
+  // The ground separator bands in each row of the source image are uneven in height; avoid frame numbers and adjacent frames by the actual boundaries.
   const rowBounds = [[1, 126], [135, 262], [270, 391], [405, 528]][row]!;
   const scaleY = image.naturalHeight / 538;
   const cellWidth = image.naturalWidth / 4;
@@ -93,7 +93,7 @@ function draw() {
   ctx.fillStyle = glow;
   ctx.fillRect(0, 0, width, height);
 
-  // 画面、齿孔与磨损同随 jitter 平移/旋转，背景光晕保持静止
+  // The picture, sprocket holes and wear move/rotate together with the jitter, while the background glow stays still
   ctx.save();
   ctx.translate(x + filmWidth / 2 + jitterX, y + filmHeight / 2 + jitterY);
   ctx.rotate(jitterAngle);
@@ -128,7 +128,7 @@ function draw() {
     (filmHeight - sh * scale) / 2, sw * scale, sh * scale);
   ctx.filter = "none";
 
-  // 暖色灯光泄漏，强度随时间缓慢起伏
+  // Warm light leak, with intensity slowly fluctuating over time
   const leak = (Math.sin(frameTick * 0.02) + 1) / 2;
   const leakGradient = ctx.createRadialGradient(filmWidth * 0.85, filmHeight * 0.12, 0, filmWidth * 0.85, filmHeight * 0.12, filmWidth * 0.6);
   leakGradient.addColorStop(0, `rgba(255,150,60,${0.16 * leak})`);

@@ -5,7 +5,7 @@
       ref="labelInput"
       v-model="labelDraft"
       class="groupLabelInput nodrag nopan"
-      aria-label="分组名称"
+      aria-label="Group name"
       @pointerdown.stop
       @mousedown.stop
       @click.stop
@@ -14,8 +14,8 @@
       @keydown.enter="confirmLabel"
       @keydown.esc.prevent="editingLabel = false"
       @blur="saveLabel" />
-    <span v-else class="groupLabel" tabindex="0" :title="`${data.label || '分组'}（双击编辑名称）`" @dblclick.stop="editLabel" @keydown.enter.stop.prevent="editLabel">
-      {{ data.label || "分组" }}
+    <span v-else class="groupLabel" tabindex="0" :title="`${data.label || 'Group'}(double-click to edit)`" @dblclick.stop="editLabel" @keydown.enter.stop.prevent="editLabel">
+      {{ data.label || "Group" }}
     </span>
     <button
       v-for="corner in resizeCorners"
@@ -23,7 +23,7 @@
       class="resizeCorner nodrag nopan"
       :class="corner.name"
       type="button"
-      :aria-label="`调整分组${corner.label}`"
+      :aria-label="`Resize group ${corner.label}`"
       @pointerdown.stop.prevent="startResize($event, corner)"
       @pointermove.stop="moveResize"
       @pointerup.stop="finishResize"
@@ -47,10 +47,10 @@ const editingLabel = ref(false);
 const labelDraft = ref("");
 const labelInput = ref<HTMLInputElement>();
 const resizeCorners = [
-  { name: "topLeft", label: "左上角", x: -1, y: -1 },
-  { name: "topRight", label: "右上角", x: 1, y: -1 },
-  { name: "bottomLeft", label: "左下角", x: -1, y: 1 },
-  { name: "bottomRight", label: "右下角", x: 1, y: 1 },
+  { name: "topLeft", label: "top-left", x: -1, y: -1 },
+  { name: "topRight", label: "top-right", x: 1, y: -1 },
+  { name: "bottomLeft", label: "bottom-left", x: -1, y: 1 },
+  { name: "bottomRight", label: "bottom-right", x: 1, y: 1 },
 ] as const;
 type ResizeCorner = typeof resizeCorners[number];
 const resize = shallowRef<{
@@ -66,7 +66,7 @@ const resize = shallowRef<{
 }>();
 
 async function editLabel() {
-  labelDraft.value = props.data.label || "分组";
+  labelDraft.value = props.data.label || "Group";
   editingLabel.value = true;
   await nextTick();
   labelInput.value?.select();
@@ -101,7 +101,7 @@ function startResize(event: PointerEvent, corner: ResizeCorner) {
   });
   void (batchHistory ? batchHistory(action) : action()).catch(error => {
     finishResize();
-    ElMessage.error(error instanceof Error ? error.message : "分组缩放失败");
+    ElMessage.error(error instanceof Error ? error.message : "Group resize failed");
   });
 }
 
@@ -142,7 +142,7 @@ onBeforeUnmount(() => finishResize());
 watch(
   () => flow.getNodes.value.filter(node => node.parentNode === props.id),
   children => {
-    // ACT: 拖动期间保持分组框不变，松手后由画布统一贴合内容。
+    // ACT: Keep group frame unchanged during drag; canvas fits content uniformly on release.
     children.forEach(node => { node.expandParent = false; });
   },
   { immediate: true },

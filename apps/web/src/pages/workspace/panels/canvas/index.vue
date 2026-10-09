@@ -100,8 +100,8 @@
         class="edgeDisconnect"
         type="danger"
         circle
-        aria-label="断开连接"
-        title="断开连接"
+        aria-label="Disconnect"
+        title="Disconnect"
         :style="{ left: `${edgeDisconnect.x}px`, top: `${edgeDisconnect.y}px` }"
         @click.stop="
           removeEdges(edgeDisconnect.id);
@@ -263,7 +263,7 @@ const createCanvasContext = useCanvasTools({
   availableNodes,
   flushSave: flushCanvasSave,
   menu() {
-    if (!canvasMenuRef.value) throw new Error("画布菜单尚未就绪");
+    if (!canvasMenuRef.value) throw new Error("Canvas menu is not ready");
     return canvasMenuRef.value;
   },
   getCanvasBinding: () => ({ id: canvasId.value, signal: canvasController.signal }),
@@ -289,33 +289,33 @@ async function prepareCanvasDelete() {
   function checkCanvas() {
     signal.throwIfAborted();
     if (!directory || directory !== project.value?.directory || !fileName || fileName !== canvasId.value) {
-      throw new Error("工作区或画布已切换，请重新删除");
+      throw new Error("Workspace or canvas changed, please delete again");
     }
   }
   checkCanvas();
   await nextTick();
   checkCanvas();
-  // 宿主已暂停画布保存；这里只执行节点生命周期，文件删除成功后由宿主取消保存并卸载。
+  // Host has paused canvas save; only execute node lifecycle here, host cancels save and unmounts after file deletion.
   for (const node of nodes) {
-    if (flow.findNode(node.id) !== node) throw new Error("画布节点已变化，请重新删除");
+    if (flow.findNode(node.id) !== node) throw new Error("Canvas nodes changed, please delete again");
     await useNodeEvent(node.id, flow).emit("delete");
     checkCanvas();
-    if (flow.findNode(node.id) !== node) throw new Error("画布节点已变化，请重新删除");
+    if (flow.findNode(node.id) !== node) throw new Error("Canvas nodes changed, please delete again");
   }
   if (flow.getNodes.value.length !== nodes.length || nodes.some(node => flow.findNode(node.id) !== node)) {
-    throw new Error("画布节点已变化，请重新删除");
+    throw new Error("Canvas nodes changed, please delete again");
   }
 }
 
 type DocumentNodeData = { label?: string; handles?: NodeHandle[]; outputs?: Record<string, NodeOutput | undefined>; textPath?: string };
 
 function checkDocumentDirectory(directory: string) {
-  if (!directory || directory !== project.value?.directory) throw new Error("工作目录已切换，请重新打开节点");
+  if (!directory || directory !== project.value?.directory) throw new Error("Working directory changed, please reopen node");
 }
 
 function observeDocumentNode(directory: string, canvasPath: string, nodeId: string, onState: (state: NodeDocumentState) => void) {
   checkDocumentDirectory(directory);
-  if (canvasId.value !== canvasPath || !findNode(nodeId)) throw new Error("节点不存在，请刷新文件树");
+  if (canvasId.value !== canvasPath || !findNode(nodeId)) throw new Error("Node does not exist, please refresh file tree");
   const stop = watch((): NodeDocumentState => {
     const node = findNode(nodeId);
     const state = nodeDocument.states.get(nodeId);
@@ -329,7 +329,7 @@ function observeDocumentNode(directory: string, canvasPath: string, nodeId: stri
     release,
     async flushSave() {
       checkDocumentDirectory(directory);
-      if (!findNode(nodeId)) throw new Error("节点已删除，请刷新文件树");
+      if (!findNode(nodeId)) throw new Error("Node deleted, please refresh file tree");
       await flushCanvasSave();
     },
   };
@@ -337,19 +337,19 @@ function observeDocumentNode(directory: string, canvasPath: string, nodeId: stri
 
 async function mountDocumentNode(directory: string, canvasPath: string, nodeId: string, target: HTMLElement) {
   checkDocumentDirectory(directory);
-  if (canvasId.value !== canvasPath) throw new Error("画布已切换，请重新打开节点");
+  if (canvasId.value !== canvasPath) throw new Error("Canvas changed, please reopen node");
   await nextTick();
   checkDocumentDirectory(directory);
   const node = findNode(nodeId);
-  if (!node) throw new Error("节点已删除，请刷新文件树");
+  if (!node) throw new Error("Node deleted, please refresh file tree");
   if (nodeErrors.value[node.type]) throw new Error(nodeErrors.value[node.type]);
   const mount = nodeDocument.mounts.get(nodeId);
-  if (!mount) throw new Error("当前节点未提供文档视图，请确认节点正常加载并更新节点插件");
+  if (!mount) throw new Error("Current node does not provide document view, please verify node is loaded and update plugin");
   const release = mount(target);
   try {
     await nextTick();
     checkDocumentDirectory(directory);
-    if (!target.isConnected || !target.querySelector(".documentNode")) throw new Error("节点文档视图加载失败，请重新打开节点");
+    if (!target.isConnected || !target.querySelector(".documentNode")) throw new Error("Node document view failed to load, please reopen node");
     return release;
   } catch (error) {
     release();
@@ -376,12 +376,12 @@ async function readDocumentCanvas(directory: string, canvasPath: string, nodeId:
   const files = useWorkspaceFiles(directory);
   const canvas = await files.readJson<{ toonflowCanvas?: boolean; nodes?: Node<DocumentNodeData>[] }>(canvasPath);
   checkDocumentDirectory(directory);
-  if (canvas?.toonflowCanvas !== true || !Array.isArray(canvas.nodes)) throw new Error("文件不是有效画布");
+  if (canvas?.toonflowCanvas !== true || !Array.isArray(canvas.nodes)) throw new Error("File is not a valid canvas");
   const node = canvas.nodes.find((item) => item && item.id === nodeId);
-  if (!node) throw new Error("节点已删除，请刷新文件树");
-  if (node.data !== undefined && (!node.data || typeof node.data !== "object" || Array.isArray(node.data))) throw new Error("节点数据无效");
+  if (!node) throw new Error("Node deleted, please refresh file tree");
+  if (node.data !== undefined && (!node.data || typeof node.data !== "object" || Array.isArray(node.data))) throw new Error("Node data is invalid");
   const liveNode = canvasId.value === canvasPath ? findNode(nodeId) : undefined;
-  if (canvasId.value === canvasPath && !liveNode) throw new Error("节点已删除，请刷新文件树");
+  if (canvasId.value === canvasPath && !liveNode) throw new Error("Node deleted, please refresh file tree");
   const textPath = node.data?.textPath;
   if (
     textPath !== undefined &&
@@ -391,7 +391,7 @@ async function readDocumentCanvas(directory: string, canvasPath: string, nodeId:
       textPath.includes("\0") ||
       textPath.split(/[\\/]/).includes(".."))
   )
-    throw new Error("文本文件路径必须位于工作区内");
+    throw new Error("Text file path must be within workspace");
   return { files, canvas, node, liveNode, textPath };
 }
 
@@ -420,16 +420,16 @@ async function saveDocumentNode(directory: string, canvasPath: string, nodeId: s
   checkDocumentDirectory(directory);
   await flushCanvasSave(async () => {
     const { files, canvas, node, liveNode, textPath } = await readDocumentCanvas(directory, canvasPath, nodeId);
-    if (!documentHandles(liveNode ?? node).some((handle) => handle.id === handleId)) throw new Error("文本输出已删除，请重新打开节点");
+    if (!documentHandles(liveNode ?? node).some((handle) => handle.id === handleId)) throw new Error("Text output deleted, please reopen node");
     if (expectedText !== undefined) {
       const output = (liveNode ?? node).data?.outputs?.[handleId];
       const currentText = output?.dataType === "STRING" && typeof output.value === "string" ? output.value : textPath === undefined ? "" : await files.readText(textPath);
-      if (currentText !== expectedText) throw new Error("文档内容已变化，请重新读取后编辑");
+      if (currentText !== expectedText) throw new Error("Document content has changed, please re-read before editing");
     }
     if (liveNode?.type === "remote-textNode") {
       await getNodeTools().call({ nodeId, name: "node:setText", args: { text } }, canvasController.signal);
       checkDocumentDirectory(directory);
-      // 节点工具已同步输出并排队保存；等待期间用户可能继续编辑，不能再写入旧文本快照。
+      // Node tools have synced output and queued save; user may continue editing during wait, cannot write old text snapshot.
       return;
     }
     if (liveNode && canvasId.value === canvasPath && findNode(nodeId) === liveNode) {
@@ -471,7 +471,7 @@ async function dropFiles(event: DragEvent) {
   try {
     await canvasHistory.batch(() => dropCanvasFiles(event, { directory, availableNodes: availableNodes.value, signal: canvasController.signal, flow }));
   } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : "文件导入失败");
+    ElMessage.error(error instanceof Error ? error.message : "File import failed");
   }
 }
 
@@ -488,7 +488,7 @@ function selectFiles(position: { x: number; y: number }) {
     try {
       await canvasHistory.batch(() => importCanvasFiles(files, position, context));
     } catch (error) {
-      ElMessage.error(error instanceof Error ? error.message : "文件导入失败");
+      ElMessage.error(error instanceof Error ? error.message : "File import failed");
     }
   };
   input.click();
@@ -512,10 +512,10 @@ async function changeHistory(direction: "undo" | "redo") {
   } catch (error) {
     ElMessage.error(
       axios.isAxiosError<{ message?: string }>(error)
-        ? error.response?.data.message || "恢复画布失败"
+        ? error.response?.data.message || "Failed to restore canvas"
         : error instanceof Error
         ? error.message
-        : "恢复画布失败"
+        : "Failed to restore canvas"
     );
   }
 }
@@ -530,7 +530,7 @@ let saveRevision = 0;
 const saveCanvas = debounce((directory: string, fileName: string) => {
   const flow = toObject();
   const revision = saveRevision;
-  // ACT: 同页保存按顺序完成，防止慢请求覆盖后续修改；不处理多个客户端的并发编辑。
+  // ACT: Same-page saves complete sequentially, preventing slow requests from overwriting later changes; no multi-client concurrent editing.
   saving = saving.then(async () => {
     try {
       await useWorkspaceFiles(directory).writeJson(fileName, { toonflowCanvas: true, nodes: flow.nodes, edges: flow.edges, viewport: flow.viewport });
@@ -539,13 +539,13 @@ const saveCanvas = debounce((directory: string, fileName: string) => {
       if (revision === saveRevision) canvasDirty.value = false;
     } catch (err) {
       saveError = err;
-      canvasSaveError.value = axios.isAxiosError<{ message?: string }>(err) ? err.response?.data.message || err.message : err instanceof Error ? err.message : "画布保存失败";
+      canvasSaveError.value = axios.isAxiosError<{ message?: string }>(err) ? err.response?.data.message || err.message : err instanceof Error ? err.message : "Canvas save failed";
       ElMessage.error(
         axios.isAxiosError<{ message?: string }>(err)
-          ? err.response?.data.message || "画布保存失败"
+          ? err.response?.data.message || "Canvas save failed"
           : err instanceof Error
           ? err.message
-          : "画布保存失败"
+          : "Canvas save failed"
       );
     }
   });
@@ -581,7 +581,7 @@ const nodeRuntimeFields = new Set([
   "events",
 ]);
 const edgeRuntimeFields = new Set(["data", "selected", "sourceNode", "targetNode", "sourceX", "sourceY", "targetX", "targetY", "events"]);
-// ACT: 仅增删、替换元素时扫描列表；位移与 data 各自监听，单个节点变化不遍历其余节点。
+// ACT: Scan list only on add/remove/replace; position and data are watched separately, single node change doesn't traverse others.
 watch(
   () => [...flow.nodes.value, ...flow.edges.value],
   (elements) => {
@@ -594,7 +594,7 @@ watch(
     }
     for (const element of elements) {
       if (elementSaveWatchers.has(element)) continue;
-      // 与 toObject 排除的运行态字段保持一致，其他自定义持久字段仍参与自动保存。
+      // Consistent with runtime fields excluded by toObject; other custom persistent fields still participate in auto-save.
       const runtimeFields = isNode(element) ? nodeRuntimeFields : edgeRuntimeFields;
       const stopFields = watch(
         () =>
@@ -629,16 +629,16 @@ watch(
   [() => project.value?.directory, canvasId],
   ([directory, fileName], [previousDirectory, previousFileName]) => {
     if (directory !== previousDirectory) {
-      workspaceController.abort(new Error("工作区已切换，本轮画布操作已停止"));
+      workspaceController.abort(new Error("Workspace changed, canvas operation stopped"));
       workspaceController = new AbortController();
     }
     edgeDisconnect.value = undefined;
     dragCopy = undefined;
     pointerPosition = undefined;
     resetCanvasKeys();
-    // 同一实例只在重新装载画布时失效；重命名仅更新保存路径。
+    // Same instance only invalidates on canvas reload; rename only updates save path.
     if (directory !== previousDirectory || !fileName || !previousFileName) {
-      canvasController.abort(new Error("画布已重新加载，本次画布调用已停止"));
+      canvasController.abort(new Error("Canvas reloaded, canvas call stopped"));
       canvasController = new AbortController();
     }
     if (!savePaused) saveCanvas.flush();
@@ -646,7 +646,7 @@ watch(
   { flush: "sync" }
 );
 
-// ACT: 切换显示面板不会卸载画布；仅清理交互，不中断本轮工具调用。
+// ACT: Switching display panel doesn't unmount canvas; only cleans up interaction, doesn't interrupt current tool calls.
 watch(() => props.active, (active) => {
   if (!active) assetsVisible.value = false;
   edgeDisconnect.value = undefined;
@@ -656,9 +656,9 @@ watch(() => props.active, (active) => {
 }, { flush: "sync" });
 
 function flushCanvasSave(action?: () => Promise<void>): Promise<void> {
-  // ACT: 完整保存及其文件操作串行执行，重命名暂停期间的显式保存也必须等待。
+  // ACT: Full save and its file operations execute serially; explicit save during rename pause must also wait.
   const next = flushing.then(() => saveCanvasState(action)).then(() => { canvasSaveError.value = ""; }, error => {
-    canvasSaveError.value = axios.isAxiosError<{ message?: string }>(error) ? error.response?.data.message || error.message : error instanceof Error ? error.message : "画布保存失败";
+    canvasSaveError.value = axios.isAxiosError<{ message?: string }>(error) ? error.response?.data.message || error.message : error instanceof Error ? error.message : "Canvas save failed";
     throw error;
   });
   flushing = next.catch(() => {});
@@ -666,16 +666,16 @@ function flushCanvasSave(action?: () => Promise<void>): Promise<void> {
 }
 
 async function saveCanvasState(action?: () => Promise<void>) {
-  if (saveCancelled) throw new Error("画布保存已取消");
+  if (saveCancelled) throw new Error("Canvas save cancelled");
   await Promise.all(flow.getNodes.value.map((node) => useNodeEvent(node.id, flow).emit("save")));
   await nextTick();
-  if (saveCancelled) throw new Error("画布保存已取消");
+  if (saveCancelled) throw new Error("Canvas save cancelled");
   if (saveError && project.value?.directory && canvasId.value) saveCanvas(project.value.directory, canvasId.value);
   if (action) savePaused = true;
   try {
     let revision: number;
     do {
-      if (saveCancelled) throw new Error("画布保存已取消");
+      if (saveCancelled) throw new Error("Canvas save cancelled");
       revision = saveRevision;
       if (changedWhilePaused && project.value?.directory && canvasId.value) {
         saveCanvas(project.value.directory, canvasId.value);
@@ -684,11 +684,11 @@ async function saveCanvasState(action?: () => Promise<void>) {
       saveCanvas.flush();
       await saving;
       if (saveError) throw saveError;
-      // 画布写入期间节点可能完成生成，等新增落盘后重新保存变化。
+      // Nodes may finish generation during canvas write; re-save changes after new additions are written to disk.
       await Promise.all(flow.getNodes.value.map((node) => useNodeEvent(node.id, flow).emit("save")));
       await nextTick();
     } while (revision !== saveRevision);
-    if (saveCancelled) throw new Error("画布保存已取消");
+    if (saveCancelled) throw new Error("Canvas save cancelled");
     await action?.();
   } finally {
     if (action && !saveCancelled) {
@@ -716,7 +716,7 @@ function canUseCanvasClipboard(event: Event) {
 function beforeClipboard(event: Event) {
   if (!canUseCanvasClipboard(event)) return;
   if (event.type === "beforecopy" && (!flow.getSelectedNodes.value.length || window.getSelection()?.toString())) return;
-  // ACT: WKWebView 通过 beforecopy/beforepaste 判定非输入区能否使用原生编辑菜单。
+  // ACT: WKWebView uses beforecopy/beforepaste to determine if non-input areas can use native edit menus.
   event.preventDefault();
 }
 
@@ -746,11 +746,11 @@ async function copySelectedNodes() {
         position: parentNode ? { ...saved.position } : { x: node.computedPosition.x, y: node.computedPosition.y } };
     }));
     signal.throwIfAborted();
-    if (nodes.some(node => findNode(node.id) !== node)) throw new Error("节点已变化，请重新复制");
+    if (nodes.some(node => findNode(node.id) !== node)) throw new Error("Nodes changed, please copy again");
     const edges = snapshot.edges.filter(edge => ids.has(edge.source) && ids.has(edge.target));
     await copyNodesToClipboard(copies, edges, directory);
   } catch (error) {
-    if (!signal.aborted) ElMessage.error(error instanceof Error ? error.message : "节点复制失败");
+    if (!signal.aborted) ElMessage.error(error instanceof Error ? error.message : "Node copy failed");
   } finally {
     copyingNodes = false;
   }
@@ -778,9 +778,9 @@ async function pasteClipboardNode(position: { x: number; y: number }, command?: 
     const directory = project.value.directory;
     const snapshot = await readClipboardNodes(command ?? (await readClipboardText()), directory);
     if (canvasSignal.aborted) return false;
-    if (!snapshot) throw new Error("剪贴板中没有可粘贴的节点命令");
+    if (!snapshot) throw new Error("No pasteable node command in clipboard");
     if (snapshot.nodes.some(node => node.type !== "canvasGroup" && !availableNodes.value.some(item => item.type === node.type))) {
-      throw new Error("请先安装并启用对应的节点插件");
+      throw new Error("Please install and enable corresponding node plugin first");
     }
     const ids = new Map(snapshot.nodes.map(node => [node.id, crypto.randomUUID()]));
     const roots = snapshot.nodes.filter(node => !node.parentNode);
@@ -798,11 +798,11 @@ async function pasteClipboardNode(position: { x: number; y: number }, command?: 
   } catch (error) {
     const pasteShortcut = generalSettings.value.canvasShortcuts.paste;
     const clipboardMessage = getShortcutBindings(pasteShortcut).some(binding => /^(Ctrl|Meta)\+KeyV$/.test(binding))
-      ? `无法读取剪贴板，请在画布上按 ${shortcutLabel(pasteShortcut)} 粘贴`
-      : "无法读取剪贴板，请允许浏览器访问剪贴板";
+      ? `Cannot read clipboard, press ${shortcutLabel(pasteShortcut)} paste`
+      : "Cannot read clipboard, please allow browser clipboard access";
     if (!canvasSignal.aborted)
       ElMessage.error(
-        error instanceof DOMException && error.name === "NotAllowedError" ? clipboardMessage : error instanceof Error ? error.message : "节点粘贴失败"
+        error instanceof DOMException && error.name === "NotAllowedError" ? clipboardMessage : error instanceof Error ? error.message : "Node paste failed"
       );
     return false;
   }
@@ -819,11 +819,11 @@ function zoomCanvas(event: WheelEvent | (Event & { scale: number })) {
     factor = event.type === "gesturechange" && gestureScale !== undefined ? event.scale / gestureScale : 1;
     gestureScale = event.type === "gestureend" ? undefined : event.scale;
   } else {
-    // ACT: Chromium 捏合发送 Ctrl+wheel，但不发送 Control 按键；WebKit 使用上方原生 gesture 事件。
+    // ACT: Chromium pinch sends Ctrl+wheel but no Control key; WebKit uses native gesture events above.
     const pinching = event.ctrlKey && !pressedCodes.has("ControlLeft") && !pressedCodes.has("ControlRight");
     if (!pinching && !shortcutPressed(event, generalSettings.value.canvasShortcuts.zoom, pressedCodes)) {
       if (!event.ctrlKey) return;
-      // 实体 Ctrl 未绑定缩放时，阻止 Vue Flow 和节点骨架将它误判为捏合。
+      // When physical Ctrl is not bound to zoom, prevent Vue Flow and node skeleton from treating it as pinch.
       factor = 1;
     } else {
       factor = pinching && gestureScale !== undefined ? 1 : 2 ** (pinching ? -event.deltaY * 0.02 : wheelDelta(event));
@@ -873,7 +873,7 @@ function updateCanvasKeys(event: KeyboardEvent) {
   }
   if (!canvasId.value || !project.value?.directory) return;
   if (action === "copy" && (!flow.getSelectedNodes.value.length || window.getSelection()?.toString())) return;
-  // 桌面快捷键直接复用原生剪贴板桥接；浏览器 Ctrl/Cmd+V 保留原生事件，避免额外读取权限。
+  // Desktop shortcuts reuse native clipboard bridge; browser Ctrl/Cmd+V keeps native events to avoid extra read permissions.
   if (!isDesktop && action === "paste" && event.code === "KeyV" && (event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey) return;
   event.preventDefault();
   if (event.repeat) return;
@@ -884,7 +884,7 @@ function updateCanvasKeys(event: KeyboardEvent) {
     void canvasHistory
       .batch(() => menu.deleteSelection(nodes))
       .catch((error) => {
-        ElMessage.error(error instanceof Error ? error.message : "节点删除失败");
+        ElMessage.error(error instanceof Error ? error.message : "Node delete failed");
       });
     return;
   }
@@ -916,7 +916,7 @@ function refreshInstalled(event: WindowEventMap["toonflow:plugin-installed"]) {
 const refreshNodeConfig = () => { void loadRemoteNodes(); };
 
 onMounted(() => {
-  // 在捕获阶段同步修饰键，避免节点编辑器截断 keydown/keyup 后缩放状态丢失或卡住。
+  // Sync modifier keys in capture phase to prevent zoom state loss or sticking after node editor captures keydown/keyup.
   window.addEventListener("keydown", updateCanvasKeys, true);
   window.addEventListener("keyup", updateCanvasKeys, true);
   window.addEventListener("blur", resetCanvasKeys);
@@ -938,8 +938,8 @@ onBeforeUnmount(() => {
   document.removeEventListener("copy", copyNode);
   document.removeEventListener("beforecopy", beforeClipboard);
   document.removeEventListener("beforepaste", beforeClipboard);
-  workspaceController.abort(new Error("工作区已关闭"));
-  canvasController.abort(new Error("画布已关闭"));
+  workspaceController.abort(new Error("Workspace closed"));
+  canvasController.abort(new Error("Canvas closed"));
   saveCanvas.flush();
   loadRequest++;
 });
@@ -952,17 +952,17 @@ nodeWindow.toonflowNodeHost = { vue: vueRuntime, vueFlow: vueFlowRuntime, elemen
 provide("nodeConfig", (nodeType: string) => nodeConfigs.value[nodeType] ?? {});
 provide("workspaceFiles", () => {
   const directory = project.value?.directory;
-  if (!directory) throw new Error("请先选择工作目录");
+  if (!directory) throw new Error("Please select a working directory first");
   return useWorkspaceFiles(directory);
 });
 provide("workspaceDirectory", () => {
   const directory = project.value?.directory;
-  if (!directory) throw new Error("请先选择工作目录");
+  if (!directory) throw new Error("Please select a working directory first");
   return directory;
 });
 provide("reloadRemoteNode", (type: string) => {
   const name = type.replace(/^remote-/, "");
-  if (!type.startsWith("remote-") || !/^[a-z][a-zA-Z0-9]*$/.test(name)) throw new Error("节点类型无效");
+  if (!type.startsWith("remote-") || !/^[a-z][a-zA-Z0-9]*$/.test(name)) throw new Error("Invalid node type");
   return loadNode(name, `/api/nodes/files?name=${name}`, true);
 });
 
@@ -977,7 +977,7 @@ async function loadNode(name: string, url: string, force = false): Promise<void>
   if (!force && nodeTypes.value[nodeType] && !nodeErrors.value[nodeType]) return;
   if (force) {
     signal.throwIfAborted();
-    // ACT: 复用画布修订号收敛等待期间的编辑；持续修改画布时延后刷新，不额外维护节点修订状态。
+    // ACT: Reuse edits during canvas revision convergence wait; defer refresh on continuous canvas changes, no extra node revision state.
     let revision: number;
     do {
       revision = saveRevision;
@@ -991,7 +991,7 @@ async function loadNode(name: string, url: string, force = false): Promise<void>
   delete nodeErrors.value[nodeType];
   const nodeLoad = loadNodeComponent(name, url, force)
     .then((remoteNode) => {
-      // 同类型节点共享组件，运行错误由每个节点自己的边界显示。
+      // Same-type nodes share component; runtime errors are shown by each node's own error boundary.
       nodeTypes.value = { ...nodeTypes.value, [nodeType]: markRaw(remoteNode) };
     })
     .catch((error) => {
@@ -1014,20 +1014,20 @@ async function loadRemoteNodes(reloadName?: string) {
       { headers: { "Cache-Control": "no-cache", "x-toonflow-workspace": "1" } }
     );
     if (requestId !== loadRequest) return;
-    if (data.code !== 200 || !Array.isArray(data.data)) throw new Error("节点列表格式错误");
+    if (data.code !== 200 || !Array.isArray(data.data)) throw new Error("Node list format error");
     const nodes = data.data.filter(node => {
       if (!node || typeof node.name !== "string" || !/^[a-z][a-zA-Z0-9]*$/.test(node.name) || node.url !== `/api/nodes/files?name=${node.name}`) {
-        console.error("节点地址无效", node);
+        console.error("Invalid node address", node);
         return false;
       }
       return true;
     });
     nodeConfigs.value = Object.fromEntries(nodes.map(node => [`remote-${node.name}`, node.config ?? {}]));
     const enabledNodes = nodes.filter(node => node.enabled !== false);
-    // 节点各自加载完成后即可出现在菜单中，不等待其他节点的脚本。
+    // Nodes appear in menu as soon as individually loaded, without waiting for other nodes' scripts.
     nodeOptions.value = enabledNodes.map(node => ({ type: `remote-${node.name}`, label: node.displayName }))
       .sort((left, right) => left.type.localeCompare(right.type));
-    // ACT: 安装事件合并到最新列表请求，避免连续更新不同节点时丢失较早的刷新名称。
+    // ACT: Install events merge into latest list request, preventing loss of earlier refresh names when updating different nodes.
     const reloadNames = new Set(nodeReloads);
     nodeReloads.clear();
     await Promise.all(
@@ -1037,11 +1037,11 @@ async function loadRemoteNodes(reloadName?: string) {
           if (nodeTypes.value[nodeType] && !nodeErrors.value[nodeType] && !reloadNames.has(node.name)) return;
           await loadNode(node.name, node.url, reloadNames.has(node.name));
         } catch (error) {
-          console.error("加载远端节点失败", node, error);
-          // 保存拒绝时旧组件仍可用，不从节点菜单中移除；脚本加载错误仍排除。
+          console.error("Failed to load remote node", node, error);
+          // When save is rejected, old component remains usable and isn't removed from node menu; script load errors still excluded.
           if (nodeTypes.value[nodeType] && !nodeErrors.value[nodeType]) {
             if (reloadNames.has(node.name) && !signal.aborted) ElMessage.warning({
-              message: `${node.displayName}已安装，但当前节点无法刷新。请等待任务结束后，点击节点右上角的刷新按钮。`,
+              message: `${node.displayName}installed, but current node cannot be refreshed. Please wait for tasks to finish, then click the refresh button.`,
               grouping: true,
             });
           }
@@ -1049,7 +1049,7 @@ async function loadRemoteNodes(reloadName?: string) {
       })
     );
   } catch (error) {
-    if (requestId === loadRequest) console.error("获取远端节点列表失败", error);
+    if (requestId === loadRequest) console.error("Failed to get remote node list", error);
   } finally {
     if (requestId === loadRequest) nodeListLoading.value = false;
   }

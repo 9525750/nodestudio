@@ -13,7 +13,7 @@ export async function readCanvasFiles(files: Files, path = "", options: Omit<Doc
   signal?.throwIfAborted();
   const entries = path ? (await files.list(path.slice(0, path.lastIndexOf("/") + 1), signal)).entries.filter(entry => entry.path === path) : (await files.list("", signal)).entries;
   signal?.throwIfAborted();
-  if (path && !entries.length) throw new Error("文件或目录不存在");
+  if (path && !entries.length) throw new Error("File or directory does not exist");
   const canvases: { id: string; name: string; data: CanvasFile }[] = [];
   for (let index = 0; index < entries.length; index++) {
     signal?.throwIfAborted();
@@ -29,10 +29,10 @@ export async function readCanvasFiles(files: Files, path = "", options: Omit<Doc
       if (data?.toonflowCanvas !== true || !Array.isArray(data.nodes) || !Array.isArray(data.edges) || !data.viewport
         || ![data.viewport.x, data.viewport.y, data.viewport.zoom].every(Number.isFinite) || data.viewport.zoom <= 0
         || data.nodes.some(node => !node || typeof node.id !== "string" || !node.id || /[\\/\0]/.test(node.id) || [".", ".."].includes(node.id))) {
-        throw new Error(`画布文件格式无效：${entry.path}`);
+        throw new Error(`Invalid canvas file format: ${entry.path}`);
       }
       const ids = new Set(data.nodes.map(node => node.id));
-      if (ids.size !== data.nodes.length || data.edges.some(edge => !edge || !ids.has(edge.source) || !ids.has(edge.target))) throw new Error(`画布节点或连线无效：${entry.path}`);
+      if (ids.size !== data.nodes.length || data.edges.some(edge => !edge || !ids.has(edge.source) || !ids.has(edge.target))) throw new Error(`Invalid canvas nodes or connections: ${entry.path}`);
       canvases.push({ id: entry.path, name: entry.name.slice(0, -5), data });
     } catch (error) {
       signal?.throwIfAborted();
@@ -66,7 +66,7 @@ export async function copyCanvasFiles(files: Files, path: string, target: string
         copiedAssets.push(destination);
         paths.set(`assets/${id}`, destination);
       }
-      // ACT: 节点所属素材整体独立复制；未归属本画布节点的公共素材继续引用原文件。
+      // ACT: Node-owned assets are copied independently; shared assets not belonging to this canvas's nodes keep original file references.
       const remapPath = (value: string) => {
         const normalized = value.replaceAll("\\", "/");
         for (const [source, destination] of paths) if (normalized === source || normalized.startsWith(`${source}/`)) return destination + normalized.slice(source.length);
@@ -76,7 +76,7 @@ export async function copyCanvasFiles(files: Files, path: string, target: string
         try {
           const reference = JSON.parse(decodeURIComponent(value));
           if (Array.isArray(reference) && reference.length === 2 && ids.has(reference[0])) return encodeURIComponent(JSON.stringify([ids.get(reference[0]), reference[1]]));
-        } catch { /* 普通文本不是节点参考标识。 */ }
+        } catch { /* Plain text is not a node reference identifier. */ }
         return value;
       };
       const remapData = (value: unknown): unknown => {
@@ -129,14 +129,14 @@ export async function copyCanvasFiles(files: Files, path: string, target: string
       canvas.id = target + suffix;
       canvas.name = canvas.id.split("/").at(-1)!.slice(0, -5);
     }
-    // 所有正文、素材和引用完成后才发布副本，目标已存在时仍由 rename 拒绝覆盖。
+    // Publish copy only after all content, assets and references are done; rename still rejects overwrite if target exists.
     await files.rename(temporary, target);
     copied = false;
     return canvases.map(({ id, name }) => ({ id, name }));
   } catch (error) {
     const cleanup = await Promise.allSettled([...copiedAssets, ...(copied ? [temporary] : [])].map(path => files.remove(path, true)));
     if (createdAssets) cleanup.push(...await Promise.allSettled([files.remove("assets")]));
-    if (cleanup.some(result => result.status === "rejected")) throw new Error(`复制失败且部分副本未能清理，请检查“${target}”：${error instanceof Error ? error.message : "文件操作失败"}`);
+    if (cleanup.some(result => result.status === “rejected”)) throw new Error(`Copy failed and some copies could not be cleaned up, please check “${target}”: ${error instanceof Error ? error.message : “File operation failed”}`);
     throw error;
   }
 }

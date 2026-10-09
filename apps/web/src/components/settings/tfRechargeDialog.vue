@@ -1,30 +1,30 @@
 <template>
-  <el-dialog v-model="visible" title="TF-Router 充值" width="min(480px, calc(100vw - 32px))" alignCenter appendToBody destroyOnClose :closeOnClickModal="false">
+  <el-dialog v-model="visible" title="TF-Router Top Up" width="min(480px, calc(100vw - 32px))" alignCenter appendToBody destroyOnClose :closeOnClickModal="false">
     <div class="rechargeContent">
       <el-form v-if="!payment" labelPosition="top" :disabled="creating" @submit.prevent="createPayment">
-        <el-form-item label="充值套餐">
+        <el-form-item label="Top-up Plans">
           <el-skeleton v-if="loadingSkus" :rows="3" animated />
           <template v-else>
             <div v-if="skuError" class="skuError" role="alert">
               <el-text type="danger" size="small">{{ skuError }}</el-text>
-              <el-button text size="small" :disabled="creating" @click="loadSkus">重试</el-button>
+              <el-button text size="small" :disabled="creating" @click="loadSkus">Retry</el-button>
             </div>
-            <el-radio-group v-model="selectedSkuId" class="rechargeOptions" aria-label="充值套餐">
+            <el-radio-group v-model="selectedSkuId" class="rechargeOptions" aria-label="Top-up plans">
               <el-radio v-for="sku in skus" :key="sku.id" :value="sku.id" border>
                 <strong class="skuPrice">{{ moneyFormat.format(sku.price) }}</strong>
                 <span v-if="sku.describe" class="skuDescription">{{ sku.describe }}</span>
               </el-radio>
-              <el-radio :value="-1" class="customOption" border>自定义金额</el-radio>
+              <el-radio :value="-1" class="customOption" border>Custom Amount</el-radio>
             </el-radio-group>
           </template>
         </el-form-item>
-        <el-form-item v-if="!loadingSkus && selectedSkuId === -1" label="充值金额（元）">
-          <el-input-number v-model="amount" class="amountInput" :min="0.01" :max="50000" :precision="2" :step="1" controlsPosition="right" placeholder="输入充值金额" aria-label="充值金额（元）" />
+        <el-form-item v-if="!loadingSkus && selectedSkuId === -1" label="Amount (CNY)">
+          <el-input-number v-model="amount" class="amountInput" :min="0.01" :max="50000" :precision="2" :step="1" controlsPosition="right" placeholder="Enter amount" aria-label="Amount (CNY)" />
         </el-form-item>
-        <el-form-item label="支付方式">
-          <el-radio-group v-model="payType" class="paymentMethods" aria-label="支付方式">
-            <el-radio-button value="wechat"><icon-brand-wechat :size="18" />微信支付</el-radio-button>
-            <el-radio-button value="alipay"><icon-brand-alipay :size="18" />支付宝</el-radio-button>
+        <el-form-item label="Payment Method">
+          <el-radio-group v-model="payType" class="paymentMethods" aria-label="Payment method">
+            <el-radio-button value="wechat"><icon-brand-wechat :size="18" />WeChat Pay</el-radio-button>
+            <el-radio-button value="alipay"><icon-brand-alipay :size="18" />Alipay</el-radio-button>
           </el-radio-group>
         </el-form-item>
       </el-form>
@@ -32,29 +32,29 @@
         <strong class="paymentAmount">{{ moneyFormat.format(paymentAmount) }}</strong>
         <template v-if="paymentLink">
           <template v-if="payType === 'wechat'">
-            <el-image class="paymentQr" :src="paymentLink" fit="contain" alt="微信支付二维码">
-              <template #error><el-text type="danger" size="small">二维码图片加载失败</el-text></template>
+            <el-image class="paymentQr" :src="paymentLink" fit="contain" alt="WeChat Pay QR code">
+              <template #error><el-text type="danger" size="small">QR code image failed to load</el-text></template>
             </el-image>
-            <el-text>使用微信扫码支付</el-text>
+            <el-text>Scan with WeChat to pay</el-text>
           </template>
           <template v-else>
-            <el-text>请在浏览器中完成支付宝支付</el-text>
-            <el-button tag="a" :href="paymentLink" target="_blank" rel="noopener noreferrer" text type="primary" :icon="IconExternalLink">打开支付页面</el-button>
+            <el-text>Please complete Alipay payment in your browser</el-text>
+            <el-button tag="a" :href="paymentLink" target="_blank" rel="noopener noreferrer" text type="primary" :icon="IconExternalLink">Open payment page</el-button>
           </template>
         </template>
-        <el-alert v-else title="订单已创建，但接口未返回有效的支付链接" type="warning" :closable="false" showIcon />
+        <el-alert v-else title="Order created, but the API did not return a valid payment link" type="warning" :closable="false" showIcon />
         <div class="orderInfo">
-          <el-text size="small" type="info">订单号</el-text>
+          <el-text size="small" type="info">Order Number</el-text>
           <span>{{ payment.orderNumber }}</span>
         </div>
-        <el-text size="small" type="info">完成支付后，关闭此充值弹窗以刷新账户余额。</el-text>
+        <el-text size="small" type="info">After payment, close this dialog to refresh your account balance.</el-text>
       </div>
       <el-alert v-if="errorMessage" :title="errorMessage" type="error" :closable="false" showIcon />
     </div>
     <template #footer>
-      <el-button @click="visible = false">{{ payment ? '关闭' : '取消' }}</el-button>
-      <el-button v-if="!payment" type="primary" :icon="IconCreditCard" :loading="creating" :disabled="!canPay" @click="createPayment">{{ payType === 'wechat' ? '获取支付二维码' : '前往支付宝支付' }}</el-button>
-      <el-button v-else type="primary" :icon="IconRefresh" @click="visible = false">查看余额</el-button>
+      <el-button @click="visible = false">{{ payment ? 'Close' : 'Cancel' }}</el-button>
+      <el-button v-if="!payment" type="primary" :icon="IconCreditCard" :loading="creating" :disabled="!canPay" @click="createPayment">{{ payType === 'wechat' ? 'Get Payment QR Code' : 'Go to Alipay' }}</el-button>
+      <el-button v-else type="primary" :icon="IconRefresh" @click="visible = false">Check Balance</el-button>
     </template>
   </el-dialog>
 </template>
@@ -105,7 +105,7 @@ async function loadSkus() {
     if (!request.signal.aborted) {
       skuError.value = axios.isAxiosError<{ message?: string }>(error)
         ? error.response?.data?.message || error.message
-        : error instanceof Error ? error.message : "读取充值套餐失败，请重试";
+        : error instanceof Error ? error.message : "Failed to load plans, please retry";
     }
   } finally {
     if (!request.signal.aborted) loadingSkus.value = false;
@@ -130,7 +130,7 @@ async function createPayment() {
     if (!request.signal.aborted) {
       errorMessage.value = axios.isAxiosError<{ message?: string }>(error)
         ? error.response?.data?.message || error.message
-        : error instanceof Error ? error.message : "创建充值订单失败，请重试";
+        : error instanceof Error ? error.message : "Failed to create payment order, please retry";
     }
   } finally {
     if (!request.signal.aborted) creating.value = false;

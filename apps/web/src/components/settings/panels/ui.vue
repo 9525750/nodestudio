@@ -1,22 +1,22 @@
 <template>
   <div class="ui">
-    <p class="intro">让创作空间更合你的习惯，修改会自动保存。</p>
+    <p class="intro">Customize your creative workspace. Changes are saved automatically.</p>
 
     <section class="settingSection" aria-labelledby="languageTitle">
-      <h3 id="languageTitle"><icon-language :size="18" />语言</h3>
-      <p class="description">界面语言立即生效，默认跟随电脑语言。</p>
+      <h3 id="languageTitle"><icon-language :size="18" />Language</h3>
+      <p class="description">Interface language takes effect immediately. Follows system language by default.</p>
       <languageSelect class="languageCards" />
     </section>
 
     <section class="settingSection" aria-labelledby="themeTitle">
       <h3 id="themeTitle">
         <icon-sun-moon :size="18" />
-        外观模式
+        Appearance
       </h3>
       <el-radio-group
         class="themeOptions"
         :modelValue="uiSettings.theme"
-        aria-label="外观模式"
+        aria-label="Appearance"
         @click="captureThemeClickPoint"
         @change="(value) => changeTheme(String(value))">
         <el-radio v-for="item in themes" :key="item.value" :value="item.value" border>
@@ -33,11 +33,11 @@
       <div class="settingHeader">
         <h3 id="colorTitle">
           <icon-palette :size="18" />
-          主题颜色
+          Theme Color
         </h3>
         <span class="settingValue">{{ uiSettings.primaryColor.toUpperCase() }}</span>
       </div>
-      <p class="description">用于按钮、选中状态与创作背景。</p>
+      <p class="description">Used for buttons, selected states, and creative backgrounds.</p>
       <div class="colorOptions">
         <el-button
           v-for="color in colors"
@@ -54,9 +54,9 @@
         <el-color-picker
           :modelValue="uiSettings.primaryColor"
           colorFormat="hex"
-          aria-label="自定义主题颜色"
+          aria-label="Custom theme color"
           @change="changeColor" />
-        <span class="description">自定义</span>
+        <span class="description">Custom</span>
       </div>
     </section>
 
@@ -64,19 +64,19 @@
       <div class="settingHeader">
         <h3 id="fontTitle">
           <icon-text-size :size="18" />
-          字体大小
+          Font Size
         </h3>
         <span class="settingValue">{{ fontScale }}%</span>
       </div>
-      <p class="description">统一调整界面、聊天和节点中的文字大小。</p>
+      <p class="description">Adjust text size across the interface, chat, and nodes.</p>
       <el-slider
         v-model="fontScale"
         class="settingSlider"
         :min="85"
         :max="125"
         :step="5"
-        :marks="{ 85: '较小', 100: '默认', 125: '较大' }"
-        aria-label="字体大小"
+        :marks="{ 85: 'Small', 100: 'Default', 125: 'Large' }"
+        aria-label="Font size"
         @change="(value) => typeof value === 'number' && updateUiSettings({ fontScale: value })" />
     </section>
 
@@ -84,7 +84,7 @@
       <div class="settingHeader">
         <h3 id="radiusTitle">
           <icon-border-radius :size="18" />
-          界面圆角
+          Border Radius
         </h3>
         <span class="settingValue">{{ radius }} px</span>
       </div>
@@ -94,22 +94,22 @@
         :min="0"
         :max="16"
         :step="2"
-        :marks="{ 0: '直角', 8: '默认', 16: '圆润' }"
-        aria-label="界面圆角"
+        :marks="{ 0: 'Sharp', 8: 'Default', 16: 'Rounded' }"
+        aria-label="Border radius"
         @change="(value) => typeof value === 'number' && updateUiSettings({ radius: value })" />
     </section>
 
     <el-card class="appearancePreview" shadow="never">
       <div class="previewIcon"><icon-sparkles :size="20" /></div>
       <div class="previewText">
-        <strong>Toonflow 每一个灵感，都值得被看见</strong>
-        <p>这是当前颜色、字体与圆角的实际效果。</p>
+        <strong>Toonflow — Every idea deserves to be seen</strong>
+        <p>This is the actual effect of the current color, font, and border radius.</p>
       </div>
-      <el-tag type="primary" effect="light">预览</el-tag>
+      <el-tag type="primary" effect="light">Preview</el-tag>
     </el-card>
 
     <div class="settingsFooter">
-      <el-button :icon="IconRestore" @click="updateUiSettings({ ...defaultUiSettings, language: uiSettings.language, startupAnimation: uiSettings.startupAnimation })">恢复界面默认设置</el-button>
+      <el-button :icon="IconRestore" @click="updateUiSettings({ ...defaultUiSettings, language: uiSettings.language, startupAnimation: uiSettings.startupAnimation })">Restore UI Defaults</el-button>
     </div>
   </div>
 </template>
@@ -137,23 +137,23 @@ watchEffect(() => {
 });
 
 const themes = [
-  { value: "light", label: "浅色", description: "明亮清晰", icon: IconSun },
-  { value: "dark", label: "深色", description: "沉浸创作", icon: IconMoon },
-  { value: "system", label: "跟随系统", description: "自动切换", icon: IconDeviceDesktop },
+  { value: "light", label: "Light", description: "Bright and clear", icon: IconSun },
+  { value: "dark", label: "Dark", description: "Immersive creation", icon: IconMoon },
+  { value: "system", label: "System", description: "Auto switch", icon: IconDeviceDesktop },
 ];
 const colors = [
-  { value: "#409eff", label: "天空蓝" },
-  { value: "#6366f1", label: "鸢尾紫" },
-  { value: "#a855f7", label: "薰衣紫" },
-  { value: "#e34b83", label: "蔷薇粉" },
-  { value: "#e89524", label: "琥珀橙" },
-  { value: "#18a17c", label: "松石绿" },
+  { value: "#409eff", label: "Sky Blue" },
+  { value: "#6366f1", label: "Iris Purple" },
+  { value: "#a855f7", label: "Lavender" },
+  { value: "#e34b83", label: "Rose Pink" },
+  { value: "#e89524", label: "Amber Orange" },
+  { value: "#18a17c", label: "Turquoise" },
 ];
 function changeColor(value: string | null) {
   if (value) updateUiSettings({ primaryColor: value });
 }
 
-// ACT: 圆心固定用视口中心，实际点击坐标由 captureThemeClickPoint 在 change 前写入。
+// ACT: Center defaults to viewport center; actual click coordinates are written by captureThemeClickPoint before change.
 let themeClickPoint = { x: innerWidth / 2, y: innerHeight / 2 };
 function captureThemeClickPoint(event: MouseEvent) {
   themeClickPoint = { x: event.clientX, y: event.clientY };

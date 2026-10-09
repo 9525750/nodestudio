@@ -4,18 +4,18 @@
     <section class="welcomePanel" aria-labelledby="welcomeTitle">
       <div v-if="view !== 'welcome'" class="providerContent">
         <header class="providerHeader">
-          <el-button text :icon="IconArrowLeft" :disabled="saving" @click="view = 'welcome'">返回</el-button>
-          <h1 id="welcomeTitle">{{ view === "login" ? "登录 TF-Router" : "配置语言模型" }}</h1>
+          <el-button text :icon="IconArrowLeft" :disabled="saving" @click="view = 'welcome'">Back</el-button>
+          <h1 id="welcomeTitle">{{ view === "login" ? "Log in to TF-Router" : "Configure language models" }}</h1>
         </header>
-        <div v-if="view === 'login'" v-loading="saving" class="loginBody" element-loading-text="正在配置文本模型和媒体模型…">
-          <iframe ref="loginFrame" class="loginFrame" :src="loginUrl" title="TF-Router 登录与注册" />
+        <div v-if="view === 'login'" v-loading="saving" class="loginBody" element-loading-text="Configuring text and media models…">
+          <iframe ref="loginFrame" class="loginFrame" :src="loginUrl" title="TF-Router login and sign-up" />
         </div>
         <div v-else class="providerBody">
           <languageModel />
         </div>
         <div v-if="view === 'login' && loginError" class="loginFeedback" role="status">
           <el-alert :title="loginError" type="error" :closable="false" showIcon />
-          <el-button v-if="loginKey" type="primary" :loading="saving" @click="configureProviders">重试配置</el-button>
+          <el-button v-if="loginKey" type="primary" :loading="saving" @click="configureProviders">Retry configuration</el-button>
         </div>
         <el-button
           v-else-if="view === 'custom'"
@@ -23,29 +23,29 @@
           :loading="saving"
           :disabled="!customProviders.some((provider) => provider.models.length)"
           @click="completeSetup">
-          开始使用
+          Get started
         </el-button>
       </div>
       <div v-else class="welcomeContent">
-        <h1 id="welcomeTitle">快速开始</h1>
-        <p class="description">选择登录TF-Router可直接自动配置，无需任何复杂操作，即可开始创作。</p>
+        <h1 id="welcomeTitle">Quick start</h1>
+        <p class="description">Log in to TF-Router for automatic configuration with no complicated steps, and start creating right away.</p>
 
         <el-button class="loginButton" type="primary" @click="openLogin">
           <icon-login class="buttonIcon" />
-          登录 TF-Router 自动配置
+          Log in to TF-Router for automatic setup
         </el-button>
         <div class="secondaryActions">
           <el-button class="secondaryButton" round @click="view = 'custom'">
             <icon-key class="buttonIcon" />
-            添加私有提供商
+            Add a private provider
           </el-button>
-          <span class="separator">或</span>
-          <el-button class="secondaryButton" round :loading="saving" @click="completeSetup">稍后配置</el-button>
+          <span class="separator">or</span>
+          <el-button class="secondaryButton" round :loading="saving" @click="completeSetup">Configure later</el-button>
         </div>
       </div>
 
       <footer class="pageFooter">
-        <p>© {{ new Date().getFullYear() }} Toonflow · 保留所有权利。</p>
+        <p>© {{ new Date().getFullYear() }} Toonflow · All rights reserved.</p>
       </footer>
     </section>
     <div class="artPanel" aria-hidden="true">
@@ -105,7 +105,7 @@ async function completeSetup() {
     anonymousData.track(view.value === "custom" ? "onboarding.complete" : "onboarding.skip");
     await router.replace("/home");
   } catch {
-    ElMessage.error("保存引导状态失败，请重试");
+    ElMessage.error("Failed to save onboarding state, please try again");
   } finally {
     saving.value = false;
   }
@@ -117,18 +117,18 @@ function receiveLogin(event: MessageEvent) {
   if (!data || typeof data !== "object" || !["register", "login"].includes(data.type)) return;
   if (data.msg === "failed") {
     loginKey.value = "";
-    loginError.value = typeof data.error === "string" && data.error.trim() ? data.error : data.type === "register" ? "注册失败" : "登录失败";
+    loginError.value = typeof data.error === "string" && data.error.trim() ? data.error : data.type === "register" ? "Sign-up failed" : "Login failed";
     return;
   }
   if (data.msg !== "success") return;
   loginError.value = "";
   if (data.type === "register") {
-    ElMessage.success("注册成功，请继续登录以自动配置模型");
+    ElMessage.success("Sign-up successful, please log in to configure models automatically");
     return;
   }
   if (typeof data.key !== "string" || !data.key.trim() || data.key.length > 8192) {
     loginKey.value = "";
-    loginError.value = "登录未返回有效的 API Key，请重新登录";
+    loginError.value = "Login did not return a valid API Key, please log in again";
     return;
   }
   loginKey.value = data.key.trim();
@@ -144,21 +144,21 @@ async function configureProviders() {
   loginRequest = request;
   try {
     const mediaResponse = await axios.get<{ code: number; data: MediaProvider[] }>("/api/providers/media/list", { signal: request.signal });
-    if (mediaResponse.data.code !== 200 || !Array.isArray(mediaResponse.data.data)) throw new Error("读取媒体供应商失败，请重试配置");
+    if (mediaResponse.data.code !== 200 || !Array.isArray(mediaResponse.data.data)) throw new Error("Failed to read media providers, please retry the configuration");
     request.signal.throwIfAborted();
     if (!mediaResponse.data.data.some((provider) => provider.id === tfRouter.id)) {
       await axios.post("/api/providers/media/add", { source: tfRouterSource }, { signal: request.signal });
     }
     request.signal.throwIfAborted();
-    // ACT: 媒体文件已安装但保存失败时保留文件，重试通过列表复用，不覆盖用户编辑的模型。
+    // ACT: If the media files are installed but saving fails, keep the files; retries reuse them via the list and do not overwrite models edited by the user.
     await saveSettings(settings => {
       request.signal.throwIfAborted();
       const providers = settings.customProviders ?? [];
-      if (!Array.isArray(providers)) throw new Error("语言模型配置格式无效");
+      if (!Array.isArray(providers)) throw new Error("Invalid language model configuration format");
       const configs = settings.mediaProviderConfigs as Record<string, Record<string, unknown>> | undefined;
-      if (configs !== undefined && (!configs || typeof configs !== "object" || Array.isArray(configs))) throw new Error("媒体供应商配置格式无效");
+      if (configs !== undefined && (!configs || typeof configs !== "object" || Array.isArray(configs))) throw new Error("Invalid media provider configuration format");
       const current = configs?.[tfRouter.id];
-      if (current !== undefined && (!current || typeof current !== "object" || Array.isArray(current))) throw new Error("当前供应商配置格式无效");
+      if (current !== undefined && (!current || typeof current !== "object" || Array.isArray(current))) throw new Error("Invalid current provider configuration format");
       const index = providers.findIndex(provider => typeof provider?.id === "string" && provider.id.toLowerCase() === tfRouter.id.toLowerCase());
       const previous = providers[index];
       const provider = {
@@ -180,15 +180,15 @@ async function configureProviders() {
     await hello.complete();
     anonymousData.track("onboarding.complete");
     loginKey.value = "";
-    ElMessage.success("TF-Router API Key 已配置完成");
+    ElMessage.success("TF-Router API Key configured");
     await router.replace("/home");
   } catch (error) {
     if (!request.signal.aborted)
       loginError.value = axios.isAxiosError(error)
-        ? error.response?.data?.message || "自动配置失败，请重试"
+        ? error.response?.data?.message || "Automatic configuration failed, please try again"
         : error instanceof Error
         ? error.message
-        : "自动配置失败，请重试";
+        : "Automatic configuration failed, please try again";
   } finally {
     saving.value = false;
   }

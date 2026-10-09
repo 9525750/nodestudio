@@ -52,7 +52,7 @@ export function useMcpControl() {
     projectList: workspaceStore.projectList,
   });
   watch(() => workspaceStore.project?.directory, () => {
-    for (const controller of calls.values()) controller.abort(new Error("工作区已切换，本次调用已停止"));
+    for (const controller of calls.values()) controller.abort(new Error("Workspace switched, this call has been stopped"));
   }, { flush: "sync" });
 
   watch(() => {
@@ -65,7 +65,7 @@ export function useMcpControl() {
     onCleanup(() => {
       lifetime.abort();
       clearTimeout(reconnect);
-      for (const controller of calls.values()) controller.abort(new Error("MCP 连接已关闭"));
+      for (const controller of calls.values()) controller.abort(new Error("MCP connection closed"));
     });
 
     async function connect() {
@@ -80,7 +80,7 @@ export function useMcpControl() {
           body: JSON.stringify({ connectionId, ...(path === "state" ? { revision: ++revision } : {}), ...body }), signal,
         });
         if (path === "result" && response.status === 404 && callSignal?.aborted) return;
-        if (!response.ok) throw new Error(`MCP ${path} 请求失败（${response.status}）`);
+        if (!response.ok) throw new Error(`MCP ${path} request failed (${response.status})`);
       }
       let stopState = () => {};
       const connectionCalls = new Map<string, AbortController>();
@@ -97,17 +97,17 @@ export function useMcpControl() {
           else if (request.name === "getSettings") result = readSettings();
           else if (request.name === "updateSettings") {
             const patch = request.args.patch;
-            if (!patch || typeof patch !== "object" || Array.isArray(patch)) throw new Error("设置 patch 必须是对象");
-            if (Object.hasOwn(patch, "mcp") || Object.hasOwn(patch, "stores")) throw new Error("MCP 不允许修改连接配置或持久化 Store");
+            if (!patch || typeof patch !== "object" || Array.isArray(patch)) throw new Error("Settings patch must be an object");
+            if (Object.hasOwn(patch, "mcp") || Object.hasOwn(patch, "stores")) throw new Error("MCP is not allowed to modify connection config or persisted stores");
             JSON.stringify(patch, (_key, value) => {
-              if (value === "[REDACTED]") throw new Error("不能将脱敏占位符保存为设置，请填写实际值");
+              if (value === "[REDACTED]") throw new Error("Cannot save redacted placeholder as settings, please provide actual values");
               return value;
             });
             await saveSettings(() => { callSignal.throwIfAborted(); return patch as Record<string, unknown>; });
             result = readSettings();
           } else if (request.name === "refreshResources") {
             const { type, name, removedProviderId } = request.args;
-            if (type !== "node" && type !== "tool" && type !== "skill" && type !== "provider") throw new Error("未知资源类型");
+            if (type !== "node" && type !== "tool" && type !== "skill" && type !== "provider") throw new Error("Unknown resource type");
             if (type === "provider") {
               if (typeof removedProviderId === "string" && removedProviderId) await saveSettings(current => {
                 callSignal.throwIfAborted();
@@ -123,10 +123,10 @@ export function useMcpControl() {
             result = { refreshed: true };
           } else if (request.name === "openProject") {
             const directory = request.args.directory;
-            if (typeof directory !== "string" || !directory.trim()) throw new Error("缺少工作目录");
+            if (typeof directory !== "string" || !directory.trim()) throw new Error("Missing working directory");
             await workspaceControl.value?.flushSave();
             callSignal.throwIfAborted();
-            // ACT: 切换项目会取消旧画布调用；当前打开项目命令属于应用层。
+            // ACT: Switching projects cancels old canvas calls; the open-project command belongs to the app layer.
             calls.delete(request.callId);
             await workspaceStore.openProject(directory, directory, callSignal);
             const openedDirectory = workspaceStore.project?.directory;
@@ -135,12 +135,12 @@ export function useMcpControl() {
             await router.push("/workspace");
             await waitForControlValue(() => workspaceControl.value, callSignal);
             callSignal.throwIfAborted();
-            if (router.currentRoute.value.path !== "/workspace" || workspaceStore.project?.directory !== openedDirectory) throw new Error("工作区打开已取消");
+            if (router.currentRoute.value.path !== "/workspace" || workspaceStore.project?.directory !== openedDirectory) throw new Error("Workspace open cancelled");
             result = getState();
           } else {
             const control = workspaceControl.value;
-            if (!control) throw new Error("请先打开工作区");
-            if (request.directory && request.directory !== control.getState().directory) throw new Error("工作区已切换，请重新读取应用状态");
+            if (!control) throw new Error("Please open a workspace first");
+            if (request.directory && request.directory !== control.getState().directory) throw new Error("Workspace switched, please re-read application state");
             result = await control.call(request, callSignal);
           }
         } catch (reason) {
@@ -158,7 +158,7 @@ export function useMcpControl() {
       }
       try {
         const response = await fetch(`/api/mcp/control/events?connectionId=${encodeURIComponent(connectionId)}`, { headers: { ...headers, "Accept-Language": locale.value }, signal });
-        if (!response.ok || !response.body) throw new Error(`MCP 连接失败（${response.status}）`);
+        if (!response.ok || !response.body) throw new Error(`MCP connection failed (${response.status})`);
         stopState = watch(() => JSON.stringify(getState()), state => {
           void post("state", { state: JSON.parse(state) }).catch(error => { if (!signal.aborted) connection.abort(error); });
         }, { immediate: true, flush: "post" });
@@ -179,7 +179,7 @@ export function useMcpControl() {
               if (line || !data.length) continue;
               const event = JSON.parse(data.join("\n")) as ControlCall | { type: "cancel"; callId: string };
               data = [];
-              if (event.type === "cancel") connectionCalls.get(event.callId)?.abort(new Error("MCP 调用已取消"));
+              if (event.type === "cancel") connectionCalls.get(event.callId)?.abort(new Error("MCP call cancelled"));
               else if (event.type === "call") void execute(event).catch(error => { if (!signal.aborted) connection.abort(error); });
             }
           }
@@ -188,7 +188,7 @@ export function useMcpControl() {
           reader.releaseLock();
         }
       } catch (error) {
-        if (!signal.aborted) console.warn("MCP 控制连接已中断", error);
+        if (!signal.aborted) console.warn("MCP control connection interrupted", error);
       } finally {
         stopState();
         connection.abort();

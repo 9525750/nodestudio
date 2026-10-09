@@ -1,10 +1,10 @@
 <template>
-  <el-dialog v-model="visible" :title="`${plugin.displayName}配置`" width="min(520px, 94vw)" alignCenter appendToBody destroyOnClose :closeOnClickModal="false" :closeOnPressEscape="!saving" :showClose="!saving" @closed="formApi = undefined">
+  <el-dialog v-model="visible" :title="`${plugin.displayName} Settings`" width="min(520px, 94vw)" alignCenter appendToBody destroyOnClose :closeOnClickModal="false" :closeOnPressEscape="!saving" :showClose="!saving" @closed="formApi = undefined">
     <form-create v-model="formValues" v-model:api="formApi" :rule="formRules" :option="formOptions" />
     <el-alert v-if="configError" :title="configError" type="error" :closable="false" showIcon />
     <template #footer>
-      <el-button :disabled="saving" @click="visible = false">取消</el-button>
-      <el-button type="primary" :loading="saving" :disabled="!canManage || !formApi" @click="saveConfig">保存</el-button>
+      <el-button :disabled="saving" @click="visible = false">Cancel</el-button>
+      <el-button type="primary" :loading="saving" :disabled="!canManage || !formApi" @click="saveConfig">Save</el-button>
     </template>
   </el-dialog>
 </template>
@@ -46,16 +46,16 @@ async function saveConfig() {
       plugin.config = extensionConfig(plugin.name);
     } else {
       const { data } = await axios.put(`/api/${path}/save`, { name: plugin.name, config: formApi.value.formData() }, { headers: { "x-toonflow-workspace": "1" } });
-      if (data.code !== 200) throw new Error(data.message || "保存插件配置失败");
+      if (data.code !== 200) throw new Error(data.message || "Failed to save plugin settings");
       plugin.config = data.data;
     }
     if (plugin.type === "node") window.dispatchEvent(new Event("toonflow:node-config-updated"));
     visible.value = false;
-    ElMessage.success("插件配置已保存");
+    ElMessage.success("Plugin settings saved");
   } catch (error) {
     configError.value = axios.isAxiosError(error)
-      ? error.response?.data?.message || "保存失败，请重试；当前填写的内容已保留"
-      : error instanceof Error ? error.message : "保存失败，请重试";
+      ? error.response?.data?.message || "Save failed. Please try again; your current input has been kept"
+      : error instanceof Error ? error.message : "Save failed. Please try again";
   } finally { saving.value = false; }
 }
 </script>

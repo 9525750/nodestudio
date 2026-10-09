@@ -1,9 +1,9 @@
 <template>
-  <el-card v-if="visible" class="assetLibrary" shadow="never" :bodyStyle="{ padding: '8px' }" role="region" aria-label="素材库" @dblclick.stop>
+  <el-card v-if="visible" class="assetLibrary" shadow="never" :bodyStyle="{ padding: '8px' }" role="region" aria-label="Asset library" @dblclick.stop>
     <div class="libraryToolbar">
-      <el-input v-model="searchQuery" class="searchInput" :prefixIcon="IconSearch" placeholder="搜索素材" aria-label="搜索素材" clearable @keydown.esc.stop="searchQuery = ''" />
-      <el-button class="toolbarButton" text :icon="IconFolderPlus" title="新建文件夹" aria-label="新建文件夹" :disabled="newFolderParent !== undefined" @click="startFolder" />
-      <el-button class="toolbarButton" text :icon="IconX" title="关闭素材库" aria-label="关闭素材库" @click="visible = false" />
+      <el-input v-model="searchQuery" class="searchInput" :prefixIcon="IconSearch" placeholder="Search assets" aria-label="Search assets" clearable @keydown.esc.stop="searchQuery = ''" />
+      <el-button class="toolbarButton" text :icon="IconFolderPlus" title="New folder" aria-label="New folder" :disabled="newFolderParent !== undefined" @click="startFolder" />
+      <el-button class="toolbarButton" text :icon="IconX" title="Close asset library" aria-label="Close asset library" @click="visible = false" />
     </div>
     <el-scrollbar class="libraryScroll" maxHeight="min(440px, calc(100dvh - 198px))">
       <el-tree ref="assetTree" class="assetTree" :data="displayEntries" nodeKey="path" :props="{ label: 'name' }" :currentNodeKey="folder === '.' ? undefined : folder" :filterNodeMethod="filterEntry" defaultExpandAll highlightCurrent emptyText="" @nodeClick="selectFolder">
@@ -18,10 +18,10 @@
               <icon-video v-else-if="mediaKind(data) === 'video'" :size="24" />
               <icon-file v-else :size="24" />
             </span>
-            <el-input v-if="data.draft" ref="folderInput" v-model="newFolderName" class="folderNameInput" size="small" aria-label="文件夹名称" :disabled="folderSaving" @click.stop @keydown.stop @keydown.enter.prevent="saveFolder" @keydown.esc.prevent="cancelFolder" @blur="saveFolder" />
+            <el-input v-if="data.draft" ref="folderInput" v-model="newFolderName" class="folderNameInput" size="small" aria-label="Folder name" :disabled="folderSaving" @click.stop @keydown.stop @keydown.enter.prevent="saveFolder" @keydown.esc.prevent="cancelFolder" @blur="saveFolder" />
             <span v-else class="assetName">{{ data.name }}</span>
-            <el-button v-if="mediaKind(data)" class="moreButton" text :icon="IconEye" :aria-label="'预览 ' + data.name" title="预览（也可双击素材）" @click.stop="openPreview(data)" />
-            <el-button v-if="!data.draft" class="moreButton" text :icon="IconDots" :aria-label="'更多 ' + data.name" title="更多" @click.stop="openItemMenu($event, data)" />
+            <el-button v-if="mediaKind(data)" class="moreButton" text :icon="IconEye" :aria-label="'Preview ' + data.name" title="Preview (double-click to preview)" @click.stop="openPreview(data)" />
+            <el-button v-if="!data.draft" class="moreButton" text :icon="IconDots" :aria-label="'More ' + data.name" title="More" @click.stop="openItemMenu($event, data)" />
           </div>
         </template>
       </el-tree>
@@ -29,10 +29,10 @@
     <div v-if="previewAsset?.kind === 'audio'" class="audioPreview">
       <div class="audioHeader">
         <span :title="previewAsset.name">{{ previewAsset.name }}</span>
-        <el-button text :icon="IconX" aria-label="关闭音频预览" @click="previewAsset = undefined" />
+        <el-button text :icon="IconX" aria-label="Close audio preview" @click="previewAsset = undefined" />
       </div>
       <el-alert v-if="previewError" :title="previewError" type="error" :closable="false" showIcon />
-      <audio v-else :key="previewAsset.url" :src="previewAsset.url" :aria-label="previewAsset.name" controls preload="metadata" @error="previewError = '音频无法播放，文件可能已损坏或当前浏览器不支持其编码。'" />
+      <audio v-else :key="previewAsset.url" :src="previewAsset.url" :aria-label="previewAsset.name" controls preload="metadata" @error="previewError = 'Audio cannot play. File may be corrupted or encoding not supported.'" />
     </div>
   </el-card>
 
@@ -43,24 +43,24 @@
   <el-dialog :modelValue="previewAsset?.kind === 'video'" :title="previewAsset?.name" width="min(800px, calc(100vw - 32px))" alignCenter appendToBody destroyOnClose @update:modelValue="previewAsset = undefined">
     <div v-if="previewAsset?.kind === 'video'" class="assetPreview">
       <el-alert v-if="previewError" :title="previewError" type="error" :closable="false" showIcon />
-      <video v-else :key="previewAsset.url" class="previewVideo" :src="previewAsset.url" :aria-label="previewAsset.name" controls playsinline preload="metadata" @error="previewError = '视频无法播放，文件可能已损坏或当前浏览器不支持其编码。'" />
+      <video v-else :key="previewAsset.url" class="previewVideo" :src="previewAsset.url" :aria-label="previewAsset.name" controls playsinline preload="metadata" @error="previewError = 'Video cannot play. File may be corrupted or encoding not supported.'" />
     </div>
   </el-dialog>
 
-  <el-dialog v-model="saveVisible" title="保存到素材库" width="460px" alignCenter appendToBody :closeOnClickModal="false" @opened="assetNameInput?.select()">
+  <el-dialog v-model="saveVisible" title="Save to asset library" width="460px" alignCenter appendToBody :closeOnClickModal="false" @opened="assetNameInput?.select()">
     <el-form class="saveForm" labelPosition="top" @submit.prevent="saveAsset">
-      <el-form-item label="素材名称">
-        <el-input ref="assetNameInput" v-model="assetName" aria-label="素材名称" placeholder="输入完整文件名" :disabled="saving" @keydown.enter.prevent="saveAsset" />
+      <el-form-item label="Asset name">
+        <el-input ref="assetNameInput" v-model="assetName" aria-label="Asset name" placeholder="Enter full filename" :disabled="saving" @keydown.enter.prevent="saveAsset" />
       </el-form-item>
-      <el-form-item v-if="outputs.length > 1" label="节点输出">
-        <el-select v-model="selectedOutput" aria-label="节点输出" :disabled="saving">
+      <el-form-item v-if="outputs.length > 1" label="Node output">
+        <el-select v-model="selectedOutput" aria-label="Node output" :disabled="saving">
           <el-option v-for="(item, index) in outputs" :key="index" :label="item.label" :value="index" />
         </el-select>
       </el-form-item>
       <div class="saveLocation">
         <div class="locationHeader">
-          <span>保存位置</span>
-          <el-button text :icon="IconFolderPlus" :disabled="saving || saveFolderName !== undefined" @click="startSaveFolder">新建文件夹</el-button>
+          <span>Save location</span>
+          <el-button text :icon="IconFolderPlus" :disabled="saving || saveFolderName !== undefined" @click="startSaveFolder">New folder</el-button>
         </div>
         <div class="locationPath" :title="saveLocationLabel">{{ saveLocationLabel }}</div>
         <el-scrollbar class="saveFolderScroll" maxHeight="220px">
@@ -71,15 +71,15 @@
           </el-tree>
         </el-scrollbar>
         <div v-if="saveFolderName !== undefined" class="createFolderRow">
-          <el-input ref="saveFolderInput" v-model="saveFolderName" aria-label="新文件夹名称" :disabled="folderSaving" @keydown.enter.prevent="createFolder" @keydown.esc.stop="saveFolderName = undefined" />
-          <el-button :loading="folderSaving" :disabled="!saveFolderName.trim()" @click="createFolder">创建</el-button>
-          <el-button text :disabled="folderSaving" @click="saveFolderName = undefined">取消</el-button>
+          <el-input ref="saveFolderInput" v-model="saveFolderName" aria-label="New folder name" :disabled="folderSaving" @keydown.enter.prevent="createFolder" @keydown.esc.stop="saveFolderName = undefined" />
+          <el-button :loading="folderSaving" :disabled="!saveFolderName.trim()" @click="createFolder">Create</el-button>
+          <el-button text :disabled="folderSaving" @click="saveFolderName = undefined">Cancel</el-button>
         </div>
       </div>
     </el-form>
     <template #footer>
-      <el-button :disabled="saving" @click="saveVisible = false">取消</el-button>
-      <el-button type="primary" :loading="saving" :disabled="!assetName.trim() || /[\\/]/.test(assetName) || saveFolderName !== undefined" @click="saveAsset">保存</el-button>
+      <el-button :disabled="saving" @click="saveVisible = false">Cancel</el-button>
+      <el-button type="primary" :loading="saving" :disabled="!assetName.trim() || /[\\/]/.test(assetName) || saveFolderName !== undefined" @click="saveAsset">Save</el-button>
     </template>
   </el-dialog>
 </template>
@@ -108,7 +108,7 @@ const assetNameInput = ref<InputInstance>();
 const saveDirectory = ref(".");
 const saveFolderName = ref<string>();
 const saveFolderInput = ref<InputInstance>();
-const saveLocationLabel = computed(() => saveDirectory.value === "." ? "素材库" : `素材库 / ${saveDirectory.value.split("/").join(" / ")}`);
+const saveLocationLabel = computed(() => saveDirectory.value === "." ? "Asset library" : `Asset library / ${saveDirectory.value.split("/").join(" / ")}`);
 const searchQuery = ref("");
 const assetTree = ref<InstanceType<typeof ElTree>>();
 const folderInput = ref<InputInstance>();
@@ -155,7 +155,7 @@ async function refreshAssets(path?: string, target?: string) {
 const displayEntries = computed(() => {
   function withDraft(items: AssetEntry[], parent: string): AssetEntry[] {
     const children = items.map(item => item.children ? { ...item, children: withDraft(item.children, item.path) } : item);
-    if (newFolderParent.value === parent) children.push({ name: "新建文件夹", path: `${parent}/:newFolder`, type: "directory", draft: true });
+    if (newFolderParent.value === parent) children.push({ name: "New folder", path: `${parent}/:newFolder`, type: "directory", draft: true });
     return children;
   }
   return newFolderParent.value === undefined ? entries.value : withDraft(entries.value, ".");
@@ -170,7 +170,7 @@ watch(searchQuery, query => assetTree.value?.filter(query));
 async function startFolder() {
   searchQuery.value = "";
   newFolderParent.value = folder.value;
-  newFolderName.value = "新建文件夹";
+  newFolderName.value = "New folder";
   await nextTick();
   assetTree.value?.getNode(folder.value)?.expand();
   await nextTick();
@@ -248,7 +248,7 @@ function selectFolder(entry: AssetEntry) {
 }
 
 async function startSaveFolder() {
-  saveFolderName.value = "新建文件夹";
+  saveFolderName.value = "New folder";
   await nextTick();
   saveFolderInput.value?.select();
 }
@@ -270,7 +270,7 @@ async function createFolder() {
 }
 
 async function createAssetFolder(parent: string, name: string) {
-  if (/[\\/]/.test(name)) throw new Error("文件夹名称不能包含斜杠");
+  if (/[\\/]/.test(name)) throw new Error("Folder name cannot contain slashes");
   const path = parent === "." ? name : `${parent}/${name}`;
   await axios.post("/api/assets/mkdir", { path });
   return path;
@@ -303,7 +303,7 @@ async function saveAsset() {
       : new Blob([String(output.value)]);
     await axios.put("/api/assets/save", content, { params: { path }, headers: { "Content-Type": "application/octet-stream" } });
     saveVisible.value = false;
-    ElMessage.success("已保存到素材库");
+    ElMessage.success("Saved to asset library");
     await loadEntries();
   } catch (error) {
     showError(error);

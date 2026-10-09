@@ -1,45 +1,45 @@
 <template>
   <section class="canvasShortcuts" aria-labelledby="canvasShortcutsTitle">
     <div class="shortcutHeader">
-      <h3 id="canvasShortcutsTitle">画布快捷键</h3>
+      <h3 id="canvasShortcutsTitle">Canvas Shortcuts</h3>
       <div class="shortcutActions">
         <el-dropdown trigger="click" @command="changeBindMode">
-          <el-button text size="small" aria-label="快捷键绑定方式">
-            {{ bindMode === 'listen' ? '按键录制' : '手动填写' }}
+          <el-button text size="small" aria-label="Shortcut binding mode">
+            {{ bindMode === 'listen' ? 'Record keys' : 'Type manually' }}
             <icon-chevron-down :size="14" />
           </el-button>
           <template #dropdown>
             <el-dropdown-menu>
-              <el-dropdown-item command="listen" :icon="IconKeyboard">按键录制</el-dropdown-item>
-              <el-dropdown-item command="input" :icon="IconEdit">手动填写</el-dropdown-item>
+              <el-dropdown-item command="listen" :icon="IconKeyboard">Record keys</el-dropdown-item>
+              <el-dropdown-item command="input" :icon="IconEdit">Type manually</el-dropdown-item>
             </el-dropdown-menu>
           </template>
         </el-dropdown>
-        <el-button text size="small" :icon="IconRestore" @click="resetShortcuts">恢复默认</el-button>
+        <el-button text size="small" :icon="IconRestore" @click="resetShortcuts">Restore Defaults</el-button>
       </div>
     </div>
     <p class="description">
-      {{ bindMode === "listen" ? "点击键帽录制，Esc 退出；右侧 × 取消绑定。" : "使用按键代号，如 Ctrl+KeyG / Alt+KeyG；回车或移开焦点保存，留空取消绑定。" }}
+      {{ bindMode === "listen" ? "Click the key cap to record, press Esc to exit; click × on the right to unbind." : "Use key codes such as Ctrl+KeyG / Alt+KeyG; press Enter or move focus away to save, leave empty to unbind." }}
     </p>
     <el-form class="shortcutList">
       <el-form-item v-for="field in canvasShortcutFields" :key="`${field.id}:${resetKey}`" class="shortcutItem" :error="issues[field.id]">
         <div class="shortcutRow">
           <div class="shortcutInfo">
             <span class="shortcutName">{{ field.label }}</span>
-            <span v-if="field.hold" class="shortcutHint">{{ field.gesture === 'drag' ? '按住并拖动节点' : field.gesture === 'wheel' ? '按住并滚动' : '按住并拖动画布' }}</span>
+            <span v-if="field.hold" class="shortcutHint">{{ field.gesture === 'drag' ? 'Hold and drag a node' : field.gesture === 'wheel' ? 'Hold and scroll' : 'Hold and drag the canvas' }}</span>
           </div>
           <keyInput
             class="shortcutInput"
             :code="generalSettings.canvasShortcuts[field.id]"
             :mode="bindMode"
-            :label="`${field.label}快捷键`"
+            :label="`${field.label} shortcut`"
             :hold="field.hold"
             @change="setShortcut(field.id, $event)" />
         </div>
       </el-form-item>
-      <div class="gestureRow"><span>触摸板缩放</span><span class="gestureValue"><icon-hand-two-fingers :size="16" />双指捏合</span></div>
-      <div class="gestureRow"><span>触摸板平移</span><span class="gestureValue"><icon-hand-two-fingers :size="16" />双指滑动</span></div>
-      <div class="gestureRow"><span>鼠标平移</span><span class="gestureValue"><icon-mouse :size="16" />滚轮 / 中键拖动</span></div>
+      <div class="gestureRow"><span>Touchpad zoom</span><span class="gestureValue"><icon-hand-two-fingers :size="16" />Two-finger pinch</span></div>
+      <div class="gestureRow"><span>Touchpad pan</span><span class="gestureValue"><icon-hand-two-fingers :size="16" />Two-finger swipe</span></div>
+      <div class="gestureRow"><span>Mouse pan</span><span class="gestureValue"><icon-mouse :size="16" />Wheel / middle-button drag</span></div>
     </el-form>
   </section>
 </template>
@@ -64,15 +64,15 @@ function setShortcut(action: CanvasShortcutAction, value: string) {
   const binding = normalizeShortcut(value);
   const field = canvasShortcutFields.find(field => field.id === action)!;
   if (binding === undefined || !isShortcutAllowed(field, binding)) {
-    issues.value[action] = binding === undefined ? "请输入有效按键，例如 Ctrl+KeyG / Alt+KeyG。"
-      : field.gesture === "drag" ? "拖拽操作只绑定修饰键，例如 Alt 或 Ctrl+Alt。" : "此操作需要普通按键，例如 KeyP 或 Ctrl+KeyZ。";
+    issues.value[action] = binding === undefined ? "Enter a valid key, e.g. Ctrl+KeyG / Alt+KeyG."
+      : field.gesture === "drag" ? "Drag actions can only be bound to modifier keys, e.g. Alt or Ctrl+Alt." : "This action requires a regular key, e.g. KeyP or Ctrl+KeyZ.";
     return;
   }
   const bindings = getShortcutBindings(binding);
   const conflict = canvasShortcutFields.find(other => other.id !== action && other.gesture === field.gesture
     && getShortcutBindings(generalSettings.value.canvasShortcuts[other.id]).some(value => bindings.includes(value)));
   if (conflict) {
-    issues.value[action] = `与「${conflict.label}」重复，请换一个快捷键。`;
+    issues.value[action] = `Conflicts with "${conflict.label}", please choose a different shortcut.`;
     return;
   }
   delete issues.value[action];

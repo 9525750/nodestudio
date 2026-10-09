@@ -49,13 +49,13 @@ watch(canvases, (current, previous) => {
   entries.value = entries.value.filter(entry => {
     const panel = instances.get(entry.key);
     if (!removed.has(panel?.canvasId || entry.fileName || "")) return true;
-    // 卸载会刷新待保存内容，删除文件后必须先取消，避免重新创建 JSON。
+    // Unmount flushes pending save content; must cancel first after file deletion to avoid recreating JSON.
     panel?.cancelSave();
     return false;
   });
   if (!entries.value.some(entry => entry.key === activeKey.value)) activeKey.value = entries.value[0]?.key ?? "";
 }, { flush: "sync" });
-onScopeDispose(() => lifetime.abort(new Error("工作区已关闭")));
+onScopeDispose(() => lifetime.abort(new Error("Workspace closed")));
 
 function setInstance(key: string, value: Element | ComponentPublicInstance | null) {
   if (value) instances.set(key, value as CanvasInstance);
@@ -79,19 +79,19 @@ async function ensureCanvas(fileName: string, signal?: AbortSignal, activate = f
   fileName = canonicalCanvasPath(fileName);
   if (!canvases.value.some(canvas => canvas.id === fileName)) {
     const directory = workspaceStore.project?.directory;
-    if (!directory) throw new Error("请先选择工作目录");
+    if (!directory) throw new Error("Please select a working directory first");
     const data = await useWorkspaceFiles(directory).readJson<{ toonflowCanvas?: boolean; nodes?: unknown[]; edges?: unknown[]; viewport?: { x: number; y: number; zoom: number } }>(fileName);
     checkDirectory(directory);
     callSignal.throwIfAborted();
     if (data?.toonflowCanvas !== true || !Array.isArray(data.nodes) || !Array.isArray(data.edges) || !data.viewport
-      || ![data.viewport.x, data.viewport.y, data.viewport.zoom].every(Number.isFinite) || data.viewport.zoom <= 0) throw new Error("画布文件格式无效");
+      || ![data.viewport.x, data.viewport.y, data.viewport.zoom].every(Number.isFinite) || data.viewport.zoom <= 0) throw new Error("Invalid canvas file format");
     fileName = canonicalCanvasPath(fileName);
     if (!canvases.value.some(canvas => canvas.id === fileName)) canvases.value = [...canvases.value, { id: fileName, name: canvasName(fileName) }];
   }
   const previousKey = activeKey.value;
   let entry = entries.value.find(item => instances.get(item.key)?.canvasId === fileName || (!instances.get(item.key)?.canvasId && item.fileName === fileName));
   if (!entry) {
-    // ACT: 已打开的画布保留至退出工作区，避免卸载后台节点任务；大量画布时可按任务引用回收空闲实例。
+    // ACT: Keep opened canvases until workspace exit to avoid unloading background node tasks; reclaim idle instances by task reference when many canvases.
     entry = { key: crypto.randomUUID(), fileName };
     entries.value = [...entries.value, entry];
   }
@@ -112,20 +112,20 @@ async function ensureCanvas(fileName: string, signal?: AbortSignal, activate = f
 }
 
 async function activateCanvas(fileName: string, signal?: AbortSignal) {
-  if (fileActionBusy) throw new Error("工作区文件正在操作，请稍后重试");
+  if (fileActionBusy) throw new Error("Workspace file operation in progress, please try again later");
   await ensureCanvas(fileName, signal, true);
 }
 
 async function mountDocumentNode(directory: string, canvasPath: string, nodeId: string, target: HTMLElement) {
-  if (fileActionBusy) throw new Error("工作区文件正在操作，请稍后重试");
-  if (!directory || workspaceStore.project?.directory !== directory) throw new Error("工作目录已切换，请重新打开节点");
+  if (fileActionBusy) throw new Error("Workspace file operation in progress, please try again later");
+  if (!directory || workspaceStore.project?.directory !== directory) throw new Error("Working directory changed, please reopen node");
   const panel = await ensureCanvas(canvasPath);
-  if (workspaceStore.project?.directory !== directory) throw new Error("工作目录已切换，请重新打开节点");
+  if (workspaceStore.project?.directory !== directory) throw new Error("Working directory changed, please reopen node");
   return panel.mountDocumentNode(directory, panel.canvasId, nodeId, target);
 }
 
 async function observeDocumentNode(directory: string, canvasPath: string, nodeId: string, onState: (state: NodeDocumentState) => void) {
-  if (fileActionBusy) throw new Error("工作区文件正在操作，请稍后重试");
+  if (fileActionBusy) throw new Error("Workspace file operation in progress, please try again later");
   checkDirectory(directory);
   const panel = await ensureCanvas(canvasPath);
   checkDirectory(directory);
@@ -145,7 +145,7 @@ async function resolveDocumentNodeFile(directory: string, path: string) {
     const textPath = node.data?.textPath ?? `assets/${node.id}/content.md`;
     if (typeof textPath === "string" && identity(textPath) === identity(path)) matches.push({ canvasPath: source.path, nodeId: node.id, label: node.data?.label || node.id });
   }
-  if (matches.length > 1) throw new Error("多个画布共用此节点正文，请先创建独立画布副本，再从对应节点编辑");
+  if (matches.length > 1) throw new Error("Multiple canvases share this node content, please create an independent canvas copy first");
   return matches[0];
 }
 
@@ -157,7 +157,7 @@ async function readDocumentCanvases(directory: string, options: DocumentNodeOpti
   const identity = (path: string) => windowsPath ? path.replaceAll("\\", "/").toLowerCase() : path.replaceAll("\\", "/");
   const path = options.canvasPath ? relativePath(options.canvasPath) : "";
   const live = [...instances.values()].filter(panel => panel.canvasId && (!path || identity(panel.canvasId) === identity(path)));
-  // 已加载画布直接取实时节点；展开单个 JSON 不再扫描其余画布和素材目录。
+  // Already loaded canvases use live nodes directly; expanding single JSON no longer scans other canvases and asset dirs.
   if (path && live.length) return new Map(live.map(panel => [identity(panel.canvasId), { path: panel.canvasId, nodes: panel.getMentionNodes() }]));
   const stored = await readCanvasFiles(useWorkspaceFiles(directory), path, { signal, onError: options.onError });
   checkDirectory(directory);
@@ -190,14 +190,14 @@ async function flushSave(action?: () => Promise<void>) {
     await Promise.all(panels.map(panel => panel.flushSave()));
     return;
   }
-  // 重命名文件期间暂停所有实例自动保存，目标实例同步新路径后再恢复。
+  // Pause all instance auto-save during file rename; resume after target instance syncs new path.
   const run = (index: number): Promise<void> => index < panels.length ? panels[index]!.flushSave(() => run(index + 1)) : action();
   await run(0);
 }
 
 function relativePath(path: string) {
   const parts = path.replaceAll("\\", "/").split("/").filter(part => part && part !== ".");
-  if (!parts.length || path.startsWith("/") || path.startsWith("\\") || /^[a-z][a-z\d+.-]*:/i.test(path) || parts.includes("..")) throw new Error("请选择工作区内的文件或目录");
+  if (!parts.length || path.startsWith("/") || path.startsWith("\\") || /^[a-z][a-z\d+.-]*:/i.test(path) || parts.includes("..")) throw new Error("Please select a file or directory within the workspace");
   return parts.join("/");
 }
 
@@ -205,7 +205,7 @@ function containsPath(parent: string, path: string) { return path === parent || 
 function canvasName(path: string) { return path.split("/").at(-1)!.replace(/\.json$/i, ""); }
 function checkDirectory(directory: string) {
   lifetime.signal.throwIfAborted();
-  if (!directory || workspaceStore.project?.directory !== directory) throw new Error("工作目录已切换，本次文件操作已停止");
+  if (!directory || workspaceStore.project?.directory !== directory) throw new Error("Working directory changed, file operation stopped");
 }
 
 function checkNodeResources(path: string) {
@@ -220,8 +220,8 @@ function checkNodeResources(path: string) {
       for (const reference of references) {
         if (typeof reference !== "string" || !reference || /^(?:[a-z][a-z\d+.-]*:|[\\/])/i.test(reference)) continue;
         const resource = reference.replaceAll("\\", "/").split("/").filter(part => part && part !== ".").join("/").toLowerCase();
-        // ACT: 包含撤销历史，并保守合并大小写；节点资源仍被运行时持有时拒绝移动，避免后台生成写回旧路径。
-        if (containsPath(requested, resource) || containsPath(resource, requested)) throw new Error(`“${path}”仍被画布“${panel.canvasId}”中的节点使用，无法重命名或移动`);
+        // ACT: Includes undo history with conservative case merge; refuse move when node resources are still held by runtime to prevent background generation writing to old path.
+        if (containsPath(requested, resource) || containsPath(resource, requested)) throw new Error(`”${path}” is still used by canvas “${panel.canvasId}” nodes, cannot rename or move`);
       }
     }
   }
@@ -229,12 +229,12 @@ function checkNodeResources(path: string) {
 
 async function performFileAction(directory: string, action: "copy" | "rename" | "move" | "mkdir" | "delete", path: string, target?: string, nodeId?: string) {
   checkDirectory(directory);
-  if (fileActionBusy) throw new Error("工作区文件正在操作，请稍后重试");
+  if (fileActionBusy) throw new Error("Workspace file operation in progress, please try again later");
   path = relativePath(path);
-  if (!["copy", "rename", "move", "mkdir", "delete"].includes(action)) throw new Error("不支持的文件操作");
-  if (nodeId && action !== "delete") throw new Error("此操作不支持画布节点");
+  if (!["copy", "rename", "move", "mkdir", "delete"].includes(action)) throw new Error("Unsupported file operation");
+  if (nodeId && action !== "delete") throw new Error("This operation does not support canvas nodes");
   if (action !== "delete" && action !== "mkdir") {
-    if (!target) throw new Error("请提供目标文件名");
+    if (!target) throw new Error("Please provide target filename");
     target = relativePath(target);
     if (target === path) return;
   }
@@ -245,7 +245,7 @@ async function performFileAction(directory: string, action: "copy" | "rename" | 
       const panel = await ensureCanvas(path);
       checkDirectory(directory);
       const context = panel.getCanvasContext();
-      if (!context) throw new Error("画布尚未就绪");
+      if (!context) throw new Error("Canvas is not ready");
       await context.call({ name: "deleteNodes", args: { nodeIds: [nodeId] } }, lifetime.signal);
       checkDirectory(directory);
       return;
@@ -300,10 +300,10 @@ async function performFileAction(directory: string, action: "copy" | "rename" | 
         }
         await files.remove(path, true);
         checkDirectory(directory);
-        // 共享列表移除会同步取消匹配实例的保存；只删除所选路径，不连带清理画布的素材。
+        // Shared list removal synchronously cancels matching instance saves; only delete selected paths, not canvas assets.
         canvases.value = canvases.value.filter(canvas => !affected.includes(canvas));
         if (!entries.value.length) {
-          // ACT: 空字符串表示已删除最后一个画布，只保留菜单，不自动创建替代 JSON。
+          // ACT: Empty string means last canvas deleted; keep menu only, don't auto-create replacement JSON.
           const entry = { key: crypto.randomUUID(), fileName: "" };
           entries.value = [entry];
           activeKey.value = entry.key;
@@ -315,7 +315,7 @@ async function performFileAction(directory: string, action: "copy" | "rename" | 
 }
 
 async function readDocumentNode(...args: Parameters<CanvasInstance["readDocumentNode"]>) {
-  if (fileActionBusy) throw new Error("工作区文件正在操作，请稍后重试");
+  if (fileActionBusy) throw new Error("Workspace file operation in progress, please try again later");
   checkDirectory(args[0]);
   const instance = await ensureCanvas(args[1]);
   checkDirectory(args[0]);
@@ -324,7 +324,7 @@ async function readDocumentNode(...args: Parameters<CanvasInstance["readDocument
 }
 
 async function saveDocumentNode(...args: Parameters<CanvasInstance["saveDocumentNode"]>) {
-  if (fileActionBusy) throw new Error("工作区文件正在操作，请稍后重试");
+  if (fileActionBusy) throw new Error("Workspace file operation in progress, please try again later");
   checkDirectory(args[0]);
   const instance = await ensureCanvas(args[1]);
   checkDirectory(args[0]);
@@ -354,19 +354,19 @@ const mentionSource: MentionCanvasSource = {
     const panel = mentionInstance(canvasId);
     if (!panel) return;
     const node = panel.findMentionNode(nodeId);
-    if (!node) throw new Error("节点已删除，请重新选择");
+    if (!node) throw new Error("Node deleted, please select again");
     return mentionNodeOutputs(node);
   },
   selectCanvas(canvasId, nodeId, outputId) {
     const panel = mentionInstance(canvasId);
     if (!panel) return;
     const node = panel.findMentionNode(nodeId);
-    if (!node) throw new Error("节点已删除，请重新选择");
+    if (!node) throw new Error("Node deleted, please select again");
     const directory = workspaceStore.project?.directory;
-    if (!directory) throw new Error("请先打开工作区");
+    if (!directory) throw new Error("Please open a workspace first");
     return createCanvasMention(node, canvasId, outputId, async path => {
       const text = await useWorkspaceFiles(directory).readText(path, 400001);
-      if (text.length > 100000) throw new Error("文本引用最多支持 100000 个字符，请缩小内容后重试");
+      if (text.length > 100000) throw new Error("Text reference supports up to 100000 characters, please reduce content");
       return text;
     });
   },

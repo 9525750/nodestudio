@@ -16,43 +16,43 @@
         <div class="updateCopy">
           <div class="cardLabel">
             <icon-refresh :size="18" aria-hidden="true" />
-            <span>版本更新</span>
+            <span>Updates</span>
           </div>
         </div>
         <div class="updateActions">
-          <el-select :modelValue="updateSource" aria-label="更新源" size="small" :disabled="working || sourceSaving" @change="saveUpdateSource">
+          <el-select :modelValue="updateSource" aria-label="Update source" size="small" :disabled="working || sourceSaving" @change="saveUpdateSource">
             <template #prefix>
               <icon-brand-github v-if="updateSource === 'github'" :size="14" aria-hidden="true" />
               <icon-world v-else :size="14" aria-hidden="true" />
             </template>
-            <el-option label="官方源" value="official" />
+            <el-option label="Official" value="official" />
             <el-option label="GitHub" value="github" />
-            <el-option v-if="customUpdateUrl" label="自定义源" value="custom" />
+            <el-option v-if="customUpdateUrl" label="Custom" value="custom" />
           </el-select>
           <el-badge isDot :hidden="!hasDesktopUpdate">
             <el-button size="small" type="primary" plain :loading="checking" :disabled="sourceSaving" @click="openUpdate">
-              {{ snapshot?.installFailure ? "查看更新失败原因" : snapshot?.updateReady ? "更新已就绪" : snapshot?.updating || action === "download" ? "查看更新进度" : "检查更新" }}
+              {{ snapshot?.installFailure ? "View update failure reason" : snapshot?.updateReady ? "Update ready" : snapshot?.updating || action === "download" ? "View update progress" : "Check for updates" }}
             </el-button>
           </el-badge>
         </div>
       </div>
       <div v-if="snapshot?.hash" class="buildInfo">
-        <span>构建标识</span>
+        <span>Build ID</span>
         <code>{{ snapshot.hash }}</code>
       </div>
       <div v-if="snapshot?.installFailure" class="installFailureNotice" role="alert">
-        <strong>上次更新未成功</strong>
+        <strong>Last update failed</strong>
         <p>{{ snapshot.installFailure.message }}</p>
-        <p>请前往 GitHub 最新发布页，选择适合当前系统的完整安装包，关闭客户端后重新安装。</p>
-        <el-button tag="a" type="primary" size="small" :href="snapshot.installFailure.downloadUrl" target="_blank" rel="noopener noreferrer">前往下载页</el-button>
+        <p>Go to the latest release page on GitHub, choose the full installer for your system, close the client, and reinstall.</p>
+        <el-button tag="a" type="primary" size="small" :href="snapshot.installFailure.downloadUrl" target="_blank" rel="noopener noreferrer">Go to download page</el-button>
       </div>
     </el-card>
 
     <el-card class="infoCard repositoryCard" shadow="never">
-      <a class="repositoryLink" :href="repositoryUrl" target="_blank" rel="noopener noreferrer" aria-label="GitHub 仓库：HBAI-Ltd/Toonflow-app">
+      <a class="repositoryLink" :href="repositoryUrl" target="_blank" rel="noopener noreferrer" aria-label="GitHub repository: HBAI-Ltd/Toonflow-app">
         <icon-brand-github class="repositoryIcon" :size="22" aria-hidden="true" />
         <div class="repositoryInfo">
-          <span class="repositoryTitle">GitHub 仓库</span>
+          <span class="repositoryTitle">GitHub Repository</span>
         </div>
         <icon-external-link class="externalIcon" :size="16" aria-hidden="true" />
       </a>
@@ -62,7 +62,7 @@
       <a class="repositoryLink" href="https://api.toonflow.net/" target="_blank" rel="noopener noreferrer">
         <icon-world class="repositoryIcon" :size="22" aria-hidden="true" />
         <div class="repositoryInfo">
-          <span class="repositoryTitle">官方中转平台 TF-Router</span>
+          <span class="repositoryTitle">Official Relay Platform TF-Router</span>
         </div>
         <icon-external-link class="externalIcon" :size="16" aria-hidden="true" />
       </a>
@@ -72,11 +72,11 @@
       <div class="cardHeader">
         <div class="cardLabel">
           <icon-brand-wechat :size="20" aria-hidden="true" />
-          <span>微信交流群</span>
+          <span>WeChat Community Group</span>
         </div>
-        <el-popover trigger="click" placement="top" title="微信扫码加入交流群" :width="196">
+        <el-popover trigger="click" placement="top" title="Scan with WeChat to join the community group" :width="196">
           <template #reference>
-            <el-button size="small" :icon="IconQrcode">展示二维码</el-button>
+            <el-button size="small" :icon="IconQrcode">Show QR Code</el-button>
           </template>
           <q-r-code
             :value="communityUrl"
@@ -86,22 +86,22 @@
             bgColor="#ffffff"
             borderless
             role="img"
-            aria-label="Toonflow 交流群二维码" />
+            aria-label="Toonflow community group QR code" />
           <div class="tips">
-            Toonflow 是为爱发电的开源项目。欢迎文明交流、友善反馈；回复可能需要一些时间，请避免责问或命令式沟通，感谢你的理解与尊重。
+            Toonflow is an open-source project built out of passion. Courteous discussion and friendly feedback are welcome; replies may take some time, so please avoid blaming or commanding language. Thank you for your understanding and respect.
           </div>
         </el-popover>
       </div>
     </el-card>
 
-    <section class="sponsorPanel" aria-label="赞助商">
+    <section class="sponsorPanel" aria-label="Sponsors">
       <h3 class="sponsorTitle">
         <icon-gift :size="20" aria-hidden="true" />
-        赞助商
-        <span class="sponsorHint">排名不分先后</span>
-        <el-popover trigger="click" placement="top" title="微信扫码洽谈商务合作" :width="196">
+        Sponsors
+        <span class="sponsorHint">In no particular order</span>
+        <el-popover trigger="click" placement="top" title="Scan with WeChat to discuss business partnerships" :width="196">
           <template #reference>
-            <el-button class="sponsorContact" size="small" type="primary" link>成为赞助商</el-button>
+            <el-button class="sponsorContact" size="small" type="primary" link>Become a Sponsor</el-button>
           </template>
           <q-r-code
             value="https://work.weixin.qq.com/u/vc0f54596c5837d05a?v=5.0.8.70675"
@@ -111,7 +111,7 @@
             bgColor="#ffffff"
             borderless
             role="img"
-            aria-label="Toonflow 商务合作二维码" />
+            aria-label="Toonflow business partnership QR code" />
         </el-popover>
       </h3>
       <div v-if="sponsors.length" class="sponsorGrid" @keydown.esc="closeSponsor">
@@ -127,7 +127,7 @@
           :persistent="false"
           @update:visible="(visible) => setSponsorVisible(sponsor.id, visible)">
           <template #reference>
-            <button class="sponsorEntry" type="button" :aria-label="`查看 ${sponsor.name} 详情`">
+            <button class="sponsorEntry" type="button" :aria-label="`View ${sponsor.name} details`">
               <span v-if="sponsor.logoUrl" class="sponsorLogo"><img :src="sponsor.logoUrl" :alt="`${sponsor.name} logo`" /></span>
               <span class="sponsorName">{{ sponsor.name }}</span>
             </button>
@@ -137,7 +137,7 @@
       </div>
     </section>
 
-    <el-dialog v-model="resultVisible" title="版本更新" width="min(480px, 92vw)" alignCenter appendToBody>
+    <el-dialog v-model="resultVisible" title="Updates" width="min(480px, 92vw)" alignCenter appendToBody>
       <div class="updateResult" aria-live="polite" :aria-busy="working">
         <div class="resultHeader">
           <span class="resultIcon" :class="{ warning: !!updateError, success: !working && !updateError && !snapshot?.updateAvailable }">
@@ -154,12 +154,12 @@
         <div v-if="!checking && !updateError && snapshot?.updateAvailable" class="releaseInfo">
           <div class="versionComparison">
             <div class="versionItem">
-              <span>当前版本</span>
+              <span>Current version</span>
               <strong>v{{ currentVersion }}</strong>
             </div>
             <icon-arrow-right class="versionArrow" :size="18" aria-hidden="true" />
             <div class="versionItem latestVersion">
-              <span>最新版本</span>
+              <span>Latest version</span>
               <strong>v{{ snapshot.latestVersion }}</strong>
             </div>
           </div>
@@ -170,16 +170,16 @@
         </div>
       </div>
       <template #footer>
-        <el-button size="small" @click="resultVisible = false">关闭</el-button>
-        <el-button v-if="snapshot?.installFailure" tag="a" type="primary" size="small" :href="snapshot.installFailure.downloadUrl" target="_blank" rel="noopener noreferrer">前往下载页</el-button>
-        <el-button v-else-if="snapshot?.updating && !working" size="small" type="primary" @click="runUpdate('read')">重新读取状态</el-button>
+        <el-button size="small" @click="resultVisible = false">Close</el-button>
+        <el-button v-if="snapshot?.installFailure" tag="a" type="primary" size="small" :href="snapshot.installFailure.downloadUrl" target="_blank" rel="noopener noreferrer">Go to download page</el-button>
+        <el-button v-else-if="snapshot?.updating && !working" size="small" type="primary" @click="runUpdate('read')">Re-read status</el-button>
         <el-button
           v-else-if="snapshot?.canUpdate && snapshot.updateAvailable"
           size="small"
           type="primary"
           :loading="working"
           @click="runUpdate(snapshot.updateReady ? 'apply' : 'download')">
-          {{ snapshot.updateReady ? "重启并更新" : "下载更新" }}
+          {{ snapshot.updateReady ? "Restart and update" : "Download update" }}
         </el-button>
       </template>
     </el-dialog>
@@ -268,7 +268,7 @@ onMounted(async () => {
   try {
     await runDesktopUpdate("read");
   } catch {
-    // ACT: 状态读取失败仍显示构建版本；检查按钮会展示具体错误。
+    // ACT: If reading the status fails, the build version is still shown; the check button will display the specific error.
   }
 });
 onBeforeUnmount(() => controller.abort());
@@ -310,14 +310,14 @@ async function runUpdate(nextAction: "read" | "check" | "download" | "apply") {
   if (working.value || sourceSaving.value) return;
   updateError.value = "";
   if (!isDesktop) {
-    updateError.value = "请在桌面客户端中检查更新。";
+    updateError.value = "Please check for updates in the desktop client.";
     return;
   }
   try {
     await runDesktopUpdate(nextAction);
-    if (snapshot.value?.channel === "dev") updateError.value = "开发版本不提供更新检查，请使用正式桌面客户端。";
+    if (snapshot.value?.channel === "dev") updateError.value = "Development builds do not support update checks. Please use the official desktop client.";
   } catch {
-    // 错误与交接状态由全局 Store 保留，关闭面板不取消更新观察。
+    // Errors and handoff state are kept by the global store; closing the panel does not cancel update observation.
   }
 }
 </script>

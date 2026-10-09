@@ -9,7 +9,7 @@
           <div class="providerInfo">
             <div class="providerHeading">
               <el-text class="providerName" tag="strong">{{ item.label }}</el-text>
-              <el-tag v-if="isTfRouterProvider(item)" size="small">官方</el-tag>
+              <el-tag v-if="isTfRouterProvider(item)" size="small">Official</el-tag>
             </div>
             <el-text class="providerId" size="small" type="info" :title="item.id">{{ item.id }}</el-text>
           </div>
@@ -18,21 +18,21 @@
         <div class="providerFooter">
           <div class="providerMeta">
             <el-tag v-if="getProviderVersion(item)" size="small" type="info" effect="plain">v{{ getProviderVersion(item) }}</el-tag>
-            <el-text size="small" type="info">{{ item.models.length }} 个模型</el-text>
+            <el-text size="small" type="info">{{ item.models.length }} models</el-text>
           </div>
           <el-space class="itemActions" wrap>
-            <el-button v-if="isTfRouterProvider(item) && item.apiKey?.trim() && !item.models.length" text :icon="IconRefresh" :loading="fetchingId === item.id" :disabled="!!deletingId || !!fetchingId" @click="fetchProviderModels(item)">获取模型</el-button>
-            <el-button text :icon="IconEdit" :disabled="!!deletingId" @click="openCustomProvider(item)">编辑</el-button>
-            <el-popconfirm title="确定删除此供应商及其模型？" confirmButtonText="删除" cancelButtonText="取消" @confirm="deleteProvider(item.id)">
-              <template #reference><el-button text type="danger" :icon="IconTrash" :loading="deletingId === item.id" :disabled="!!deletingId">删除</el-button></template>
+            <el-button v-if="isTfRouterProvider(item) && item.apiKey?.trim() && !item.models.length" text :icon="IconRefresh" :loading="fetchingId === item.id" :disabled="!!deletingId || !!fetchingId" @click="fetchProviderModels(item)">Fetch Models</el-button>
+            <el-button text :icon="IconEdit" :disabled="!!deletingId" @click="openCustomProvider(item)">Edit</el-button>
+            <el-popconfirm title="Delete this provider and its models?" confirmButtonText="Delete" cancelButtonText="Cancel" @confirm="deleteProvider(item.id)">
+              <template #reference><el-button text type="danger" :icon="IconTrash" :loading="deletingId === item.id" :disabled="!!deletingId">Delete</el-button></template>
             </el-popconfirm>
           </el-space>
         </div>
       </el-card>
     </div>
     <div class="providerActions">
-      <el-button class="addButton" :icon="IconPlus" @click="openProvider">添加供应商</el-button>
-      <el-button class="addButton" :icon="IconSettings" @click="openCustomProvider()">添加自定义供应商</el-button>
+      <el-button class="addButton" :icon="IconPlus" @click="openProvider">Add Provider</el-button>
+      <el-button class="addButton" :icon="IconSettings" @click="openCustomProvider()">Add Custom Provider</el-button>
     </div>
     <component :is="addProviderDialog" v-model="providerDialogVisible" />
     <component :is="addCustomProviderDialog" v-model="customProviderDialogVisible" :provider="editingProvider" />
@@ -82,24 +82,24 @@ async function deleteProvider(id: string) {
   try {
     await saveSettings(settings => {
       const current = settings.customProviders;
-      if (!Array.isArray(current)) throw new Error("配置格式错误");
+      if (!Array.isArray(current)) throw new Error("Invalid configuration format");
       return { customProviders: current.filter(item => item?.id !== id) };
     });
-  } catch { ElMessage.error("删除失败，请重试"); }
+  } catch { ElMessage.error("Failed to delete. Please try again"); }
   finally { deletingId.value = ""; }
 }
 
 async function saveProviderApiKey(id: string, key: string) {
   const provider = customProviders.value.find(item => item.id === id);
-  if (!provider) throw new Error("供应商已不存在");
+  if (!provider) throw new Error("The provider no longer exists");
   const { apiUrl, protocol, apiKey } = provider;
   await saveSettings(settings => {
     const current = settings.customProviders;
-    if (!Array.isArray(current)) throw new Error("配置格式错误");
+    if (!Array.isArray(current)) throw new Error("Invalid configuration format");
     const latest = current.find(item => item?.id === id);
-    if (!latest) throw new Error("供应商已不存在");
+    if (!latest) throw new Error("The provider no longer exists");
     if (latest.apiUrl !== apiUrl || latest.protocol !== protocol || latest.apiKey !== apiKey) {
-      throw new Error("供应商配置已变更，请重试");
+      throw new Error("The provider configuration has changed. Please try again");
     }
     return { customProviders: current.map(item => item?.id === id ? { ...item, apiKey: key } : item) };
   });
@@ -111,20 +111,20 @@ async function fetchProviderModels(provider: CustomProvider) {
   fetchingId.value = id;
   try {
     const { data } = await axios.post("/api/providers/models", { apiUrl, protocol, apiKey }, { timeout: 35000 });
-    if (data.code !== 200 || !Array.isArray(data.data)) throw new Error(data.message || "获取模型列表失败");
-    if (!data.data.length) throw new Error("未获取到可用模型，请检查 API Key 后重试");
+    if (data.code !== 200 || !Array.isArray(data.data)) throw new Error(data.message || "Failed to fetch the model list");
+    if (!data.data.length) throw new Error("No available models were found. Check your API Key and try again");
     await saveSettings(settings => {
       const current = settings.customProviders;
-      if (!Array.isArray(current)) throw new Error("配置格式错误");
+      if (!Array.isArray(current)) throw new Error("Invalid configuration format");
       const latest = current.find(item => item?.id === id);
-      if (!latest) throw new Error("供应商已不存在");
+      if (!latest) throw new Error("The provider no longer exists");
       if (latest.apiUrl !== apiUrl || latest.protocol !== protocol || latest.apiKey !== apiKey) {
-        throw new Error("供应商配置已变更，请重试");
+        throw new Error("The provider configuration has changed. Please try again");
       }
       return { customProviders: current.map(item => item?.id === id ? { ...item, models: data.data } : item) };
     });
   } catch (error) {
-    ElMessage.error(axios.isAxiosError(error) ? error.response?.data?.message || "获取模型列表失败，请重试" : error instanceof Error ? error.message : "获取模型列表失败，请重试");
+    ElMessage.error(axios.isAxiosError(error) ? error.response?.data?.message || "Failed to fetch the model list. Please try again" : error instanceof Error ? error.message : "Failed to fetch the model list. Please try again");
   }
   finally { fetchingId.value = ""; }
 }

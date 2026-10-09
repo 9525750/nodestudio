@@ -98,7 +98,7 @@ function focusLanguage(button?: HTMLButtonElement | null) {
   const popup = button.closest<HTMLElement>(".languagePopup");
   button.focus({ preventScroll: !!popup });
   if (!popup) return;
-  // ACT: 仅滚动语言弹层，避免聚焦时连带滚动 hello 页面。
+  // ACT: Only scroll the language popover to avoid scrolling the hello page when focusing.
   const cardRect = button.getBoundingClientRect();
   const popupRect = popup.getBoundingClientRect();
   if (cardRect.top < popupRect.top) popup.scrollTop += cardRect.top - popupRect.top;

@@ -3,11 +3,11 @@
     <bg class="pageBackground" />
     <el-header class="pageHeader">
       <el-badge isDot :hidden="!hasDesktopUpdate">
-        <el-button round size="large" :icon="IconSettings" :aria-label="hasDesktopUpdate ? '设置，有新版本可用' : '设置'" @click="settingsVisible = true">设置</el-button>
+        <el-button round size="large" :icon="IconSettings" :aria-label="hasDesktopUpdate ? 'Settings, new version available' : 'Settings'" @click="settingsVisible = true">Settings</el-button>
       </el-badge>
       <div class="githubAction">
         <span class="arrowHint starHint">
-          点个 Star 支持一下
+          Give us a Star to show your support
           <svg viewBox="0 0 84 44" fill="none" aria-hidden="true">
             <path d="M4 29C18 40 44 38 44 18C44 1 21 3 24 19C27 37 57 32 77 16M65 17L77 16L73 28" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
           </svg>
@@ -16,62 +16,62 @@
       </div>
     </el-header>
     <el-main class="pageContent">
-      <section class="creationPanel" aria-label="创建项目">
+      <section class="creationPanel" aria-label="Create project">
         <div class="brand">
           <el-image class="brandLogo" :src="logoUrl" fit="contain" alt="Toonflow" />
           <h1>Toonflow</h1>
         </div>
         <div class="promptArea">
           <span class="arrowHint inspirationHint">
-            灵感创作模式
+            Inspiration mode
             <svg viewBox="0 0 60 60" fill="none" aria-hidden="true">
               <path d="M4 9C21 0 44 5 40 23C36 39 14 34 22 20C30 7 49 21 47 52M38 43L47 52L54 42" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
           </span>
           <el-card class="promptCard" shadow="never" :bodyStyle="{ padding: '20px' }" :footerStyle="{ padding: '12px 16px' }">
             <attachmentList v-if="promptAttachments.length" class="promptAttachments" :attachments="promptAttachments" removable restorable :disabled="creating || opening" @remove="promptAttachments.splice($event, 1)" @restore="restoreAttachment" />
-            <el-input ref="promptInput" v-model="prompt" type="textarea" :rows="4" resize="none" :disabled="creating || opening" :placeholder="promptPlaceholder" aria-label="创作描述" @paste.capture="pasteText" />
+            <el-input ref="promptInput" v-model="prompt" type="textarea" :rows="4" resize="none" :disabled="creating || opening" :placeholder="promptPlaceholder" aria-label="Creation description" @paste.capture="pasteText" />
             <template #footer>
               <div class="composerFooter">
                 <workspacePicker ref="promptWorkspacePicker" v-model="workspaceDirectory" :disabled="creating || opening" />
                 <el-space class="sendActions" wrap :size="12">
                   <modelPopover v-model="selectedModel" v-model:reasoningEffort="reasoningEffort" class="modelSelect" :disabled="creating || opening" />
-                  <el-button class="sendButton" type="primary" :circle="!!workspaceDirectory" :icon="workspaceDirectory ? IconArrowUp : IconFolder" :loading="creating" :disabled="creating || opening" :aria-label="workspaceDirectory ? '发送' : '选择工作目录'" @click="workspaceDirectory ? createProject() : promptWorkspacePicker?.chooseDirectory()">
-                    <template v-if="!workspaceDirectory" #default>选择工作目录</template>
+                  <el-button class="sendButton" type="primary" :circle="!!workspaceDirectory" :icon="workspaceDirectory ? IconArrowUp : IconFolder" :loading="creating" :disabled="creating || opening" :aria-label="workspaceDirectory ? 'Send' : 'Select working directory'" @click="workspaceDirectory ? createProject() : promptWorkspacePicker?.chooseDirectory()">
+                    <template v-if="!workspaceDirectory" #default>Select working directory</template>
                   </el-button>
                 </el-space>
               </div>
-              <p v-if="!workspaceDirectory" class="workspaceHint" role="status">请先选择一个空文件夹作为工作目录，画布和素材会保存在这里。</p>
+              <p v-if="!workspaceDirectory" class="workspaceHint" role="status">Select an empty folder as the working directory first; canvases and assets will be saved there.</p>
             </template>
           </el-card>
         </div>
       </section>
       <section class="projectList" aria-labelledby="projectListTitle">
         <div class="sectionHeader">
-          <h2 id="projectListTitle">项目列表</h2>
+          <h2 id="projectListTitle">Projects</h2>
           <el-space wrap>
-            <el-button :icon="iconFolderOpen" :disabled="creating || opening" @click="openProject()">导入项目</el-button>
-            <el-button :icon="IconFolderPlus" :disabled="creating || opening" @click="createProject(false)">添加项目</el-button>
-            <el-button circle :icon="sortDescending ? IconSortDescending : IconSortAscending" :aria-label="sortDescending ? '按时间降序' : '按时间升序'" @click="sortDescending = !sortDescending" />
-            <el-radio-group v-model="viewMode" aria-label="项目视图">
-              <el-radio-button value="grid" aria-label="网格视图"><icon-layout-grid :size="16" /></el-radio-button>
-              <el-radio-button value="list" aria-label="列表视图"><icon-list :size="16" /></el-radio-button>
+            <el-button :icon="iconFolderOpen" :disabled="creating || opening" @click="openProject()">Import project</el-button>
+            <el-button :icon="IconFolderPlus" :disabled="creating || opening" @click="createProject(false)">Add project</el-button>
+            <el-button circle :icon="sortDescending ? IconSortDescending : IconSortAscending" :aria-label="sortDescending ? 'Sort by time descending' : 'Sort by time ascending'" @click="sortDescending = !sortDescending" />
+            <el-radio-group v-model="viewMode" aria-label="Project view">
+              <el-radio-button value="grid" aria-label="Grid view"><icon-layout-grid :size="16" /></el-radio-button>
+              <el-radio-button value="list" aria-label="List view"><icon-list :size="16" /></el-radio-button>
             </el-radio-group>
           </el-space>
         </div>
         <div class="projectItems" :class="{ listView: viewMode === 'list' }">
           <el-card v-for="project in sortedProjects" :key="project.directory" class="projectCard" shadow="hover" :bodyStyle="{ padding: '0' }">
-            <button class="projectEntry" type="button" :disabled="creating || opening" :aria-label="`打开项目 ${project.name}`" @click="openProject(project)">
+            <button class="projectEntry" type="button" :disabled="creating || opening" :aria-label="`Open project ${project.name}`" @click="openProject(project)">
               <icon-folder class="projectIcon" :size="28" aria-hidden="true" />
               <span class="projectInfo">
                 <span class="projectName" :title="project.name">{{ project.name }}</span>
                 <span class="projectPath" :title="project.directory">{{ project.directory }}</span>
-                <span class="projectTime">最近打开 {{ new Date(project.lastOpenedAt).toLocaleString(locale, { hour12: false }) }}</span>
+                <span class="projectTime">Last opened {{ new Date(project.lastOpenedAt).toLocaleString(locale, { hour12: false }) }}</span>
               </span>
             </button>
             <div class="projectActions">
-              <el-button text :icon="IconEdit" :disabled="creating || opening" :aria-label="`重命名项目 ${project.name}`" title="重命名" @click="renameProject(project)" />
-              <el-button text type="danger" :icon="IconTrash" :disabled="creating || opening" :aria-label="`移除项目 ${project.name}`" title="从列表移除，不删除文件" @click="workspaceStore.removeProject(project.directory)" />
+              <el-button text :icon="IconEdit" :disabled="creating || opening" :aria-label="`Rename project ${project.name}`" title="Rename" @click="renameProject(project)" />
+              <el-button text type="danger" :icon="IconTrash" :disabled="creating || opening" :aria-label="`Remove project ${project.name}`" title="Remove from list without deleting files" @click="workspaceStore.removeProject(project.directory)" />
             </div>
           </el-card>
         </div>
@@ -121,16 +121,16 @@ const workspaceStore = useWorkspaceStore();
 const { project, projectList } = storeToRefs(workspaceStore);
 const workspaceDirectory = ref(project.value?.directory ?? "");
 const placeholderPhrases = [
-  "描述你想创作的内容，让灵感从这里开始…",
-  "把一个故事灵感，变成一段精彩的短片…",
-  "为你的主角设计独特的外形和性格…",
-  "创作一段雨夜街头的电影感镜头…",
-  "把这段文字拆解成连贯的分镜画面…",
-  "为一场奇幻冒险生成场景和角色…",
-  "为你的画面配上一段合适的音乐…",
-  "写一段温暖的旁白，讲述这个故事…",
-  "设计一支富有想象力的产品宣传片…",
-  "从一句话开始，搭建你的创作工作流…",
+  "Describe what you want to create and let the inspiration start here…",
+  "Turn a story idea into a great short film…",
+  "Design a unique look and personality for your protagonist…",
+  "Create a cinematic shot of a rainy night street…",
+  "Break this text down into a coherent storyboard…",
+  "Generate scenes and characters for a fantasy adventure…",
+  "Add fitting music to your visuals…",
+  "Write a warm narration that tells this story…",
+  "Design an imaginative product promo video…",
+  "Start from a single sentence and build your creative workflow…",
 ];
 const promptPlaceholder = ref(translate(placeholderPhrases[0]!));
 
@@ -186,12 +186,12 @@ function pasteText(event: ClipboardEvent) {
     if (!file) return;
     event.preventDefault();
     event.stopImmediatePropagation();
-    if (promptAttachments.value.length >= 20) return ElMessage.warning("每条消息最多添加 20 个附件");
+    if (promptAttachments.value.length >= 20) return ElMessage.warning("You can add up to 20 attachments per message");
     promptAttachments.value.push({ name: file.name, path: "", mimeType: file.type, file });
   } catch (error) {
     event.preventDefault();
     event.stopImmediatePropagation();
-    ElMessage.error(error instanceof Error ? error.message : "添加文本附件失败，请重试");
+    ElMessage.error(error instanceof Error ? error.message : "Failed to add text attachment, please try again");
   }
 }
 
@@ -208,7 +208,7 @@ async function restoreAttachment(index: number) {
     promptInput.value?.focus();
     promptInput.value?.textarea?.setSelectionRange(prompt.value.length, prompt.value.length);
   } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : "取回文本失败，请重试");
+    ElMessage.error(error instanceof Error ? error.message : "Failed to restore text, please try again");
   }
 }
 
@@ -221,8 +221,8 @@ async function openProject(project?: Project) {
     try { await workspaceStore.openProject(directory); }
     catch (err) {
       if (!project || !axios.isAxiosError(err) || err.response?.status !== 404) throw err;
-      const reselect = await ElMessageBox.confirm(`项目“${project.name}”的文件夹不存在，是否重新选择文件夹？`, "工作目录不存在", {
-        confirmButtonText: "重新选择", cancelButtonText: "取消", type: "warning",
+      const reselect = await ElMessageBox.confirm(`The folder for project "${project.name}" does not exist. Select a folder again?`, "Working directory does not exist", {
+        confirmButtonText: "Select again", cancelButtonText: "Cancel", type: "warning",
       }).then(() => true, () => false);
       if (!reselect) return;
       const directory = await relocationPicker.value?.chooseDirectory();
@@ -232,15 +232,15 @@ async function openProject(project?: Project) {
     await router.push("/workspace");
   } catch (err) {
     ElMessage.error(axios.isAxiosError<{ message?: string }>(err)
-      ? err.response?.data.message || "无法打开项目，请重试"
-      : err instanceof Error ? err.message : "无法打开项目，请重试");
+      ? err.response?.data.message || "Unable to open the project, please try again"
+      : err instanceof Error ? err.message : "Unable to open the project, please try again");
   } finally { opening.value = false; }
 }
 
 async function renameProject(project: Project) {
-  const result = await ElMessageBox.prompt("请输入项目名称", "重命名项目", {
-    inputValue: project.name, confirmButtonText: "保存", cancelButtonText: "取消",
-    inputValidator: value => !!value?.trim() || "项目名称不能为空",
+  const result = await ElMessageBox.prompt("Enter a project name", "Rename project", {
+    inputValue: project.name, confirmButtonText: "Save", cancelButtonText: "Cancel",
+    inputValidator: value => !!value?.trim() || "Project name cannot be empty",
   }).catch(() => null);
   if (result) workspaceStore.renameProject(project.directory, result.value);
 }
@@ -251,15 +251,15 @@ async function createProject(fromPrompt = true) {
   try {
     let path = workspaceDirectory.value;
     if (!fromPrompt) {
-      const confirmed = await ElMessageBox.confirm("请选择一个空文件夹作为项目目录，画布和素材将保存在其中。", "添加项目", {
-        confirmButtonText: "选择空文件夹", cancelButtonText: "取消", type: "info",
+      const confirmed = await ElMessageBox.confirm("Select an empty folder as the project directory; canvases and assets will be saved in it.", "Add project", {
+        confirmButtonText: "Select empty folder", cancelButtonText: "Cancel", type: "info",
       }).then(() => true, () => false);
       if (!confirmed) return;
       path = await relocationPicker.value?.chooseDirectory() ?? "";
       if (!path) return;
     }
     const { directory, empty } = await useWorkspaceFiles(path).list();
-    if (!empty) return ElMessage.warning("该文件夹不为空，请重新选择空文件夹；已有项目请使用“导入项目”或点击项目列表打开。");
+    if (!empty) return ElMessage.warning("This folder is not empty. Select an empty folder again; for existing projects, use \"Import project\" or click one in the project list to open it.");
     await useWorkspaceFiles(directory).writeJson("画布1.json", { toonflowCanvas: true, nodes: [], edges: [], viewport: { x: 0, y: 0, zoom: 1 } }, true);
     await workspaceStore.openProject(directory);
     if (fromPrompt && (prompt.value.trim() || promptAttachments.value.length)) {
@@ -268,8 +268,8 @@ async function createProject(fromPrompt = true) {
     await router.push("/workspace");
   } catch (err) {
     ElMessage.error(axios.isAxiosError<{ message?: string }>(err)
-      ? err.response?.data.message || "创建项目失败，请重试"
-      : err instanceof Error ? err.message : "创建项目失败，请重试");
+      ? err.response?.data.message || "Failed to create the project, please try again"
+      : err instanceof Error ? err.message : "Failed to create the project, please try again");
   } finally {
     creating.value = false;
   }

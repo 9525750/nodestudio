@@ -14,24 +14,24 @@
         :buildCode="updateBoxBuild.hash"
         @opened="rememberUpdateBox"
         @close="rememberUpdateBox" />
-      <el-dialog v-if="installFailure" v-model="installFailureVisible" title="更新未成功" width="min(520px, 92vw)" alignCenter appendToBody :closeOnClickModal="false">
+      <el-dialog v-if="installFailure" v-model="installFailureVisible" title="Update failed" width="min(520px, 92vw)" alignCenter appendToBody :closeOnClickModal="false">
         <div v-if="installFailure" class="installFailureContent">
           <p class="failureMessage">{{ installFailure.message }}</p>
           <dl class="failureVersions">
             <div>
-              <dt>当前运行版本</dt>
-              <dd><strong>{{ installFailure.currentVersion ? `v${installFailure.currentVersion}` : "未知版本" }}</strong><code>{{ installFailure.currentHash || "构建标识未知" }}</code></dd>
+              <dt>Current version</dt>
+              <dd><strong>{{ installFailure.currentVersion ? `v${installFailure.currentVersion}` : "Unknown version" }}</strong><code>{{ installFailure.currentHash || "Unknown build ID" }}</code></dd>
             </div>
             <div>
-              <dt>本次更新目标</dt>
-              <dd><strong>{{ installFailure.targetVersion ? `v${installFailure.targetVersion}` : "未知版本" }}</strong><code>{{ installFailure.targetHash || "构建标识未知" }}</code></dd>
+              <dt>Update target</dt>
+              <dd><strong>{{ installFailure.targetVersion ? `v${installFailure.targetVersion}` : "Unknown version" }}</strong><code>{{ installFailure.targetHash || "Unknown build ID" }}</code></dd>
             </div>
           </dl>
-          <p class="failureHint">请前往 GitHub 最新发布页，选择适合当前系统的完整安装包，关闭客户端后重新安装。</p>
+          <p class="failureHint">Go to the latest release page on GitHub, choose the full installer for your system, close the client, and reinstall.</p>
         </div>
         <template #footer>
-          <el-button @click="installFailureVisible = false">稍后</el-button>
-          <el-button tag="a" type="primary" :href="installFailure.downloadUrl" target="_blank" rel="noopener noreferrer">前往下载页</el-button>
+          <el-button @click="installFailureVisible = false">Later</el-button>
+          <el-button tag="a" type="primary" :href="installFailure.downloadUrl" target="_blank" rel="noopener noreferrer">Go to download page</el-button>
         </template>
       </el-dialog>
     </config-provider>
@@ -62,13 +62,13 @@ import "element-plus/theme-chalk/dark/css-vars.css";
 
 useMcpControl();
 
-// ACT: TDesign 缺少的语言使用英语基底，聊天控件由应用字典补齐。
+// ACT: Languages missing from TDesign fall back to English, and chat controls are filled in by the app dictionary.
 const tdesignLocales = {
   "zh-CN": tdesignZhCn, "zh-TW": tdesignZhTw, en: tdesignEn, ja: tdesignJa, ru: tdesignRu, vi: tdesignEn, th: tdesignEn, ko: tdesignKo, hi: tdesignEn,
   id: tdesignEn, ms: tdesignEn, fil: tdesignEn, bn: tdesignEn, ur: tdesignEn, ta: tdesignEn, te: tdesignEn, mr: tdesignEn, pa: tdesignEn, ar: tdesignAr, fa: tdesignEn, tr: tdesignEn,
 };
 const elementLocale = computed(() => elementLocales[locale.value]);
-// ACT: TDesign 自带语言包声明为 readonly，而 ConfigProvider 的只读使用接口声明为可写。
+// ACT: TDesign's built-in locale packs are declared readonly, while ConfigProvider's read-only usage interface is declared writable.
 const tdesignLocale = computed(() => ({ ...tdesignLocales[locale.value], chat: chatLocale.value }) as unknown as GlobalConfigProvider);
 
 const updateBoxVisible = ref(false);
@@ -87,12 +87,12 @@ watch(desktopUpdateSnapshot, snapshot => {
     const attemptId = snapshot.installFailure.attemptId;
     if (shownInstallAttempts.has(attemptId)) return;
     shownInstallAttempts.add(attemptId);
-    // ACT: 同一 WebView 刷新后仍不重复提醒；退出客户端后新会话可再次提醒。
+    // ACT: Do not remind again after a refresh in the same WebView; a new session after quitting the client can remind again.
     try {
       const key = `desktopUpdateFailure:${attemptId}`;
       if (sessionStorage.getItem(key)) return;
       sessionStorage.setItem(key, "1");
-    } catch { /* 存储不可用时仍按当前页面去重。 */ }
+    } catch { /* When storage is unavailable, dedupe within the current page only. */ }
     installFailureVisible.value = true;
     return;
   }
@@ -113,11 +113,11 @@ watch(desktopUpdateSnapshot, snapshot => {
 function rememberUpdateBox() {
   if (!updateBoxBuild.value) return;
   const buildKey = `${updateBoxBuild.value.version}:${updateBoxBuild.value.hash}`;
-  // ACT: 桌面端启动端口会变化，复用应用设置；展示完成或提前关闭时记录，保存队列内去重。
+  // ACT: The desktop launch port can change, so reuse app settings; record when shown or closed early, and dedupe within the save queue.
   void saveSettings(current => {
     const seenBuilds = Array.isArray(current.updateBoxSeenBuilds) ? current.updateBoxSeenBuilds.filter(value => typeof value === "string") : [];
     return seenBuilds.includes(buildKey) ? undefined : { updateBoxSeenBuilds: [...seenBuilds, buildKey] };
-  }).catch(() => { ElMessage.warning("更新说明的展示记录保存失败，下次启动时可能再次显示。"); });
+  }).catch(() => { ElMessage.warning("Failed to save the release notes display record; they may show again on next launch."); });
 }
 
 function preventPageZoom(event: WheelEvent) {
@@ -126,9 +126,9 @@ function preventPageZoom(event: WheelEvent) {
 function preventPageZoomShortcut(event: KeyboardEvent) {
   if ((event.ctrlKey || event.metaKey) && !event.altKey && ["+", "=", "-", "0"].includes(event.key)) event.preventDefault();
 }
-// 仅取消浏览器默认缩放，继续传递事件供 Vue Flow 缩放画布。
+// Only cancel the browser default zoom and keep passing the event on so Vue Flow can zoom the canvas.
 window.addEventListener("wheel", preventPageZoom, { capture: true, passive: false });
-// 画布在捕获阶段先处理自己的快捷键，再在冒泡阶段取消浏览器缩放。
+// The canvas handles its own shortcuts in the capture phase, then browser zoom is cancelled in the bubble phase.
 window.addEventListener("keydown", preventPageZoomShortcut);
 onBeforeUnmount(() => {
   stopDesktopUpdateObservation();
@@ -207,7 +207,7 @@ html {
   .failureHint { margin: 0; line-height: 1.7; }
 }
 
-// ACT: RTL 只改变界面阅读方向，画布坐标、代码和技术值保留从左到右。
+// ACT: RTL only changes the UI reading direction; canvas coordinates, code and technical values stay left-to-right.
 .vue-flow,
 pre,
 code,
@@ -223,7 +223,7 @@ input[inputmode="decimal"],
   unicode-bidi: isolate;
 }
 
-// 主题切换圆形扩散动效，坐标由触发点写入 --themeX/--themeY/--themeR。
+// Circular reveal animation for theme switching; coordinates are written from the trigger point to --themeX/--themeY/--themeR.
 ::view-transition-old(root),
 ::view-transition-new(root) {
   animation: none;

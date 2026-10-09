@@ -464,7 +464,7 @@ watch(sceneSettings, value => {
   applySceneSettings(runtime, value);
   refreshThumbnails();
 });
-// 拖动时只更新灯光，松手后再保存参数并重新生成缩略图。
+// During drag only update the light; save parameters and regenerate thumbnails on release.
 watch(() => [lightingDraft.value.azimuth, lightingDraft.value.elevation], ([azimuth, elevation]) => {
   if (runtime) applyLighting(runtime, { ...lighting.value, azimuth: azimuth!, elevation: elevation! });
 });

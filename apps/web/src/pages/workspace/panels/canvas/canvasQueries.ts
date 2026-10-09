@@ -57,7 +57,7 @@ function jsonSize(value: unknown, limit = responseBytes) {
   return limit - remaining;
 }
 
-// ACT: 投影只遍历有界的字段和字符串，不调用节点自定义 toJSON，也不复制整幅画布。
+// ACT: Projection only traverses bounded fields and strings; no custom node toJSON calls or full canvas copies.
 function projectValue(value: unknown, options: ValueOptions, path: string[] = []) {
   const truncated: OmittedValue[] = [];
   let remaining = 36 * 1024;
@@ -146,15 +146,15 @@ export function createCanvasQueries(source: {
   const sessionId = crypto.randomUUID();
   function findNode(id: string) {
     const node = source.findNode(id);
-    if (!node) throw new Error(`节点不存在：${id}`);
+    if (!node) throw new Error(`Node does not exist: ${id}`);
     return node;
   }
 
   return async function read(request: CanvasToolCall, canvasId: string, signal: AbortSignal) {
-    if (!isCanvasRead(request.name)) throw new Error("未知画布查询");
+    if (!isCanvasRead(request.name)) throw new Error("Unknown canvas query");
     const name = request.name as "getCanvas" | "findCanvasNodes" | "getCanvasNodes" | "getCanvasEdges" | "getNodeTools";
     const args = canvasSchemas[name].parse(request.args);
-    if (args.canvasId !== undefined && args.canvasId !== canvasId) throw new Error("目标画布已切换，请重新查询画布");
+    if (args.canvasId !== undefined && args.canvasId !== canvasId) throw new Error("Target canvas has changed, please query again");
     const { cursor, ...filters } = args;
     const metadata = name === "getCanvas" ? {
       canvases: (args as { include?: string[] }).include?.includes("canvases") ? source.canvases() : [],
@@ -167,9 +167,9 @@ export function createCanvasQueries(source: {
     let offset = 0;
     if (cursor) {
       let page: unknown;
-      try { page = JSON.parse(cursor); } catch { throw new Error("分页游标无效，请重新查询"); }
+      try { page = JSON.parse(cursor); } catch { throw new Error("Invalid pagination cursor, please query again"); }
       if (!Array.isArray(page) || page.length !== 6 || page[0] !== sessionId || page[1] !== canvasId || page[2] !== revision || page[3] !== key || !Number.isSafeInteger(page[4]) || page[4] < 0 || page[5] !== name) {
-        throw new Error("画布结构或查询参数已变化，分页游标失效，请重新查询");
+        throw new Error("Canvas structure or query params changed, cursor expired, please query again");
       }
       offset = page[4];
     }
@@ -178,7 +178,7 @@ export function createCanvasQueries(source: {
     function append(value: unknown) {
       const size = jsonSize(value) + 1;
       if (bytes + size > pageBytes) {
-        if (!items.length) throw new Error("单项结果超过读取预算，请缩小 fields、dataKeys、names 或 textLimit；函数参数定义不会截断");
+        if (!items.length) throw new Error("Single item exceeds read budget, please narrow fields, dataKeys, names or textLimit; function parameter definitions will not be truncated");
         return false;
       }
       bytes += size;
@@ -187,7 +187,7 @@ export function createCanvasQueries(source: {
     }
     function finish(field: string, hasMore: boolean, extra: Record<string, unknown> = {}) {
       const result = { canvasId, ...(field ? { [field]: items } : {}), ...extra, hasMore, nextCursor: hasMore ? JSON.stringify([sessionId, canvasId, revision, key, offset, name]) : null };
-      if (jsonSize(result) > responseBytes) throw new Error("读取结果超过 64 KiB，请缩小查询范围");
+      if (jsonSize(result) > responseBytes) throw new Error("Read result exceeds 64 KiB, please narrow query");
       return result;
     }
 
@@ -221,7 +221,7 @@ export function createCanvasQueries(source: {
         const keyword = args.query?.trim().toLocaleLowerCase();
         const types = args.types?.length ? new Set(args.types) : undefined;
         const start = offset;
-        // ACT: ID 读取复用原生索引；关键词检索按 2000 条分段扫描，频繁全图检索时再维护名称索引。
+        // ACT: ID reads reuse native index; keyword search scans in 2000-item segments, maintain name index for frequent full scans.
         while (offset < nodes.length && offset - start < scanLimit && items.length < args.limit) {
           const node = nodes[offset]!;
           const summary = canvasNodeSummary(node);
@@ -250,11 +250,11 @@ export function createCanvasQueries(source: {
             path = args.path;
             projected = fields;
             for (const part of path) {
-              if (!projected || typeof projected !== "object" || !Object.hasOwn(projected, part)) throw new Error(`节点 ${node.id} 不存在路径 ${path.join(".")}`);
+              if (!projected || typeof projected !== "object" || !Object.hasOwn(projected, part)) throw new Error(`Node ${node.id} path does not exist ${path.join(".")}`);
               projected = Reflect.get(projected, part);
             }
-            if (args.textOffset > 0 && typeof projected !== "string") throw new Error("textOffset 仅用于字符串路径");
-            if (args.valueOffset > 0 && (!projected || typeof projected !== "object")) throw new Error("valueOffset 仅用于数组或对象路径");
+            if (args.textOffset > 0 && typeof projected !== "string") throw new Error("textOffset only for string paths");
+            if (args.valueOffset > 0 && (!projected || typeof projected !== "object")) throw new Error("valueOffset only for array or object paths");
           } else {
             projected = Object.create(null);
             for (const field of args.fields) {

@@ -1,6 +1,6 @@
 <template>
   <header class="agentMenu">
-    <el-button v-if="parentFile" class="backButton" text circle :icon="IconArrowLeft" aria-label="返回父 Agent" title="返回父 Agent" @click="emit('back')" />
+    <el-button v-if="parentFile" class="backButton" text circle :icon="IconArrowLeft" aria-label="Back to parent Agent" title="Back to parent Agent" @click="emit('back')" />
     <el-input
       v-if="editingName && !parentFile"
       ref="nameInput"
@@ -8,7 +8,7 @@
       class="conversationName"
       size="small"
       :maxlength="80"
-      aria-label="对话名称"
+      aria-label="Conversation name"
       @keydown.enter="saveName"
       @keydown.esc.prevent="editingName = false"
       @blur="saveName" />
@@ -18,14 +18,14 @@
     <div class="menuActions">
       <el-popover v-if="subAgents?.length" v-model:visible="subAgentsVisible" trigger="click" placement="bottom-end" :width="340" :showArrow="false" :popperStyle="{ maxWidth: 'calc(100vw - 24px)' }">
         <template #reference>
-          <el-button class="subAgentTrigger" text circle :aria-label="`子 Agent，共 ${subAgents.length} 个`" :aria-expanded="subAgentsVisible" title="子 Agent">
+          <el-button class="subAgentTrigger" text circle :aria-label="`Sub-agents, ${subAgents.length} in total`" :aria-expanded="subAgentsVisible" title="Sub-agents">
             <icon-users-group :size="17" />
             <span class="subAgentCount" aria-hidden="true">{{ subAgents.length }}</span>
           </el-button>
         </template>
         <div class="subAgentMenu">
-          <div class="subAgentHeader">子 Agent <span>{{ subAgents.length }}</span></div>
-          <ul class="subAgentList" aria-label="子 Agent 列表">
+          <div class="subAgentHeader">Sub-agents <span>{{ subAgents.length }}</span></div>
+          <ul class="subAgentList" aria-label="Sub-agent list">
             <li v-for="item in subAgents" :key="item.file" class="subAgentItem">
               <button
                 class="subAgentSelect"
@@ -33,7 +33,7 @@
                 type="button"
                 :aria-current="item.file === sessionFile ? 'true' : undefined"
                 @click="selectSubAgent(item.file)">
-                <span class="statusDot" :data-status="item.status" role="img" :aria-label="subAgentStatusLabels[item.status] ?? '状态待确认'" :title="subAgentStatusLabels[item.status] ?? '状态待确认'" />
+                <span class="statusDot" :data-status="item.status" role="img" :aria-label="subAgentStatusLabels[item.status] ?? 'Status pending'" :title="subAgentStatusLabels[item.status] ?? 'Status pending'" />
                 <span class="subAgentInfo">
                   <span class="subAgentName" :title="item.name">{{ item.name }}</span>
                   <span v-if="item.result || item.task" class="subAgentSummary">{{ item.result || item.task }}</span>
@@ -44,13 +44,13 @@
           </ul>
         </div>
       </el-popover>
-      <el-button v-if="!parentFile" text circle aria-label="新建对话" title="新建对话" @click="emit('newChat')"><icon-message-plus :size="17" /></el-button>
+      <el-button v-if="!parentFile" text circle aria-label="New conversation" title="New conversation" @click="emit('newChat')"><icon-message-plus :size="17" /></el-button>
       <el-popover v-if="!parentFile" v-model:visible="historyVisible" trigger="click" placement="bottom-end" :width="280" :showArrow="false" @show="emit('history')">
         <template #reference>
-          <el-button text circle :loading="loading" :icon="IconHistory" aria-label="历史对话" title="历史对话" />
+          <el-button text circle :loading="loading" :icon="IconHistory" aria-label="Conversation history" title="Conversation history" />
         </template>
-        <div class="historyList" role="group" aria-label="历史对话">
-          <p v-if="!history.length" class="historyTips" role="status">{{ loading ? "正在加载对话…" : "暂无历史对话，点击“新建对话”开始。" }}</p>
+        <div class="historyList" role="group" aria-label="Conversation history">
+          <p v-if="!history.length" class="historyTips" role="status">{{ loading ? "Loading conversations…" : "No conversation history yet. Click \"New conversation\" to start." }}</p>
           <div
             v-for="item in history"
             :key="item.file"
@@ -66,18 +66,18 @@
               <span class="historyName">{{ item.name }}</span>
               <icon-check v-if="item.file === sessionFile" :size="15" />
             </button>
-            <el-button class="historyAction" text circle :aria-label="`重命名对话 ${item.name}`" title="重命名对话" @click.stop="renameHistory(item)">
+            <el-button class="historyAction" text circle :aria-label="`Rename conversation ${item.name}`" title="Rename conversation" @click.stop="renameHistory(item)">
               <icon-pencil :size="14" />
             </el-button>
-            <el-button v-if="history.length > 1" class="historyAction" text circle :aria-label="`移除历史对话 ${item.name}`" title="移除历史对话" @click.stop="emit('remove', item.file)">
+            <el-button v-if="history.length > 1" class="historyAction" text circle :aria-label="`Remove conversation ${item.name} from history`" title="Remove from history" @click.stop="emit('remove', item.file)">
               <icon-x :size="14" />
             </el-button>
           </div>
         </div>
       </el-popover>
-      <el-button text circle :loading="configLoading" :icon="IconAdjustmentsHorizontal" aria-label="媒体生成控制" title="媒体生成控制" @click="openMediaConfig" />
+      <el-button text circle :loading="configLoading" :icon="IconAdjustmentsHorizontal" aria-label="Media generation controls" title="Media generation controls" @click="openMediaConfig" />
       <slot name="actions" />
-      <el-button text circle aria-label="关闭对话" title="关闭" @click="emit('close')"><icon-x :size="17" /></el-button>
+      <el-button text circle aria-label="Close conversation" title="Close" @click="emit('close')"><icon-x :size="17" /></el-button>
     </div>
   </header>
   <pluginConfigDialog v-if="mediaTool" v-model="configVisible" :plugin="mediaTool" :canManage="canManageTools" />
@@ -117,8 +117,8 @@ const configLoading = ref(false);
 const canManageTools = ref(false);
 const mediaTool = shallowRef<Plugin>();
 const subAgentStatusLabels: Record<string, string> = {
-  pending: "准备中", running: "执行中", completed: "已完成", error: "失败",
-  limited: "达到限制", cancelled: "已取消", inputRequired: "等待补充", unknown: "状态待确认",
+  pending: "Preparing", running: "Running", completed: "Completed", error: "Failed",
+  limited: "Limit reached", cancelled: "Cancelled", inputRequired: "Awaiting input", unknown: "Status pending",
 };
 
 watch(() => [props.sessionFile, props.parentFile], () => {
@@ -134,15 +134,15 @@ async function openMediaConfig() {
     const { data } = await axios.get<{ code: number; data: { tools: (Plugin & { loadError?: string })[]; canManage: boolean }; message?: string }>("/api/tools/get", {
       headers: { "Cache-Control": "no-cache", "x-toonflow-workspace": "1" },
     });
-    if (data.code !== 200) throw new Error(data.message || "读取工具配置失败");
+    if (data.code !== 200) throw new Error(data.message || "Failed to read tool configuration");
     const tool = data.data.tools.find(tool => tool.name === "mediaGeneration");
-    if (!tool) throw new Error("请先安装媒体生成工具");
+    if (!tool) throw new Error("Install a media generation tool first");
     if (tool.loadError) throw new Error(tool.loadError);
     mediaTool.value = { ...tool, key: `tool:${tool.name}`, type: "tool" };
     canManageTools.value = data.data.canManage;
     configVisible.value = true;
   } catch (error) {
-    ElMessage.error(axios.isAxiosError(error) ? error.response?.data?.message || "读取工具配置失败" : error instanceof Error ? error.message : "读取工具配置失败");
+    ElMessage.error(axios.isAxiosError(error) ? error.response?.data?.message || "Failed to read tool configuration" : error instanceof Error ? error.message : "Failed to read tool configuration");
   } finally { configLoading.value = false; }
 }
 
@@ -172,11 +172,11 @@ function saveName(event: Event) {
 }
 
 async function renameHistory(item: AgentHistory) {
-  const result = await ElMessageBox.prompt("请输入对话名称", "重命名对话", {
+  const result = await ElMessageBox.prompt("Enter a conversation name", "Rename conversation", {
     inputValue: item.name,
-    confirmButtonText: "保存",
-    cancelButtonText: "取消",
-    inputValidator: value => !!value?.trim() && value.trim().length <= 80 || "请输入 1–80 个字符的对话名称",
+    confirmButtonText: "Save",
+    cancelButtonText: "Cancel",
+    inputValidator: value => !!value?.trim() && value.trim().length <= 80 || "Enter a conversation name of 1–80 characters",
   }).catch(() => null);
   if (result) emit("rename", item.file, result.value.trim());
 }

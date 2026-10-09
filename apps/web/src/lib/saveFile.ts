@@ -10,7 +10,7 @@ export default async function saveFile(content: Blob | (() => Promise<Blob>), fi
       { fileName },
       { headers: { "x-toonflow-desktop": "1" } },
     );
-    if (selectData.code !== 200) throw new Error(selectData.message || "选择保存位置失败");
+    if (selectData.code !== 200) throw new Error(selectData.message || "Failed to select save location");
     const token = selectData.data?.token;
     if (!token) return false;
     const blob = typeof content === "function" ? await content() : content;
@@ -18,7 +18,7 @@ export default async function saveFile(content: Blob | (() => Promise<Blob>), fi
       params: { token },
       headers: { "Content-Type": "application/octet-stream", "x-toonflow-desktop": "1" },
     });
-    if (data.code !== 200 || typeof data.data?.saved !== "boolean") throw new Error(data.message || "保存文件失败");
+    if (data.code !== 200 || typeof data.data?.saved !== "boolean") throw new Error(data.message || "Failed to save file");
     return data.data.saved;
   }
   const blob = typeof content === "function" ? await content() : content;
@@ -44,9 +44,9 @@ export function registerDesktopDownloads() {
     if (pending.has(link) || link.getAttribute("aria-disabled") === "true") return;
     pending.add(link);
     link.dispatchEvent(new CustomEvent("downloadstate", { detail: true }));
-    // ACT: 在捕获阶段接管下载，兼容已安装节点的 @click.stop，无需重打包节点；先选保存位置，确认后才拉取内容。
+    // ACT: Intercept downloads in capture phase, compatible with installed nodes' @click.stop, no need to re-bundle nodes; select save location first, then fetch content after confirmation.
     void saveFile(() => axios.get<Blob>(url.href, { responseType: "blob" }).then(({ data }) => data), link.download || "download").catch(error => {
-      ElMessage.error(axios.isAxiosError<{ message?: string }>(error) ? error.response?.data?.message || error.message : error instanceof Error ? error.message : "保存文件失败");
+      ElMessage.error(axios.isAxiosError<{ message?: string }>(error) ? error.response?.data?.message || error.message : error instanceof Error ? error.message : "Failed to save file");
     }).finally(() => {
       pending.delete(link);
       link.dispatchEvent(new CustomEvent("downloadstate", { detail: false }));

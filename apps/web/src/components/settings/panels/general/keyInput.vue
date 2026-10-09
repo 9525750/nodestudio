@@ -6,7 +6,7 @@
       size="small"
       :disabled="disabled"
       :aria-label="label"
-      placeholder="留空即不绑定"
+      placeholder="Leave empty to unbind"
       @keydown.stop
       @blur="commitInput"
       @keyup.enter="commitInput" />
@@ -18,13 +18,13 @@
         :disabled="disabled"
         :aria-label="label"
         :aria-pressed="recording"
-        :title="recording ? '按键录制，Esc 取消' : '点击修改快捷键'"
+        :title="recording ? 'Recording keys, press Esc to cancel' : 'Click to change shortcut'"
         @click="draft = code; recording = true"
         @keydown.stop="capture"
         @keyup.stop="finishModifiers"
         @blur="cancelRecording">
-        <span v-if="recording" class="placeholder">请按快捷键…</span>
-        <span v-else-if="!draft" class="placeholder">未绑定</span>
+        <span v-if="recording" class="placeholder">Press a shortcut…</span>
+        <span v-else-if="!draft" class="placeholder">Unbound</span>
         <span v-else class="bindings">
           <span v-for="(binding, index) in getShortcutBindings(draft)" :key="binding" class="binding">
             <span v-if="index" class="separator">/</span>
@@ -42,8 +42,8 @@
         size="small"
         :icon="IconX"
         :disabled="disabled"
-        :aria-label="`清除${label}`"
-        title="取消绑定"
+        :aria-label="`Clear ${label}`"
+        title="Unbind"
         @click="draft = ''; emit('change', '')" />
     </template>
   </div>

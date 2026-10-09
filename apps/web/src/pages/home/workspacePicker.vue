@@ -1,34 +1,34 @@
 <template>
-  <el-button v-if="!hideTrigger" class="workspaceButton" text :icon="IconFolder" :loading="selecting" :disabled="loading || disabled" :title="selectedDirectory || '选择工作目录'" aria-label="选择工作目录" @click="chooseDirectory">
-    <span class="directoryName">{{ selectedDirectory ? selectedDirectory.split(/[\\/]/).filter(Boolean).at(-1) || selectedDirectory : '工作目录' }}</span>
+  <el-button v-if="!hideTrigger" class="workspaceButton" text :icon="IconFolder" :loading="selecting" :disabled="loading || disabled" :title="selectedDirectory || 'Select working directory'" aria-label="Select working directory" @click="chooseDirectory">
+    <span class="directoryName">{{ selectedDirectory ? selectedDirectory.split(/[\\/]/).filter(Boolean).at(-1) || selectedDirectory : 'Working directory' }}</span>
     <icon-chevron-down :size="14" />
   </el-button>
-  <el-dialog v-model="dialogVisible" title="选择服务器工作目录" width="min(680px, 92vw)" appendToBody :closeOnClickModal="!editing" :closeOnPressEscape="!editing" :showClose="!editing" @close="finishSelection?.(null)">
+  <el-dialog v-model="dialogVisible" title="Select server working directory" width="min(680px, 92vw)" appendToBody :closeOnClickModal="!editing" :closeOnPressEscape="!editing" :showClose="!editing" @close="finishSelection?.(null)">
     <div class="workspaceBrowser">
       <div class="directoryHeader">
-        <el-button :icon="IconArrowLeft" circle :disabled="loading || editing || !listing?.path" aria-label="上一级目录" @click="loadDirectory(listing?.parent ?? '')" />
-        <el-text class="directoryPath" truncated :title="listing?.absolutePath">服务器工作区{{ listing?.path ? ` / ${listing.path}` : '' }}</el-text>
-        <el-button :icon="IconFolderPlus" :disabled="loading || editing || !listing || !!browseError" @click="manageEntry('mkdir')">新建文件夹</el-button>
+        <el-button :icon="IconArrowLeft" circle :disabled="loading || editing || !listing?.path" aria-label="Parent directory" @click="loadDirectory(listing?.parent ?? '')" />
+        <el-text class="directoryPath" truncated :title="listing?.absolutePath">Server workspace{{ listing?.path ? ` / ${listing.path}` : '' }}</el-text>
+        <el-button :icon="IconFolderPlus" :disabled="loading || editing || !listing || !!browseError" @click="manageEntry('mkdir')">New folder</el-button>
       </div>
       <el-alert v-if="browseError" :title="browseError" type="error" :closable="false" />
-      <el-table v-loading="loading" :data="listing?.entries ?? []" height="300" emptyText="当前目录为空">
-        <el-table-column label="名称" minWidth="160">
+      <el-table v-loading="loading" :data="listing?.entries ?? []" height="300" emptyText="This directory is empty">
+        <el-table-column label="Name" minWidth="160">
           <template #default="{ row }">
             <el-button v-if="row.type === 'directory'" class="entryName" link :icon="IconFolder" :title="row.name" :disabled="loading || editing" @click="loadDirectory([listing?.path, row.path].filter(Boolean).join('/'))">{{ row.name }}</el-button>
             <span v-else class="fileName" :title="row.name"><icon-file :size="16" /><span>{{ row.name }}</span></span>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="130" align="right">
+        <el-table-column label="Actions" width="130" align="right">
           <template #default="{ row }">
-            <el-button link :disabled="loading || editing" :aria-label="`重命名 ${row.name}`" @click="manageEntry('rename', row as WorkspaceEntry)">重命名</el-button>
-            <el-button link type="danger" :disabled="loading || editing" :aria-label="`删除 ${row.name}`" @click="manageEntry('remove', row as WorkspaceEntry)">删除</el-button>
+            <el-button link :disabled="loading || editing" :aria-label="`Rename ${row.name}`" @click="manageEntry('rename', row as WorkspaceEntry)">Rename</el-button>
+            <el-button link type="danger" :disabled="loading || editing" :aria-label="`Delete ${row.name}`" @click="manageEntry('remove', row as WorkspaceEntry)">Delete</el-button>
           </template>
         </el-table-column>
       </el-table>
     </div>
     <template #footer>
-      <el-button :disabled="editing" @click="dialogVisible = false">取消</el-button>
-      <el-button type="primary" :disabled="loading || editing || !listing || !!browseError" @click="confirmDirectory">选择此目录</el-button>
+      <el-button :disabled="editing" @click="dialogVisible = false">Cancel</el-button>
+      <el-button type="primary" :disabled="loading || editing || !listing || !!browseError" @click="confirmDirectory">Select this directory</el-button>
     </template>
   </el-dialog>
 </template>
@@ -80,7 +80,7 @@ async function chooseDirectory(): Promise<string | null> {
       return await new Promise<string | null>(resolve => { finishSelection = resolve; });
     }
   } catch (error) {
-    ElMessage.error(axios.isAxiosError<{ message?: string }>(error) ? error.response?.data?.message || "无法打开文件夹选择器，请重试" : "无法打开文件夹选择器，请重试");
+    ElMessage.error(axios.isAxiosError<{ message?: string }>(error) ? error.response?.data?.message || "Unable to open the folder picker, please try again" : "Unable to open the folder picker, please try again");
     return null;
   }
   finally { selecting.value = false; finishSelection = undefined; }
@@ -97,7 +97,7 @@ async function loadDirectory(path: string) {
     const { entries } = await useWorkspaceFiles(data.data.absolutePath).list();
     listing.value = { ...data.data, entries: entries.sort((a, b) => Number(b.type === "directory") - Number(a.type === "directory") || a.name.localeCompare(b.name, "zh-CN", { numeric: true })) };
   } catch (err) {
-    browseError.value = axios.isAxiosError<{ message?: string }>(err) ? err.response?.data?.message || "读取目录失败，请重试" : "读取目录失败，请重试";
+    browseError.value = axios.isAxiosError<{ message?: string }>(err) ? err.response?.data?.message || "Failed to read the directory, please try again" : "Failed to read the directory, please try again";
   } finally { loading.value = false; }
 }
 
@@ -109,19 +109,19 @@ async function manageEntry(action: "mkdir" | "rename" | "remove", entry?: Worksp
   try {
     if (action === "remove" && entry) {
       await ElMessageBox.confirm(entry.type === "directory"
-        ? `确定删除文件夹“${entry.name}”及其全部内容？此操作无法撤销。`
-        : `确定删除文件“${entry.name}”？此操作无法撤销。`, "删除确认", {
-        type: "warning", confirmButtonText: "删除", cancelButtonText: "取消",
+        ? `Delete folder "${entry.name}" and all its contents? This cannot be undone.`
+        : `Delete file "${entry.name}"? This cannot be undone.`, "Confirm deletion", {
+        type: "warning", confirmButtonText: "Delete", cancelButtonText: "Cancel",
       });
       await files.remove(entry.path, entry.type === "directory");
     } else {
-      const { value } = await ElMessageBox.prompt("请输入名称", action === "mkdir" ? "新建文件夹" : "重命名", {
-        inputValue: entry?.name ?? "新建文件夹",
+      const { value } = await ElMessageBox.prompt("Enter a name", action === "mkdir" ? "New folder" : "Rename", {
+        inputValue: entry?.name ?? "New folder",
         inputValidator: value => {
           const name = value?.trim();
-          return !!name && name !== "." && name !== ".." && !/[\\/:*?"<>|\u0000-\u001f]/.test(name) || "请输入有效的单个文件或文件夹名称";
+          return !!name && name !== "." && name !== ".." && !/[\\/:*?"<>|\u0000-\u001f]/.test(name) || "Enter a valid single file or folder name";
         },
-        confirmButtonText: action === "mkdir" ? "创建" : "保存", cancelButtonText: "取消",
+        confirmButtonText: action === "mkdir" ? "Create" : "Save", cancelButtonText: "Cancel",
       });
       const name = value.trim();
       if (action === "mkdir") await files.mkdir(name);
@@ -136,7 +136,7 @@ async function manageEntry(action: "mkdir" | "rename" | "remove", entry?: Worksp
     await loadDirectory(directory.path);
   } catch (error) {
     if (error !== "cancel" && error !== "close") ElMessage.error(axios.isAxiosError<{ message?: string }>(error)
-      ? error.response?.data?.message || "操作失败，请重试" : error instanceof Error ? error.message : "操作失败，请重试");
+      ? error.response?.data?.message || "Operation failed, please try again" : error instanceof Error ? error.message : "Operation failed, please try again");
   } finally { editing.value = false; }
 }
 

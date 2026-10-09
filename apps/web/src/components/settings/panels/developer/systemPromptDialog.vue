@@ -1,24 +1,24 @@
 <template>
-  <el-dialog v-model="visible" title="Agent 系统提示词" width="min(960px, calc(100vw - 32px))" alignCenter appendToBody :closeOnClickModal="false" :closeOnPressEscape="!saving" :showClose="!saving">
-    <div v-if="loading" class="loadState" role="status">正在读取系统提示词…</div>
+  <el-dialog v-model="visible" title="Agent System Prompt" width="min(960px, calc(100vw - 32px))" alignCenter appendToBody :closeOnClickModal="false" :closeOnPressEscape="!saving" :showClose="!saving">
+    <div v-if="loading" class="loadState" role="status">Loading system prompt...</div>
     <div v-else-if="loadError" class="loadState">
       <el-text type="danger" role="alert">{{ loadError }}</el-text>
-      <el-button @click="loadPrompt">重试</el-button>
+      <el-button @click="loadPrompt">Retry</el-button>
     </div>
     <div v-else class="promptEditor">
       <div class="promptDescription">
-        <p>保存后下一条消息生效，留空使用默认提示词。</p>
-        <p v-pre>保留 {{tools}}、{{guidelines}}、{{environment}} 及相关条件块，以自动填入工具规则和运行环境。</p>
+        <p>Changes take effect from the next message after saving. Leave empty to use the default prompt.</p>
+        <p v-pre>Keep {{tools}}, {{guidelines}}, {{environment}} and the related conditional blocks so tool rules and the runtime environment are filled in automatically.</p>
       </div>
-      <el-input v-model="draft" class="promptInput" type="textarea" :maxlength="maxLength" showWordLimit resize="none" :disabled="saving" aria-label="Agent 系统提示词" />
+      <el-input v-model="draft" class="promptInput" type="textarea" :maxlength="maxLength" showWordLimit resize="none" :disabled="saving" aria-label="Agent System Prompt" />
       <el-text v-if="saveError" type="danger" role="alert">{{ saveError }}</el-text>
     </div>
     <template #footer>
       <div class="dialogFooter">
-        <el-button :disabled="loading || !!loadError || saving" @click="draft = defaultSystemPrompt">恢复默认</el-button>
+        <el-button :disabled="loading || !!loadError || saving" @click="draft = defaultSystemPrompt">Restore Default</el-button>
         <div>
-          <el-button :disabled="saving" @click="visible = false">取消</el-button>
-          <el-button type="primary" :loading="saving" :disabled="loading || !!loadError || !maxLength || draft.length > maxLength" @click="save">保存</el-button>
+          <el-button :disabled="saving" @click="visible = false">Cancel</el-button>
+          <el-button type="primary" :loading="saving" :disabled="loading || !!loadError || !maxLength || draft.length > maxLength" @click="save">Save</el-button>
         </div>
       </div>
     </template>
@@ -51,16 +51,16 @@ async function loadPrompt() {
     const { data } = await axios.get<{ code: number; data: { defaultSystemPrompt: string; maxLength: number }; message?: string }>("/api/settings/systemPrompt", {
       headers: { "x-toonflow-workspace": "1", "Cache-Control": "no-cache" }, signal: controller.signal,
     });
-    if (data.code !== 200) throw new Error(data.message || "读取系统提示词失败");
+    if (data.code !== 200) throw new Error(data.message || "Failed to load the system prompt");
     if (typeof data.data?.defaultSystemPrompt !== "string" || !Number.isSafeInteger(data.data.maxLength) || data.data.maxLength <= 0) {
-      throw new Error("系统提示词格式错误");
+      throw new Error("Invalid system prompt format");
     }
     defaultSystemPrompt.value = data.data.defaultSystemPrompt;
     maxLength.value = data.data.maxLength;
     const saved = settings.value.agentSystemPrompt;
     draft.value = typeof saved === "string" && saved.trim() ? saved : defaultSystemPrompt.value;
   } catch (error) {
-    loadError.value = axios.isAxiosError<{ message?: string }>(error) ? error.response?.data?.message || "读取系统提示词失败，请重试" : error instanceof Error ? error.message : "读取系统提示词失败，请重试";
+    loadError.value = axios.isAxiosError<{ message?: string }>(error) ? error.response?.data?.message || "Failed to load the system prompt. Please try again" : error instanceof Error ? error.message : "Failed to load the system prompt. Please try again";
   } finally { loading.value = false; }
 }
 
@@ -71,10 +71,10 @@ async function save() {
   saveError.value = "";
   try {
     await saveSettings(() => ({ agentSystemPrompt }));
-    ElMessage.success("系统提示词已保存");
+    ElMessage.success("System prompt saved");
     visible.value = false;
   } catch (error) {
-    saveError.value = axios.isAxiosError<{ message?: string }>(error) ? error.response?.data?.message || "保存失败，请重试；当前内容已保留" : error instanceof Error ? error.message : "保存失败，请重试；当前内容已保留";
+    saveError.value = axios.isAxiosError<{ message?: string }>(error) ? error.response?.data?.message || "Failed to save. Please try again; your current content has been kept" : error instanceof Error ? error.message : "Failed to save. Please try again; your current content has been kept";
   } finally { saving.value = false; }
 }
 </script>

@@ -45,7 +45,7 @@ const chunks = computed(() => {
   if (blocks.value.length < 2) return blocks.value;
   const groups: string[] = [];
   let current = "";
-  // ACT: 不拆语法块，稳定组不重渲染；单个语法块仍完整交给库处理。
+  // ACT: Syntax blocks are not split and stable groups are not re-rendered; each syntax block is still handed to the library whole.
   for (const block of blocks.value) {
     if (isDefinition(block)) continue;
     if (current && current.length + block.length > 8192) {
@@ -55,7 +55,7 @@ const chunks = computed(() => {
     current += block;
   }
   if (current) groups.push(current);
-  // 定义放在组前，避免落入末尾尚未闭合的代码块。
+  // Place definitions before the group to avoid falling into an unclosed code block at the end.
   return definitions.value ? groups.map(group => `${definitions.value}\n\n${group}`) : groups;
 });
 </script>

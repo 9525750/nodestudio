@@ -15,13 +15,13 @@ export async function arrangeCanvas(flow: ReturnType<typeof useVueFlow>, signal?
   const snapshot = nodes.map((node) => ({ id: node.id, position: { ...node.position } }));
   if (!nodes.length) return { snapshot, viewport: { ...flow.viewport.value }, arrangedNodeIds: [] };
   for (const node of nodes) {
-    if (node.draggable === false) throw new Error(`节点 ${node.id} 不允许移动`);
+    if (node.draggable === false) throw new Error(`Node ${node.id} cannot be moved`);
     const { width, height } = node.dimensions;
     if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
-      throw new Error(`节点 ${node.id} 尚未完成尺寸测量，请等待节点显示后重试`);
+      throw new Error(`Node ${node.id} dimension measurement not complete, please wait for node to render`);
     }
     if (!Number.isFinite(node.position.x) || !Number.isFinite(node.position.y)) {
-      throw new Error(`节点 ${node.id} 的位置无效`);
+      throw new Error(`Node ${node.id} position is invalid`);
     }
   }
 
@@ -64,7 +64,7 @@ export async function arrangeCanvas(flow: ReturnType<typeof useVueFlow>, signal?
   let x = 0;
   let y = 0;
   let rowHeight = 0;
-  // ACT: 以连通分组分行排布，保持每条流程完整；不追求全局最紧凑的矩形装箱。
+  // ACT: Arrange connected groups in rows, keeping each flow intact; not pursuing globally tightest rectangular packing.
   const positions = groups.flatMap(group => {
     if (x > 0 && x + group.width > rowWidth) {
       x = 0;
@@ -74,7 +74,7 @@ export async function arrangeCanvas(flow: ReturnType<typeof useVueFlow>, signal?
     const result = group.ids.map(id => {
       const node = group.graph.node(id);
       const position = { x: origin.x + x + node.x - node.width / 2, y: origin.y + y + node.y - node.height / 2 };
-      if (!Number.isFinite(position.x) || !Number.isFinite(position.y)) throw new Error(`节点 ${id} 的排列位置无效`);
+      if (!Number.isFinite(position.x) || !Number.isFinite(position.y)) throw new Error(`Node ${id} arrange position is invalid`);
       return { id, position };
     });
     x += group.width + groupGap;

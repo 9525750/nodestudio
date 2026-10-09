@@ -17,7 +17,7 @@ const resolvedNode = computed(() => workspaceImage.value
   ? { ...props.image.node, url: imageUrl.value, loading: !!props.image.node.loading || loading.value }
   : props.image.node);
 const { parsedNodes, provideContext } = useContext();
-// ACT: 工作区图片按单张预览；多图切换需集中维护解析后的地址，避免直接请求原始相对路径。
+// ACT: Workspace images are previewed one at a time; multi-image switching needs centrally maintained resolved URLs to avoid requesting the raw relative path.
 provideContext({ parsedNodes: computed(() => workspaceImage.value ? [resolvedNode.value] : parsedNodes.value) });
 
 watch(() => [props.directory, props.image.node.url, props.image.node.loading] as const, async ([directory, url, streaming], _previous, onCleanup) => {

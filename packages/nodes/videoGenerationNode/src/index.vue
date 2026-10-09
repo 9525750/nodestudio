@@ -10,21 +10,21 @@
     :bottomWidth="660"
     :style="{ width: previewUrl && videoWidth ? `${videoWidth + 18}px` : undefined }">
     <template #topActions>
-      <el-button :icon="IconMusic" text :disabled="!outputFile || generating || deleting || uploading || actions?.processing" @click.stop="actions?.open('extractAudio')">提取音轨</el-button>
-      <el-button :icon="IconLayersSubtract" text :disabled="!outputFile || generating || deleting || uploading || actions?.processing" @click.stop="actions?.open('separate')">分离音视频</el-button>
-      <el-button :icon="IconScissors" text :disabled="!outputFile || generating || deleting || uploading || actions?.processing" @click.stop="actions?.open('trim')">截取片段</el-button>
+      <el-button :icon="IconMusic" text :disabled="!outputFile || generating || deleting || uploading || actions?.processing" @click.stop="actions?.open('extractAudio')">Extract audio track</el-button>
+      <el-button :icon="IconLayersSubtract" text :disabled="!outputFile || generating || deleting || uploading || actions?.processing" @click.stop="actions?.open('separate')">Separate audio and video</el-button>
+      <el-button :icon="IconScissors" text :disabled="!outputFile || generating || deleting || uploading || actions?.processing" @click.stop="actions?.open('trim')">Trim clip</el-button>
       <mediaHistory mediaType="video" :current="outputFile" :disabled="generating || deleting || uploading" @select="outputs.video = { dataType: 'VIDEO', value: $event }" />
-      <el-button :icon="IconTransfer" :loading="uploading" :disabled="generating || deleting" text title="替换视频" aria-label="替换视频" @click.stop="fileInput?.click()">替换视频</el-button>
-      <input ref="fileInput" type="file" accept="video/*" hidden aria-label="选择替换视频" :disabled="generating || deleting || uploading" @change="replaceOutput" />
+      <el-button :icon="IconTransfer" :loading="uploading" :disabled="generating || deleting" text title="Replace video" aria-label="Replace video" @click.stop="fileInput?.click()">Replace video</el-button>
+      <input ref="fileInput" type="file" accept="video/*" hidden aria-label="Select replacement video" :disabled="generating || deleting || uploading" @change="replaceOutput" />
     </template>
     <template #topRightActions>
       <el-dropdown trigger="click" placement="bottom-end" :disabled="!player?.ready || player?.capturing || generating || deleting || uploading" @command="player?.captureFrame($event)">
-        <el-button :icon="IconPhotoScan" :loading="player?.capturing" :disabled="!player?.ready || player?.capturing || generating || deleting || uploading" text title="截取视频帧" aria-label="截取视频帧" />
+        <el-button :icon="IconPhotoScan" :loading="player?.capturing" :disabled="!player?.ready || player?.capturing || generating || deleting || uploading" text title="Capture video frame" aria-label="Capture video frame" />
         <template #dropdown>
           <el-dropdown-menu>
-            <el-dropdown-item command="current" :icon="IconPhotoScan">截取当前帧</el-dropdown-item>
-            <el-dropdown-item command="first" :icon="IconPlayerSkipBack">截取首帧</el-dropdown-item>
-            <el-dropdown-item command="last" :icon="IconPlayerSkipForward">截取尾帧</el-dropdown-item>
+            <el-dropdown-item command="current" :icon="IconPhotoScan">Capture current frame</el-dropdown-item>
+            <el-dropdown-item command="first" :icon="IconPlayerSkipBack">Capture first frame</el-dropdown-item>
+            <el-dropdown-item command="last" :icon="IconPlayerSkipForward">Capture last frame</el-dropdown-item>
           </el-dropdown-menu>
         </template>
       </el-dropdown>
@@ -34,9 +34,9 @@
         v-if="previewUrl"
         ref="player"
         :src="previewUrl"
-        label="生成视频"
+        label="Generated video"
         @loadedmetadata="resizeVideo" />
-      <div v-else class="videoEmpty" role="img" aria-label="暂无生成视频">
+      <div v-else class="videoEmpty" role="img" aria-label="No generated video yet">
         <icon-camera-ai :size="48" stroke="1.25" aria-hidden="true" />
       </div>
     </div>
@@ -48,7 +48,7 @@
           @preview="setReferencePreview"
           @remove="removeReference" />
         <div v-if="frameMode" class="referenceHint">
-          {{ selectedMode === "startFrameOptional" ? "仅一张图片时作为尾帧；两张图片按顺序作为首帧、尾帧" : "图片引用按顺序作为首帧、尾帧" }}
+          {{ selectedMode === "startFrameOptional" ? "With one image, it serves as the last frame; with two images, they serve as the first and last frames in order" : "Image references serve as the first and last frames in order" }}
         </div>
         <promptInput v-model="data.promptModel" v-model:text="data.prompt" :references="referenceMentions" expandable />
         <div class="promptFooter">
@@ -58,11 +58,11 @@
             filterable
             :loading="modelsLoading"
             :disabled="generating || deleting"
-            placeholder="选择模型"
-            aria-label="生成模型"
-            noDataText="请先在设置中添加视频模型"
+            placeholder="Select model"
+            aria-label="Generation model"
+            noDataText="Please add video models in settings first"
             placement="top-start"
-            @visible-change="(visible) => visible && loadModels().catch((error) => showNodeError(error, '模型读取失败'))">
+            @visible-change="(visible) => visible && loadModels().catch((error) => showNodeError(error, 'Failed to load models'))">
             <template #prefix><icon-sparkles :size="17" /></template>
             <el-option-group v-for="provider in modelGroups" :key="provider.id" :label="provider.label">
               <el-option
@@ -85,9 +85,9 @@
             class="sendButton"
             :icon="generating ? IconPlayerStop : IconArrowUp"
             :disabled="deleting || uploading || (!generating && (!generationPrompt || !selectedModel))"
-            :title="generating ? '停止生成' : '生成视频'"
-            :aria-label="generating ? '停止生成' : '生成视频'"
-            @click="generating ? generationController?.abort() : startGeneration().catch((error) => showNodeError(error, '视频生成失败'))" />
+            :title="generating ? 'Stop generation' : 'Generate video'"
+            :aria-label="generating ? 'Stop generation' : 'Generate video'"
+            @click="generating ? generationController?.abort() : startGeneration().catch((error) => showNodeError(error, 'Video generation failed'))" />
         </div>
       </el-card>
     </template>
@@ -111,13 +111,13 @@ defineOptions({
   inheritAttrs: false,
   icon: IconCameraAi,
   handles: [
-    { id: "in", type: "target", dataType: ["IMAGE", "VIDEO", "AUDIO", "STRING"], label: "图片、视频、音频、文本输入" },
-    { id: "video", type: "source", dataType: "VIDEO", label: "视频输出" },
+    { id: "in", type: "target", dataType: ["IMAGE", "VIDEO", "AUDIO", "STRING"], label: "Image, video, audio, text input" },
+    { id: "video", type: "source", dataType: "VIDEO", label: "Video output" },
   ] satisfies NodeHandle[],
 });
 const vLoading = ElLoading.directive;
 const { id, node, nodeProps, nodeEvent, outputs, files, ai, updateNodeInternals } = useNode({
-  label: "视频生成",
+  label: "Video Generation",
 });
 type PromptModel = NonNullable<InstanceType<typeof promptInput>["$props"]["modelValue"]>;
 const data = computed(() => node.data as { prompt: string; promptModel: PromptModel; model: string; duration?: number; resolution: string; ratio: string; mode: string; generateAudio: boolean });
@@ -143,7 +143,7 @@ const generationState = useNodeGeneration(outputs, () => generationController?.a
 const { generating } = generationState;
 let generation: Promise<void> | undefined;
 let modelsRequest: Promise<void> | undefined;
-// ACT: 供应商未声明视频比例范围，沿用界面的通用比例，具体支持范围由供应商校验。
+// ACT: Providers do not declare video aspect ratio ranges; use the UI's general ratios, with specific support validated by the provider.
 const ratioOptions = ["16:9", "9:16", "1:1", "4:3", "3:4"];
 const selectedModel = computed(() => models.value.find((item) => JSON.stringify([item.providerId, item.modelId]) === data.value.model));
 const selectedMode = computed(() => selectedModel.value?.mode?.find((item) => JSON.stringify(item) === data.value.mode) as NodeVideoRequest["mode"]);
@@ -178,7 +178,7 @@ function getResolutions(choice: NodeMediaModel, duration?: number) {
   return [...new Set((choice.durationResolutionMap ?? []).filter((item) => item.duration.includes(duration!)).flatMap((item) => item.resolution))]
     .sort((left, right) => (Number.parseFloat(left) || Infinity) - (Number.parseFloat(right) || Infinity));
 }
-// ACT: 引用改变时只替换不适用的模式；普通媒体优先作为参考，避免自动变成首尾帧。
+// ACT: When references change, only replace inapplicable modes; prefer regular media as references to avoid auto-becoming start/end frames.
 watch([selectedModel, matchingModes, () => data.value.mode], ([choice, matches]) => {
   if (!choice || matches.some((item) => JSON.stringify(item) === data.value.mode)) return;
   const modes = choice.mode ?? [];
@@ -187,7 +187,7 @@ watch([selectedModel, matchingModes, () => data.value.mode], ([choice, matches])
     ?? modes.find((item) => JSON.stringify(item) === data.value.mode) ?? modes.find(Array.isArray) ?? modes[0];
   data.value.mode = mode === undefined ? "" : JSON.stringify(mode);
 }, { flush: "sync" });
-// ACT: 参数在节点内归一化，未选中、未挂载底部设置时也可由 Agent 直接生成。
+// ACT: Parameters are normalized within the node; Agent can generate directly even when the node is not selected or the bottom settings are not mounted.
 watch([selectedModel, () => data.value.duration], ([choice]) => {
   if (!choice) return;
   const durations = getDurations(choice);
@@ -201,7 +201,7 @@ const modelGroups = computed(() => groupNodeModels(models.value));
 const generationPrompt = computed(() =>
   [
     data.value.prompt.trim(),
-    ...refList.value.flatMap((item, index) => (item.dataType === "STRING" && item.value?.trim() ? [`参考 ${index + 1}：\n${item.value.trim()}`] : [])),
+    ...refList.value.flatMap((item, index) => (item.dataType === "STRING" && item.value?.trim() ? [`Reference ${index + 1}:\n${item.value.trim()}`] : [])),
   ]
     .filter(Boolean)
     .join("\n\n")
@@ -209,10 +209,10 @@ const generationPrompt = computed(() =>
 const outputFile = computed(() => outputs.value.video?.dataType === "VIDEO" ? outputs.value.video.value : undefined);
 const previewUrl = files.useFileUrl(
   outputFile,
-  (error) => showNodeError(error, "视频读取失败")
+  (error) => showNodeError(error, "Failed to load video")
 );
 
-onMounted(() => loadModels().catch((error) => showNodeError(error, "模型读取失败")));
+onMounted(() => loadModels().catch((error) => showNodeError(error, "Failed to load models")));
 onScopeDispose(() => {
   disposed = true;
   generationController?.abort();
@@ -223,8 +223,8 @@ async function replaceOutput(event: Event) {
   const file = input.files?.[0];
   input.value = "";
   if (!file || generating.value || deleting.value || uploading.value || disposed) return;
-  if (!file.type.startsWith("video/")) return void showNodeError("请选择视频文件", "视频替换失败");
-  if (!file.size || file.size > 100 * 1024 * 1024) return void showNodeError("视频不能为空且不能超过 100 MB", "视频替换失败");
+  if (!file.type.startsWith("video/")) return void showNodeError("Please select a video file", "Failed to replace video");
+  if (!file.size || file.size > 100 * 1024 * 1024) return void showNodeError("Video cannot be empty and must not exceed 100 MB", "Failed to replace video");
   uploading.value = true;
   try {
     const workspace = files.getWorkspaceFiles();

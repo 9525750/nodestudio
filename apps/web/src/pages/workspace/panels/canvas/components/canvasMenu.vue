@@ -2,29 +2,29 @@
   <panel class="canvasMenuPanel" position="top-left">
     <el-card class="canvasMenu" shadow="never" :bodyStyle="{ padding: '5px 10px' }">
       <div class="menuContent">
-        <el-input v-model="projectNameDraft" class="workspaceNameInput" :style="{ '--workspaceName': JSON.stringify(projectNameDraft || ' ') }" size="small" :title="directory" :disabled="!workspaceStore.project" aria-label="项目名称"
+        <el-input v-model="projectNameDraft" class="workspaceNameInput" :style="{ '--workspaceName': JSON.stringify(projectNameDraft || ' ') }" size="small" :title="directory" :disabled="!workspaceStore.project" aria-label="Project name"
           @keydown.stop @keydown.enter="saveProjectName" @keydown.esc.prevent="projectNameDraft = workspaceName" @blur="saveProjectName" />
         <el-divider direction="vertical" />
         <el-popover v-model:visible="canvasListVisible" trigger="click" placement="bottom-start" :width="214" :showArrow="false" :disabled="!directory">
           <template #reference>
-            <el-button class="canvasTrigger" text :loading="busy" :disabled="busy || !directory" aria-label="切换画布" :aria-expanded="canvasListVisible">
+            <el-button class="canvasTrigger" text :loading="busy" :disabled="busy || !directory" aria-label="Switch canvas" :aria-expanded="canvasListVisible">
               <span>{{ activeCanvasName }}</span><icon-chevron-down :size="14" />
             </el-button>
           </template>
           <div class="canvasPicker" @keydown.esc="canvasListVisible = false">
             <div class="pickerHeader">
-              <span>画布</span>
-              <el-button class="iconButton" text :icon="IconPlus" :disabled="busy || editingId !== null" aria-label="新增画布" @click="handleAddCanvas" />
+              <span>Canvas</span>
+              <el-button class="iconButton" text :icon="IconPlus" :disabled="busy || editingId !== null" aria-label="New canvas" @click="handleAddCanvas" />
             </div>
             <el-scrollbar maxHeight="280px">
               <div v-for="canvas in canvases" :key="canvas.id" class="canvasItem">
-                <el-input v-if="editingId === canvas.id" ref="nameInputs" v-model="canvasName" class="nameEditor" size="small" :disabled="busy" :maxlength="120" :aria-label="newCanvasId === canvas.id ? '新画布名称' : '画布名称'" @keydown.stop @keydown.enter="saveCanvas" @blur="saveCanvas" />
+                <el-input v-if="editingId === canvas.id" ref="nameInputs" v-model="canvasName" class="nameEditor" size="small" :disabled="busy" :maxlength="120" :aria-label="newCanvasId === canvas.id ? 'New canvas name' : 'Canvas name'" @keydown.stop @keydown.enter="saveCanvas" @blur="saveCanvas" />
                 <template v-else>
                   <button class="canvasChoice" type="button" :disabled="busy || editingId !== null" :aria-pressed="activeCanvasId === canvas.id" :title="canvas.name" @click="handleSwitchCanvas(canvas.id)">{{ canvas.name }}</button>
                   <div class="itemAction">
                     <icon-check v-if="activeCanvasId === canvas.id" class="selectedIcon" :size="18" aria-hidden="true" />
-                    <el-button class="iconButton renameButton" text :icon="IconEdit" :disabled="busy || editingId !== null" :aria-label="`编辑 ${canvas.name}`" title="编辑" @click="editCanvas(canvas)" />
-                    <el-button class="iconButton deleteButton" text type="danger" :icon="IconTrash" :disabled="busy || editingId !== null" :aria-label="`删除 ${canvas.name}`" title="删除画布" @click="removeCanvas(canvas)" />
+                    <el-button class="iconButton renameButton" text :icon="IconEdit" :disabled="busy || editingId !== null" :aria-label="`Edit ${canvas.name}`" title="Edit" @click="editCanvas(canvas)" />
+                    <el-button class="iconButton deleteButton" text type="danger" :icon="IconTrash" :disabled="busy || editingId !== null" :aria-label="`Delete ${canvas.name}`" title="Delete canvas" @click="removeCanvas(canvas)" />
                   </div>
                 </template>
               </div>
@@ -56,7 +56,7 @@ const props = defineProps<{
   flushSave: (action?: () => Promise<void>) => Promise<void>;
 }>();
 const workspaceStore = useWorkspaceStore();
-const workspaceName = computed(() => workspaceStore.project?.name || "未命名工作区");
+const workspaceName = computed(() => workspaceStore.project?.name || "Unnamed workspace");
 const projectNameDraft = ref("");
 watch([() => workspaceStore.project?.directory, workspaceName], () => {
   projectNameDraft.value = workspaceName.value;
@@ -79,7 +79,7 @@ watch(canvases, () => {
   if (boundCanvas.value) activeCanvasId.value = canvases.value.includes(boundCanvas.value) ? boundCanvas.value.id : "";
 }, { flush: "sync" });
 const canvasListVisible = ref(false);
-const activeCanvasName = computed(() => canvases.value.find(canvas => canvas.id === activeCanvasId.value)?.name || translate("选择画布"));
+const activeCanvasName = computed(() => canvases.value.find(canvas => canvas.id === activeCanvasId.value)?.name || translate("Select canvas"));
 const busy = ref(false);
 const loadError = ref("");
 const editingId = ref<string | null>(null);
@@ -111,12 +111,12 @@ watch(() => props.directory, async (directory, _previous, onCleanup) => {
     if (cancelled) return;
     if (!loaded.length) {
       try {
-        loaded = [await createCanvasFile(directory, "画布1")];
+        loaded = [await createCanvasFile(directory, "Canvas 1")];
       } catch (err) {
         if (!axios.isAxiosError<{ data?: { code?: string } }>(err) || err.response?.status !== 409 || err.response.data.data?.code !== "EEXIST") throw err;
-        // 同时打开工作区时，读取另一请求刚创建的默认画布，不覆盖同名文件。
+        // When multiple tabs open workspace simultaneously, read the default canvas created by another request without overwriting.
         const refreshed = await listCanvases(directory);
-        // 画布1.json 若被其他 JSON 占用，则使用下一个空闲名称，保留原文件。
+        // If canvas1.json is occupied by another JSON, use the next available name, keeping the original file.
         loaded = refreshed.length ? refreshed : [await createCanvasFile(directory)];
       }
     }
@@ -125,7 +125,7 @@ watch(() => props.directory, async (directory, _previous, onCleanup) => {
     if (canvases.value[0]) await applyCanvas(canvases.value[0].id, directory);
   } catch (err) {
     if (!cancelled) {
-      loadError.value = errorMessage(err, "读取画布失败");
+      loadError.value = errorMessage(err, "Failed to load canvas");
       if (!props.initialCanvasId) ElMessage.error(loadError.value);
     }
   } finally {
@@ -143,21 +143,21 @@ function getCanvases() {
 
 function getCanvasDirectory(signal?: AbortSignal) {
   signal?.throwIfAborted();
-  if (!props.directory) throw new Error("请先选择工作目录");
-  if (busy.value || editingId.value !== null) throw new Error("画布正在加载或编辑，请稍后重试");
+  if (!props.directory) throw new Error("Please select a working directory first");
+  if (busy.value || editingId.value !== null) throw new Error("Canvas is loading or editing, please try again later");
   return props.directory;
 }
 
 function checkCanvasDirectory(directory: string, signal?: AbortSignal) {
   signal?.throwIfAborted();
-  if (props.directory !== directory) throw new Error("工作目录已切换，本次画布操作已停止");
+  if (props.directory !== directory) throw new Error("Working directory has changed, canvas operation stopped");
 }
 
 async function applyCanvas(canvasId: string, directory: string, signal?: AbortSignal) {
   checkCanvasDirectory(directory, signal);
   const nextCanvas = canvases.value.find(canvas => canvas.id === canvasId);
   const currentCanvas = canvases.value.find(canvas => canvas.id === activeCanvasId.value);
-  if (!nextCanvas) throw new Error("画布不存在，请重新获取画布列表");
+  if (!nextCanvas) throw new Error("Canvas does not exist, please refresh canvas list");
   if (nextCanvas === currentCanvas) return;
   if (currentCanvas && props.activateCanvas) {
     await props.activateCanvas(canvasId, signal);
@@ -168,18 +168,18 @@ async function applyCanvas(canvasId: string, directory: string, signal?: AbortSi
     const data = await useWorkspaceFiles(directory).readJson<Partial<NonNullable<Canvas["flow"]>> & { toonflowCanvas?: boolean } | null>(nextCanvas.id);
     checkCanvasDirectory(directory, signal);
     if (data?.toonflowCanvas !== true || !Array.isArray(data.nodes) || !Array.isArray(data.edges) || !data.viewport
-      || ![data.viewport.x, data.viewport.y, data.viewport.zoom].every(Number.isFinite) || data.viewport.zoom <= 0) throw new Error("画布文件格式无效");
-    // 旧画布可能保存了临时导出进度，重新打开时任务已不存在。
+      || ![data.viewport.x, data.viewport.y, data.viewport.zoom].every(Number.isFinite) || data.viewport.zoom <= 0) throw new Error("Invalid canvas file format");
+    // Old canvas may have saved temporary export progress; tasks no longer exist on reopen.
     for (const node of data.nodes) if (node.type === "remote-videoNode" && node.data) delete node.data.exportProgress;
     nextCanvas.flow = { nodes: data.nodes, edges: data.edges, viewport: data.viewport };
   }
   await props.flushSave();
   checkCanvasDirectory(directory, signal);
   if (currentCanvas) currentCanvas.flow = toObject();
-  // 应用画布数据时暂时清空文件名，避免初始化触发自动保存。
+  // Temporarily clear filename when applying canvas data to prevent init triggering auto-save.
   activeCanvasId.value = "";
   setNodes(nextCanvas.flow.nodes);
-  // 命中宽度由画布统一配置，不使用旧文件中的覆盖值。
+  // Hit width is configured globally by canvas, not using override values from old files.
   setEdges(nextCanvas.flow.edges.map(({ interactionWidth, ...edge }) => edge));
   await setViewport(nextCanvas.flow.viewport);
   await nextTick();
@@ -207,7 +207,7 @@ async function handleSwitchCanvas(canvasId: string) {
   try {
     await switchCanvas(canvasId);
   } catch (err) {
-    if (props.directory === directory) ElMessage.error(errorMessage(err, "切换画布失败"));
+    if (props.directory === directory) ElMessage.error(errorMessage(err, "Failed to switch canvas"));
   }
 }
 
@@ -218,8 +218,8 @@ async function removeCanvas(canvas: Canvas) {
   busy.value = true;
   canvasListVisible.value = false;
   try {
-    const confirmed = await ElMessageBox.confirm(`确定删除“${canvas.name}”？对应的 ${id} 文件及独占的节点素材也会被删除，其他画布共用的素材会保留。此操作不可撤销。`, "删除画布", {
-      type: "warning", confirmButtonText: "删除", cancelButtonText: "取消", closeOnClickModal: false,
+    const confirmed = await ElMessageBox.confirm(`Confirm delete “${canvas.name}”? The corresponding ${id} file and exclusive node assets will be deleted. Shared assets will be kept. This cannot be undone.`, “Delete canvas”, {
+      type: "warning", confirmButtonText: "Delete", cancelButtonText: "Cancel", closeOnClickModal: false,
     }).then(() => true, () => false);
     if (!confirmed) return;
     checkCanvasDirectory(directory);
@@ -229,14 +229,14 @@ async function removeCanvas(canvas: Canvas) {
     const readNodes = async (canvasId: string) => {
       const data = await files.readJson<{ toonflowCanvas?: boolean; nodes?: { id: string; data?: unknown }[] }>(canvasId);
       if (data?.toonflowCanvas !== true || !Array.isArray(data.nodes) || data.nodes.some(node => !node || typeof node.id !== "string")) {
-        throw new Error(`无法确认 ${canvasId} 的素材引用`);
+        throw new Error(`Cannot verify ${canvasId}  asset references`);
       }
       return [...data.nodes, ...getRetainedNodes(canvasId)];
     };
     let removedNodes: { id: string; data?: unknown }[] = [];
     await props.flushSave(async () => {
       checkCanvasDirectory(directory);
-      if (canvas.id !== id || !canvases.value.includes(canvas)) throw new Error("画布已变更，请重新选择");
+      if (canvas.id !== id || !canvases.value.includes(canvas)) throw new Error("Canvas has changed, please select again");
       removedNodes = await readNodes(id);
       if (!performFileAction) {
         await files.remove(id);
@@ -245,7 +245,7 @@ async function removeCanvas(canvas: Canvas) {
         await nextTick();
       }
     });
-    // coordinator 自己进入保存临界区，必须在上一次 flush 完成后调用，避免重入保存队列。
+    // Coordinator enters save critical section; must be called after previous flush, avoiding save queue re-entry.
     if (performFileAction) await performFileAction(directory, "delete", id);
     await props.flushSave(async () => {
       checkCanvasDirectory(directory);
@@ -256,11 +256,11 @@ async function removeCanvas(canvas: Canvas) {
         if (!axios.isAxiosError<{ data?: { code?: string } }>(error) || error.response?.data.data?.code !== "ENOENT") throw error;
       })));
       const failed = results.flatMap((result, index) => result.status === "rejected" ? [assetDirectories[index]] : []);
-      if (failed.length) throw new Error(`画布已删除，但 ${failed.length} 个素材目录清理失败：${failed.join("、")}`);
+      if (failed.length) throw new Error(`Canvas deleted, but ${failed.length} asset directories failed to clean up: ${failed.join(", ")}`);
     });
-    if (props.directory === directory) ElMessage.success("画布已删除");
+    if (props.directory === directory) ElMessage.success("Canvas deleted");
   } catch (err) {
-    if (props.directory === directory) ElMessage.error(errorMessage(err, "删除画布失败"));
+    if (props.directory === directory) ElMessage.error(errorMessage(err, "Failed to delete canvas"));
   } finally {
     if (props.directory === directory) busy.value = false;
   }
@@ -272,7 +272,7 @@ async function createCanvasFile(directory: string, name?: string, signal?: Abort
   const flow = { nodes: [], edges: [], viewport: { x: 0, y: 0, zoom: 1 } };
   for (let number = 1; ; number++) {
     checkCanvasDirectory(directory, signal);
-    const canvasName = name ?? `画布${number}`;
+    const canvasName = name ?? `Canvas ${number}`;
     const id = `${canvasName}.json`;
     try {
       await files.writeJson(id, { toonflowCanvas: true, ...flow }, true);
@@ -287,7 +287,7 @@ async function listCanvases(directory: string, recursive = false): Promise<Canva
   const files = useWorkspaceFiles(directory);
   const { entries } = await files.list();
   if (recursive) {
-    // 文件接口只返回普通文件和目录，不跟随符号链接；素材目录不参与画布扫描。
+    // File API returns only regular files and directories, no symlinks; asset directories are excluded from canvas scan.
     for (let index = 0; index < entries.length; index++) {
       const entry = entries[index]!;
       if (entry.type === "directory" && entry.name.toLowerCase() !== "assets") entries.push(...(await files.list(entry.path)).entries);
@@ -328,7 +328,7 @@ async function handleAddCanvas() {
     busy.value = false;
     await editCanvas(canvas);
   } catch (err) {
-    if (props.directory === directory) ElMessage.error(errorMessage(err, "新增画布失败"));
+    if (props.directory === directory) ElMessage.error(errorMessage(err, "Failed to create canvas"));
   } finally {
     if (props.directory === directory) busy.value = false;
   }
@@ -357,7 +357,7 @@ function normalizeCanvasName(name: string) {
   name = name.trim();
   if (!name || name.length > 120 || /[<>:"/\\|?*\x00-\x1f]/.test(name) || /[. ]$/.test(name)
     || /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i.test(name)) {
-    throw new Error("画布名称不是有效文件名");
+    throw new Error("Canvas name is not a valid filename");
   }
   return name;
 }
@@ -365,7 +365,7 @@ function normalizeCanvasName(name: string) {
 async function renameCanvasFile(id: string, name: string, directory: string, signal?: AbortSignal) {
   checkCanvasDirectory(directory, signal);
   const canvas = canvases.value.find(item => item.id === id);
-  if (!canvas) throw new Error("画布不存在，请重新获取画布列表");
+  if (!canvas) throw new Error("Canvas does not exist, please refresh canvas list");
   name = normalizeCanvasName(name);
   if (name === canvas.name) return;
   const target = `${id.slice(0, id.lastIndexOf("/") + 1)}${name}.json`;
@@ -378,7 +378,7 @@ async function renameCanvasFile(id: string, name: string, directory: string, sig
     checkCanvasDirectory(directory, signal);
     await useWorkspaceFiles(directory).rename(id, target);
     checkCanvasDirectory(directory);
-    // 文件已改名时先更新保存路径，再响应取消，避免自动保存重新创建旧文件。
+    // When file is renamed, update save path first, then respond to cancel, preventing auto-save from recreating old file.
     if (activeCanvasId.value === id) activeCanvasId.value = target;
     if (newCanvasId.value === id) newCanvasId.value = target;
     if (editingId.value === id) editingId.value = target;
@@ -423,7 +423,7 @@ async function saveCanvas(event?: Event) {
     await finishEdit();
   } catch (err) {
     if (props.directory === directory) {
-      renameError.value = errorMessage(err, "重命名画布失败");
+      renameError.value = errorMessage(err, "Failed to rename canvas");
       canvasListVisible.value = true;
     }
   } finally {

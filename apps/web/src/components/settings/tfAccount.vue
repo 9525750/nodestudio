@@ -2,19 +2,19 @@
   <div class="tfAccount" :aria-busy="loading">
     <div v-if="apiKey" class="accountHeader">
       <div class="accountBalance">
-        <el-text size="small" type="info">账户余额</el-text>
+        <el-text size="small" type="info">Account Balance</el-text>
         <el-skeleton v-if="loading && !balance" animated>
           <template #template><el-skeleton-item class="balancePlaceholder" variant="text" /></template>
         </el-skeleton>
         <strong v-else class="balanceNumber">{{ balance ? numberFormat.format(balance.balance) : "—" }}</strong>
       </div>
       <div class="accountActions">
-        <el-button text circle :icon="IconRefresh" :loading="loading" :disabled="!apiKey" aria-label="刷新余额" title="刷新余额" @click="refresh" />
-        <el-button size="small" :icon="IconCreditCard" :disabled="!apiKey" @click="openRecharge">充值</el-button>
+        <el-button text circle :icon="IconRefresh" :loading="loading" :disabled="!apiKey" aria-label="Refresh balance" title="Refresh balance" @click="refresh" />
+        <el-button size="small" :icon="IconCreditCard" :disabled="!apiKey" @click="openRecharge">Top Up</el-button>
       </div>
     </div>
     <div v-if="!apiKey" class="accountSetup">
-      <el-text size="small" type="info">填写API Key开始使用官方供应商</el-text>
+      <el-text size="small" type="info">Enter an API Key to start using the official provider</el-text>
       <div class="setupForm">
         <el-input
           v-model="draftKey"
@@ -22,31 +22,31 @@
           type="password"
           dir="ltr"
           showPassword
-          placeholder="粘贴 API Key"
+          placeholder="Paste API Key"
           :disabled="saving"
           @keyup.enter="submitKey" />
-        <el-button type="primary" size="small" :loading="saving" :disabled="!draftKey.trim()" @click="submitKey">保存</el-button>
+        <el-button type="primary" size="small" :loading="saving" :disabled="!draftKey.trim()" @click="submitKey">Save</el-button>
       </div>
       <el-text v-if="setupError" size="small" type="danger">{{ setupError }}</el-text>
       <el-button tag="a" href="https://api.toonflow.net/" target="_blank" rel="noopener noreferrer" text type="primary" :icon="IconExternalLink">
-        前往 TF-Router 官网 获取 API Key
+        Get API Key from TF-Router website
       </el-button>
     </div>
     <div v-else-if="errorMessage" class="accountError" role="alert">
       <el-text size="small" type="danger">{{ errorMessage }}</el-text>
-      <el-button text size="small" :disabled="loading" @click="refresh">重试</el-button>
+      <el-button text size="small" :disabled="loading" @click="refresh">Retry</el-button>
     </div>
     <div v-if="balance" class="accountDetails">
       <div class="accountMetric">
-        <el-text size="small" type="info">密钥余额</el-text>
-        <span>{{ balance.keyBalance === null ? "无限制" : numberFormat.format(balance.keyBalance) }}</span>
+        <el-text size="small" type="info">Key Balance</el-text>
+        <span>{{ balance.keyBalance === null ? "Unlimited" : numberFormat.format(balance.keyBalance) }}</span>
       </div>
       <div class="accountMetric">
-        <el-text size="small" type="info">累计消费</el-text>
+        <el-text size="small" type="info">Total Spent</el-text>
         <span>{{ numberFormat.format(balance.totalConsumption) }}</span>
       </div>
       <div class="accountMetric">
-        <el-text size="small" type="info">累计充值</el-text>
+        <el-text size="small" type="info">Total Recharged</el-text>
         <span>{{ numberFormat.format(balance.totalRecharge) }}</span>
       </div>
     </div>
@@ -100,7 +100,7 @@ async function submitKey() {
     await props.saveApiKey(key);
     draftKey.value = "";
   } catch (error) {
-    setupError.value = error instanceof Error ? error.message : "保存失败，请重试";
+    setupError.value = error instanceof Error ? error.message : "Save failed, please retry";
   } finally {
     saving.value = false;
   }
@@ -123,7 +123,7 @@ async function refresh() {
         ? error.response?.data?.message || error.message
         : error instanceof Error
         ? error.message
-        : "余额查询失败，请重试";
+        : "Balance query failed, please retry";
     }
   } finally {
     if (!request.signal.aborted) loading.value = false;

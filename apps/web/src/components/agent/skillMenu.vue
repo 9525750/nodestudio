@@ -1,10 +1,10 @@
 <template>
   <div v-click-outside:[editor]="closeMenu" class="skillMenu" @keydown.capture="handleKeydown">
-    <el-button class="skillButton" text circle :disabled="disabled" :aria-expanded="visible" :aria-controls="listId" aria-label="选择技能" title="选择技能" @click="visible ? closeMenu() : buttonVisible = true"><icon-book :size="15" /></el-button>
+    <el-button class="skillButton" text circle :disabled="disabled" :aria-expanded="visible" :aria-controls="listId" aria-label="Select skill" title="Select skill" @click="visible ? closeMenu() : buttonVisible = true"><icon-book :size="15" /></el-button>
     <el-card v-if="visible" class="skillPopup" shadow="always" :bodyStyle="{ padding: '6px' }">
       <el-scrollbar maxHeight="260px">
-        <div :id="listId" role="listbox" aria-label="技能指令" :aria-busy="loading">
-          <div v-if="loading || loadError || !filteredSkills.length" class="skillStatus" role="status">{{ loading ? "正在加载技能…" : loadError || (skills.length ? "没有匹配的技能" : "暂无可用技能") }}</div>
+        <div :id="listId" role="listbox" aria-label="Skill instructions" :aria-busy="loading">
+          <div v-if="loading || loadError || !filteredSkills.length" class="skillStatus" role="status">{{ loading ? "Loading skills…" : loadError || (skills.length ? "No matching skills" : "No skills available") }}</div>
           <button v-for="(skill, index) in filteredSkills" v-else :id="`${listId}-${index}`" :key="skill.name" class="skillItem" :class="{ active: index === activeIndex }" type="button" role="option" :aria-selected="index === activeIndex" @mouseenter="activeIndex = index" @mousedown.prevent @click="selectSkill(skill.name)">
             <span class="skillName"><icon-book :size="15" />/skill:{{ skill.name }}</span>
             <span class="skillDescription">{{ skill.description }}</span>
@@ -84,10 +84,10 @@ watch(visible, async (open, _previous, onCleanup) => {
       params: { directory: props.directory }, signal: controller.signal,
       headers: { "x-toonflow-workspace": "1" },
     });
-    if (data.code !== 200) throw new Error(data.message || "加载技能失败");
+    if (data.code !== 200) throw new Error(data.message || "Failed to load skills");
     skills.value = data.data;
   } catch (error) {
-    if (!axios.isCancel(error)) loadError.value = "加载技能失败，请重新打开重试";
+    if (!axios.isCancel(error)) loadError.value = "Failed to load skills, please reopen and try again";
   } finally {
     if (!controller.signal.aborted) loading.value = false;
   }

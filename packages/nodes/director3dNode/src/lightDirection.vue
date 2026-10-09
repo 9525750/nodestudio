@@ -10,7 +10,7 @@
         :class="handle.kind"
         :style="handle.style"
         type="button"
-        :aria-label="handle.kind === 'azimuth' ? '拖动调整水平方位' : '拖动调整光线高度'"
+        :aria-label="handle.kind === 'azimuth' ? 'Drag to adjust horizontal direction' : 'Drag to adjust light height'"
         @pointerdown="startDrag($event, handle.kind)"
         @pointermove="moveDrag"
         @pointerup="finishDrag"
@@ -19,20 +19,20 @@
         @keydown="adjustDirection($event, handle.kind)" />
     </div>
     <div class="elevationControl">
-      <span>高度</span>
-      <el-slider v-model="elevation" vertical height="160px" :min="-90" :max="90" aria-label="光线高度" @change="commit" />
+      <span>Height</span>
+      <el-slider v-model="elevation" vertical height="160px" :min="-90" :max="90" aria-label="Light height" @change="commit" />
       <span>{{ Math.round(elevation) }}°</span>
     </div>
     <div class="angleControl">
       <div class="angleLabel">
-        <span class="azimuthLabel">水平方位 · {{ directionLabel }}</span>
+        <span class="azimuthLabel">Horizontal direction · {{ directionLabel }}</span>
         <span>{{ Math.round(relativeAngle) }}°</span>
       </div>
       <el-slider
         :modelValue="relativeAngle"
         :min="0"
         :max="360"
-        aria-label="水平方位"
+        aria-label="Horizontal direction"
         @update:modelValue="setAngle('azimuth', Number($event))"
         @change="commit" />
     </div>
@@ -71,7 +71,7 @@ const viewport = ref<HTMLDivElement>();
 const handles = ref<{ kind: AngleKind; style: { left: string; top: string } }[]>([]);
 const directionLabels = ref<{ text: string; style: { left: string; top: string } }[]>([]);
 const relativeAngle = computed(() => (((azimuth.value - referenceAzimuth) % 360) + 360) % 360);
-const directionLabel = computed(() => ["前方", "右侧", "后方", "左侧"][Math.round(relativeAngle.value / 90) % 4]);
+const directionLabel = computed(() => ["Front", "Right", "Back", "Left"][Math.round(relativeAngle.value / 90) % 4]);
 const radius = 1.65;
 const arcX = -2;
 const scene = new Scene();
@@ -117,10 +117,10 @@ function render() {
     { kind: "elevation", style: project(new Vector3(arcX, radius * Math.sin(vertical), radius * Math.cos(vertical))) },
   ];
   directionLabels.value = [
-    { text: "前", style: project(new Vector3(0, 0, 2)) },
-    { text: "后", style: project(new Vector3(0, 0, -2)) },
-    { text: "上", style: project(new Vector3(arcX, 1.95, 0)) },
-    { text: "下", style: project(new Vector3(arcX, -1.95, 0)) },
+    { text: "Front", style: project(new Vector3(0, 0, 2)) },
+    { text: "Back", style: project(new Vector3(0, 0, -2)) },
+    { text: "Up", style: project(new Vector3(arcX, 1.95, 0)) },
+    { text: "Down", style: project(new Vector3(arcX, -1.95, 0)) },
   ];
   renderer.render(scene, camera);
 }
@@ -155,7 +155,7 @@ function moveDrag(event: PointerEvent) {
   const angle = pointerAngle(event, drag.kind);
   if (angle == null) return;
   const value = angle + drag.offset;
-  // 高度弧只取朝前的半圆，拖出弧线后停在顶光或底光。
+  // The elevation arc covers only the forward half-circle; dragging past the arc clamps to top or bottom light.
   setAngle(drag.kind, drag.kind === "elevation" ? ((value + 540) % 360) - 180 : value);
 }
 

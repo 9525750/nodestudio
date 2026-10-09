@@ -10,7 +10,7 @@ export function useMentionSources(getDirectory: () => string | undefined) {
 
   async function request<T>(operation: string, args: Record<string, unknown> = {}, signal?: AbortSignal): Promise<T> {
     const directory = getDirectory();
-    if (!directory) throw new Error("请先打开工作区");
+    if (!directory) throw new Error("Open a workspace first");
     const { data } = await axios.get<{ data: T }>("/api/agent/mentionSource", {
       params: { directory, operation, ...args }, signal, headers: { "x-toonflow-workspace": "1" },
     }).catch(error => {
@@ -19,7 +19,7 @@ export function useMentionSources(getDirectory: () => string | undefined) {
       throw error;
     });
     signal?.throwIfAborted();
-    if (directory !== getDirectory()) throw new Error("工作区已切换，请重新选择");
+    if (directory !== getDirectory()) throw new Error("The workspace has changed, please select again");
     return data.data;
   }
 
@@ -36,7 +36,7 @@ export function useMentionSources(getDirectory: () => string | undefined) {
       if (live) {
         const result = await live;
         options.signal?.throwIfAborted();
-        if (directory !== getDirectory()) throw new Error("工作区已切换，请重新选择");
+        if (directory !== getDirectory()) throw new Error("The workspace has changed, please select again");
         return result;
       }
       const { signal, ...args } = options;
@@ -55,7 +55,7 @@ export function useMentionSources(getDirectory: () => string | undefined) {
       const selected = await (getCanvasSource?.()?.selectCanvas(canvasId, nodeId, outputId)
         ?? request<AgentMention>("selectCanvas", { canvasId, nodeId, outputId }, signal));
       signal?.throwIfAborted();
-      if (directory !== getDirectory()) throw new Error("工作区已切换，请重新选择");
+      if (directory !== getDirectory()) throw new Error("The workspace has changed, please select again");
       return selected;
     },
     selectAsset({ path, signal }: { path: string; signal?: AbortSignal }) {

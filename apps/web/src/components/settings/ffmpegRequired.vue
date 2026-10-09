@@ -1,6 +1,6 @@
 <template>
   <el-dialog v-model="visible" title="FFmpeg" width="min(680px, calc(100vw - 32px))" alignCenter appendToBody destroyOnClose>
-    <el-alert class="installationHint" title="安装完成后，请重新发起刚才的操作。" type="info" :closable="false" showIcon />
+    <el-alert class="installationHint" title="After installation, please retry the previous operation." type="info" :closable="false" showIcon />
     <ffmpeg v-if="visible" :downloadOnOpen="true" />
   </el-dialog>
 </template>
@@ -20,12 +20,12 @@ events.onmessage = async event => {
   if (data?.type !== "required" || pending || visible.value) return;
   pending = true;
   try {
-    await ElMessageBox.confirm("当前操作需要 FFmpeg，但尚未检测到可用版本。是否下载并安装？", "需要 FFmpeg", {
-      confirmButtonText: "下载并安装", cancelButtonText: "暂不下载", closeOnClickModal: false,
+    await ElMessageBox.confirm("This operation requires FFmpeg, but no available version was detected. Download and install?", "FFmpeg Required", {
+      confirmButtonText: "Download & Install", cancelButtonText: "Not Now", closeOnClickModal: false,
     });
     if (events.readyState !== EventSource.CLOSED) visible.value = true;
   } catch {
-    // 用户取消后保留当前操作的失败结果，不自动重新生成媒体。
+    // Keep the current operation's failure result after user cancellation; do not auto-retry media generation.
   } finally {
     pending = false;
   }

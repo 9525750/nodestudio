@@ -25,7 +25,7 @@ export function useCanvasHistory(flow: ReturnType<typeof useVueFlow>, binding: (
     const fields = (element: Node | Edge, runtimeFields: Set<string>) => Object.fromEntries(
       Object.entries(element).filter(([key]) => !runtimeFields.has(key)),
     );
-    // ACT: 只复制结构和名称；删除后恢复内容由上面的节点、连线引用保留。
+    // ACT: Copy only structure and names; content for undo-after-delete is retained by node/edge references above.
     const key = JSON.stringify({
       nodes: flow.getNodes.value.map(node => ({ ...fields(node, nodeRuntimeFields), data: { label: node.data?.label } })),
       edges: flow.getEdges.value.map(edge => fields(edge, edgeRuntimeFields)),
@@ -37,7 +37,7 @@ export function useCanvasHistory(flow: ReturnType<typeof useVueFlow>, binding: (
     if (!binding() || applying.value || grouping.value) return;
     const snapshot = capture();
     if (snapshot.key === snapshots.value[cursor.value]?.key) return;
-    // ACT: 最多保存 100 步画布结构；节点内部内容、生成结果和外部文件不属于撤销历史。
+    // ACT: Max 100 canvas structure snapshots; node internal content, generation results and external files are not part of undo history.
     snapshots.value = [...snapshots.value.slice(0, cursor.value + 1), snapshot].slice(-101);
     cursor.value = snapshots.value.length - 1;
     const nodeIds = new Set(snapshots.value.flatMap(item => item.nodes.map(node => node.id)));
@@ -75,7 +75,7 @@ export function useCanvasHistory(flow: ReturnType<typeof useVueFlow>, binding: (
         if (currentRevision !== revision) return;
       }
       if (capture().key !== before.key || removedNodes.some(node => flow.findNode(node.id) !== node)) {
-        throw new Error("画布已发生变化，请重新撤销或重做");
+        throw new Error("Canvas has changed, please undo or redo again");
       }
       flow.setNodes(snapshot.nodes.map(saved => {
         const node = flow.findNode(saved.id);
@@ -126,7 +126,7 @@ export function useCanvasHistory(flow: ReturnType<typeof useVueFlow>, binding: (
   }
 
   async function batch(action: () => Promise<void>) {
-    if (!binding() || applying.value) throw new Error("画布尚未就绪");
+    if (!binding() || applying.value) throw new Error("Canvas is not ready");
     record.cancel();
     commit();
     const currentRevision = revision;

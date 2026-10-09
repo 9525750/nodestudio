@@ -21,9 +21,9 @@
         :disabled="!canArrangeSelection"
         @click="operate(action.mode)">{{ action.label }}</el-button>
       <span class="toolbarDivider" aria-hidden="true" />
-      <el-button text :icon="IconCopyPlus" :disabled="busy || disabled" @click="operate('duplicate')">创建副本</el-button>
-      <el-button text :icon="IconBoxMultiple" :disabled="busy || disabled" @click="operate('group')">打组</el-button>
-      <el-button text :icon="IconDeselect" :disabled="busy || disabled || !hasGroup" @click="operate('ungroup')">解组</el-button>
+      <el-button text :icon="IconCopyPlus" :disabled="busy || disabled" @click="operate('duplicate')">Duplicate</el-button>
+      <el-button text :icon="IconBoxMultiple" :disabled="busy || disabled" @click="operate('group')">Group</el-button>
+      <el-button text :icon="IconDeselect" :disabled="busy || disabled || !hasGroup" @click="operate('ungroup')">Ungroup</el-button>
     </div>
   </el-card>
 </template>
@@ -49,9 +49,9 @@ const flow = useVueFlow();
 const toolbar = ref<InstanceType<typeof ElCard>>();
 const busy = ref(false);
 const layoutActions = [
-  { mode: "horizontal", label: "水平排列", icon: IconLayoutColumns },
-  { mode: "vertical", label: "垂直排列", icon: IconLayoutRows },
-  { mode: "grid", label: "宫格排列", icon: IconLayoutGrid },
+  { mode: "horizontal", label: "Horizontal", icon: IconLayoutColumns },
+  { mode: "vertical", label: "Vertical", icon: IconLayoutRows },
+  { mode: "grid", label: "Grid", icon: IconLayoutGrid },
 ] as const;
 const selectionRoots = computed(() => getSelectionRoots(flow.getSelectedNodes.value, flow.getNodes.value));
 const canArrangeSelection = computed(() => !busy.value && !props.disabled && selectionRoots.value.length > 1
@@ -67,7 +67,7 @@ const toolbarStyle = computed(() => {
   const width = toolbar.value?.$el.offsetWidth ?? 0;
   const height = toolbar.value?.$el.offsetHeight ?? 0;
   const left = Math.max(width / 2 + 8, Math.min(x + (bounds.x + bounds.width / 2) * zoom, flow.dimensions.value.width - width / 2 - 8));
-  // ACT: 顶部导航约占 56px，留出 8px 间隔；高度变化时再按导航实际尺寸定位。
+  // ACT: Top nav ~56px, 8px gap; re-position by actual nav size on height change.
   const top = Math.max(height + 64, Math.min(y + bounds.y * zoom - 12 - (hasGroup.value ? 30 * zoom : 0), flow.dimensions.value.height - 8));
   return { left: `${left}px`, top: `${top}px` };
 });
@@ -91,11 +91,11 @@ async function duplicateNodes(selection: GraphNode[], signal: AbortSignal, withE
     copy.parentNode = ids.get(saved.parentNode ?? "") ?? saved.parentNode;
     copy.position = positions ? { ...positions.get(node.id)! }
       : { x: saved.position.x + (rootsIds.has(node.id) ? bounds.width + 64 : 0), y: saved.position.y };
-    copy.data = { ...copy.data, label: `${copy.data?.label || "未命名节点"} - 副本` };
+    copy.data = { ...copy.data, label: `${copy.data?.label || "Unnamed node"} - Copy` };
     return copy;
   }));
   signal.throwIfAborted();
-  if (nodes.some(node => flow.findNode(node.id) !== node)) throw new Error("节点已变化，请重新创建副本");
+  if (nodes.some(node => flow.findNode(node.id) !== node)) throw new Error("Nodes changed, please duplicate again");
   const edges = incomingEdges.filter(edge => ids.has(edge.source) || flow.findNode(edge.source)).map(edge => ({
     ...JSON.parse(JSON.stringify(edge)),
     id: crypto.randomUUID(),
@@ -125,7 +125,7 @@ function groupNodes(selection: GraphNode[]) {
     style: { width: `${bounds.width + 48}px`, height: `${bounds.height + 64}px` },
     connectable: false,
     expandParent: false,
-    data: { label: "分组" },
+    data: { label: "Group" },
   };
   const nodes: Node[] = flow.getNodes.value.map(node => rootIds.has(node.id) ? {
     ...node,
@@ -166,7 +166,7 @@ function ungroupNodes(selection: GraphNode[]) {
 
 function mergeGroups(selection: GraphNode[]) {
   const groups = getSelectionRoots(selection.filter(node => node.type === "canvasGroup"), flow.getNodes.value);
-  if (groups.length < 2) throw new Error("请至少选择两个分组");
+  if (groups.length < 2) throw new Error("Please select at least two groups");
   const first = groups[0]!;
   const groupIds = new Set(groups.map(node => node.id));
   const bounds = getRectOfNodes(groups);
@@ -246,7 +246,7 @@ function startDragCopy(selection: GraphNode[], withEdges: boolean) {
         finishGroupDrag(flow.getNodes.value, created);
       });
     } catch (error) {
-      if (!signal.aborted) ElMessage.error(error instanceof Error ? error.message : "拖动复制失败");
+      if (!signal.aborted) ElMessage.error(error instanceof Error ? error.message : "Failed to duplicate by drag");
     } finally {
       signal.removeEventListener("abort", finish);
       busy.value = false;
@@ -256,7 +256,7 @@ function startDragCopy(selection: GraphNode[], withEdges: boolean) {
   return {
     update() {
       if (signal.aborted) return;
-      // ACT: Vue Flow 固定拖动原节点 ID；同一帧还原原位置，只让副本跟随，松手后统一提交历史。
+      // ACT: Vue Flow pins drag to original node ID; restore position in same frame, let copy follow, commit history on release.
       for (const node of roots) {
         if (flow.findNode(node.id) !== node) continue;
         positions.set(node.id, { ...node.position });
@@ -292,7 +292,7 @@ async function operate(command: "duplicate" | "group" | "ungroup" | "mergeGroup"
       }
     });
   } catch (error) {
-    if (!signal.aborted) ElMessage.error(error instanceof Error ? error.message : "选区操作失败");
+    if (!signal.aborted) ElMessage.error(error instanceof Error ? error.message : "Selection operation failed");
   } finally {
     busy.value = false;
   }

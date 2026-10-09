@@ -647,21 +647,21 @@ async function sendMessage(source?: AgentMessage) {
         default: applyEvent(event);
       }
     }
-    if (source && !accepted) throw new Error("服务端未确认重发，请重新打开对话后重试");
+    if (source && !accepted) throw new Error("Server did not confirm resend — please reopen the conversation and try again");
     finishStats("success");
-    emit("sent", mentionPlainText(prompt, mentions) || attachments[0]?.name || "新对话");
+    emit("sent", mentionPlainText(prompt, mentions) || attachments[0]?.name || "New conversation");
   } catch (error) {
     finishStats(requestController.signal.aborted ? "cancelled" : "failed");
     const responseMessage = (error as { response?: { data?: { message?: string } } })?.response?.data?.message;
-    const message = requestController.signal.aborted ? "已停止生成" : responseMessage || (error instanceof Error ? error.message : "发送失败，请重试");
+    const message = requestController.signal.aborted ? "Generation stopped" : responseMessage || (error instanceof Error ? error.message : "Failed to send, please retry");
     if ((source && !accepted) || !ownsStream) { userMessage.error = message; ElMessage.error(message); }
     else reply.error = message;
     if (ownsStream && props.initialSession?.parentFile && props.sessionFile) {
       emit("event", { type: "subAgentEvent", file: props.sessionFile, event: { type: "error", message } });
     }
   } finally {
-    for (const file of activeChildFiles) emit("event", { type: "subAgentEvent", file, event: { type: "error", message: "委派连接已结束，请重新打开子会话查看结果" } });
-    // ACT: Bun 的流断开事件可能不触发；主动结束仍在等待的提问，不依赖断开通知。
+    for (const file of activeChildFiles) emit("event", { type: "subAgentEvent", file, event: { type: "error", message: "Delegation connection ended — please reopen the sub-session to view results" } });
+    // ACT: Bun's stream disconnect events may not fire; proactively end pending questions instead of relying on disconnect notifications.
     for (const callId of pendingQuestions.values()) {
       void fetch("/api/agent/answer", {
         method: "POST", headers: { "Accept-Language": locale.value, "Content-Type": "application/json", "x-toonflow-workspace": "1" },
@@ -687,7 +687,7 @@ async function restoreTextAttachment(index: number) {
     await instance.setText(`${instance.isEmpty(false) ? "" : "\n"}${text}`);
     if (sender === instance) draftAttachments.value = draftAttachments.value.filter(item => item !== attachment);
   } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : "还原文本附件失败，请重试");
+    ElMessage.error(error instanceof Error ? error.message : "Failed to restore text attachment, please retry");
   } finally {
     restoringAttachment.value = false;
   }
@@ -702,7 +702,7 @@ function pasteAttachments(event: ClipboardEvent) {
     } catch (error) {
       event.preventDefault();
       event.stopImmediatePropagation();
-      ElMessage.warning(error instanceof Error ? error.message : "无法添加文本附件");
+      ElMessage.warning(error instanceof Error ? error.message : "Cannot add text attachment");
       return;
     }
   }
@@ -712,19 +712,19 @@ function pasteAttachments(event: ClipboardEvent) {
   if (locked.value) return;
   for (const file of files) {
     if (!/^(image|video)\//.test(file.type) && file.type !== "text/plain") {
-      ElMessage.warning("只支持图片、视频和纯文本文件");
+      ElMessage.warning("Only image, video, and plain text files are supported");
       continue;
     }
     if (!file.size || file.size > 100 * 1024 * 1024) {
-      ElMessage.warning("附件不能为空且不能超过 100 MB");
+      ElMessage.warning("Attachment cannot be empty and cannot exceed 100 MB");
       continue;
     }
     if (file.type === "text/plain" && file.size > 400000) {
-      ElMessage.warning("文本附件不能超过 400000 字节");
+      ElMessage.warning("Text attachment cannot exceed 400,000 bytes");
       continue;
     }
     if (draftAttachments.value.length >= 20) {
-      ElMessage.warning("每条消息最多添加 20 个附件");
+      ElMessage.warning("Each message can have up to 20 attachments");
       break;
     }
     draftAttachments.value.push({ name: file.name, path: "", mimeType: file.type, file });

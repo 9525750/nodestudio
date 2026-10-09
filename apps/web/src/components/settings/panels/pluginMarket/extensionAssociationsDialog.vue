@@ -1,24 +1,24 @@
 <template>
-  <el-dialog v-model="visible" title="默认打开方式" width="min(660px, calc(100vw - 32px))" alignCenter appendToBody>
+  <el-dialog v-model="visible" title="Default Open With" width="min(660px, calc(100vw - 32px))" alignCenter appendToBody>
     <div class="extensionAssociations" v-loading="loading">
-      <p>按文件类型选择默认扩展。清除后，有多个可用扩展时会再次询问打开方式。</p>
+      <p>Choose the default extension for each file type. After clearing, you will be asked again how to open the file when multiple extensions are available.</p>
       <el-alert v-if="error" :title="error" type="error" :closable="false" />
-      <el-table :data="rows" maxHeight="420" emptyText="暂无已安装的文件扩展或默认关联">
-        <el-table-column label="文件类型" width="140">
-          <template #default="{ row }">{{ row.suffix === 'canvasNode' ? '画布节点' : `.${row.suffix}` }}</template>
+      <el-table :data="rows" maxHeight="420" emptyText="No installed file extensions or default associations">
+        <el-table-column label="File type" width="140">
+          <template #default="{ row }">{{ row.suffix === 'canvasNode' ? 'Canvas node' : `.${row.suffix}` }}</template>
         </el-table-column>
-        <el-table-column label="默认扩展">
+        <el-table-column label="Default extension">
           <template #default="{ row }">
-            <el-select :modelValue="extensionAssociations[row.suffix] ?? ''" placeholder="自动选择 / 每次询问" clearable
-              :disabled="saving" :aria-label="`${row.suffix} 默认扩展`" @change="id => save(row.suffix, id)">
-              <el-option v-if="row.unavailable" :value="row.unavailable" :label="`${row.unavailable}（不可用）`" disabled />
+            <el-select :modelValue="extensionAssociations[row.suffix] ?? ''" placeholder="Auto select / Ask every time" clearable
+              :disabled="saving" :aria-label="`${row.suffix} default extension`" @change="id => save(row.suffix, id)">
+              <el-option v-if="row.unavailable" :value="row.unavailable" :label="`${row.unavailable} (unavailable)`" disabled />
               <el-option v-for="extension in row.candidates" :key="extension.id" :value="extension.id" :label="`${extension.displayName} · ${extension.id}`" />
             </el-select>
           </template>
         </el-table-column>
       </el-table>
     </div>
-    <template #footer><el-button @click="visible = false">完成</el-button></template>
+    <template #footer><el-button @click="visible = false">Done</el-button></template>
   </el-dialog>
 </template>
 
@@ -47,14 +47,14 @@ watch(visible, async value => {
   loading.value = true;
   error.value = "";
   try { extensions.value = await listExtensions(); }
-  catch (cause) { error.value = cause instanceof Error ? cause.message : "读取文件扩展失败"; }
+  catch (cause) { error.value = cause instanceof Error ? cause.message : "Failed to read file extensions"; }
   finally { loading.value = false; }
 }, { immediate: true });
 
 async function save(suffix: string, id: string) {
   saving.value = true;
   try { await setExtensionAssociation(suffix, id || undefined); }
-  catch (cause) { ElMessage.error(cause instanceof Error ? cause.message : "保存默认打开方式失败"); }
+  catch (cause) { ElMessage.error(cause instanceof Error ? cause.message : "Failed to save default open-with setting"); }
   finally { saving.value = false; }
 }
 </script>

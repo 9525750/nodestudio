@@ -9,7 +9,7 @@
           <div class="providerInfo">
             <div class="providerHeading">
               <el-text class="providerName" tag="strong">{{ item.label }}</el-text>
-              <el-tag v-if="item.id.toLowerCase() === 'tfrouter'" size="small">官方</el-tag>
+              <el-tag v-if="item.id.toLowerCase() === 'tfrouter'" size="small">Official</el-tag>
             </div>
             <el-text class="providerId" size="small" type="info" :title="item.fileName">{{ item.fileName }}</el-text>
           </div>
@@ -19,21 +19,21 @@
         <div class="providerFooter">
           <div class="providerMeta">
             <el-tag v-if="item.version" size="small" type="info" effect="plain">v{{ item.version }}</el-tag>
-            <el-text size="small" type="info">{{ item.models.length }} 个模型</el-text>
+            <el-text size="small" type="info">{{ item.models.length }} model(s)</el-text>
           </div>
           <el-space class="itemActions" wrap>
-            <el-button v-if="item.modelsUrl" text :icon="IconDownload" :loading="fetchingFile === item.fileName" :disabled="!!fetchingFile || !!deletingFile || !!item.loadError || !item.revision" @click="fetchModels(item)">获取模型</el-button>
-            <el-button text :icon="IconEdit" :disabled="!!fetchingFile || !!deletingFile || !!item.loadError" @click="editProvider(item)">编辑模型</el-button>
-            <el-popconfirm title="确定删除此供应商及其模型？" confirmButtonText="删除" cancelButtonText="取消" @confirm="deleteProvider(item)">
-              <template #reference><el-button text type="danger" :icon="IconTrash" :loading="deletingFile === item.fileName" :disabled="!!fetchingFile || !!deletingFile || !item.revision">删除</el-button></template>
+            <el-button v-if="item.modelsUrl" text :icon="IconDownload" :loading="fetchingFile === item.fileName" :disabled="!!fetchingFile || !!deletingFile || !!item.loadError || !item.revision" @click="fetchModels(item)">Fetch models</el-button>
+            <el-button text :icon="IconEdit" :disabled="!!fetchingFile || !!deletingFile || !!item.loadError" @click="editProvider(item)">Edit models</el-button>
+            <el-popconfirm title="Delete this provider and its models?" confirmButtonText="Delete" cancelButtonText="Cancel" @confirm="deleteProvider(item)">
+              <template #reference><el-button text type="danger" :icon="IconTrash" :loading="deletingFile === item.fileName" :disabled="!!fetchingFile || !!deletingFile || !item.revision">Delete</el-button></template>
             </el-popconfirm>
           </el-space>
         </div>
       </el-card>
     </div>
     <div class="providerActions">
-      <el-button class="addButton" :icon="IconPlus" @click="openAdd('builtin')">添加供应商</el-button>
-      <el-button class="addButton" :icon="IconSettings" @click="openAdd('custom')">添加自定义供应商</el-button>
+      <el-button class="addButton" :icon="IconPlus" @click="openAdd('builtin')">Add provider</el-button>
+      <el-button class="addButton" :icon="IconSettings" @click="openAdd('custom')">Add custom provider</el-button>
     </div>
     <component :is="mediaProviderDialog" v-model="providerDialogVisible" :mode="addMode" @added="saveProviderItem" />
     <component :is="editProviderDialog" v-model="editorVisible" :provider="editingProvider" @saved="saveProviderItem" />
@@ -99,7 +99,7 @@ async function loadProviders() {
     const { data } = await axios.get<{ data: MediaProvider[] }>("/api/providers/media/list");
     if (request === loadRequest) providers.value = data.data;
   } catch (error) {
-    if (request === loadRequest) ElMessage.error(axios.isAxiosError(error) ? error.response?.data?.message || error.message : "读取媒体供应商失败");
+    if (request === loadRequest) ElMessage.error(axios.isAxiosError(error) ? error.response?.data?.message || error.message : "Failed to read media providers");
   } finally {
     if (request === loadRequest) loaded.value = true;
   }
@@ -125,12 +125,12 @@ async function fetchModels(provider: MediaProvider) {
     const { data } = await axios.post<{ code: number; data: MediaProvider; message: string }>("/api/providers/media/models", {
       fileName: provider.fileName, revision: provider.revision,
     }, { timeout: 35000 });
-    if (data.code !== 200 || !data.data) throw new Error(data.message || "获取模型失败");
+    if (data.code !== 200 || !data.data) throw new Error(data.message || "Failed to fetch models");
     saveProviderItem(data.data);
     invalidateNodeModels("media");
-    ElMessage.success("模型列表已更新");
+    ElMessage.success("Model list updated");
   } catch (error) {
-    ElMessage.error(axios.isAxiosError(error) ? error.response?.data?.message || error.message : error instanceof Error ? error.message : "获取模型失败，请重试");
+    ElMessage.error(axios.isAxiosError(error) ? error.response?.data?.message || error.message : error instanceof Error ? error.message : "Failed to fetch models, please try again");
   } finally { fetchingFile.value = ""; }
 }
 
@@ -152,8 +152,8 @@ async function deleteProvider(provider: MediaProvider) {
       return { mediaProviderConfigs: current };
     });
   } catch (error) {
-    const message = axios.isAxiosError(error) ? error.response?.data?.message || error.message : error instanceof Error ? error.message : "删除失败，请重试";
-    ElMessage.error(deleted ? `供应商已删除，连接配置未清理：${message}` : message);
+    const message = axios.isAxiosError(error) ? error.response?.data?.message || error.message : error instanceof Error ? error.message : "Failed to delete, please try again";
+    ElMessage.error(deleted ? `Provider deleted, but its connection settings were not cleaned up: ${message}` : message);
   } finally { deletingFile.value = ""; }
 }
 

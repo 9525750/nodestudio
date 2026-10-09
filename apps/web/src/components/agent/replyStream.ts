@@ -6,9 +6,9 @@ import type { AgentMessage, AgentMessagePart } from "./types";
 export async function* readAgentEvents(response: Response, signal: AbortSignal) {
   if (!response.ok) {
     const error = await response.json().catch(() => null);
-    throw new Error(error?.message || `请求失败（${response.status}）`);
+    throw new Error(error?.message || `Request failed (${response.status})`);
   }
-  if (!response.body) throw new Error("未收到响应流");
+  if (!response.body) throw new Error("No response stream received");
   const reader = response.body.pipeThrough(new TextDecoderStream()).getReader();
   let pending = "";
   try {
@@ -27,7 +27,7 @@ export async function* readAgentEvents(response: Response, signal: AbortSignal) 
         yield event;
         signal.throwIfAborted();
       }
-      if (done) throw new Error("连接已中断，请重试");
+      if (done) throw new Error("Connection interrupted, please try again");
     }
   } finally {
     await reader.cancel().catch(() => {});
@@ -41,7 +41,7 @@ export function createReplyStream(reply: AgentMessage) {
   let thinkingStartedAt = 0;
   let thinkingDuration = 0;
   const pendingContent = new Map<Exclude<AgentMessagePart, { type: "tool" }>, string>();
-  // ACT: 合并 50 ms 内的文本增量，避免 Markdown 每个 token 都重新解析全文；结束时立即补齐。
+  // ACT: Merge text deltas within 50 ms to avoid re-parsing the whole Markdown on every token; flush immediately when finished.
   const flushContent = throttle(() => {
     for (const [part, content] of pendingContent) part.content = content;
     pendingContent.clear();
@@ -59,7 +59,7 @@ export function createReplyStream(reply: AgentMessage) {
   function receive(event: Extract<AgentEvent, { type: "text" | "thinking" | "tool" | "question" }>) {
     if (event.type === "question") {
       const part = parts.find(part => part.type === "tool" && part.tool.id === event.toolCallId);
-      if (part?.type !== "tool") throw new Error("提问缺少对应的工具调用");
+      if (part?.type !== "tool") throw new Error("The question is missing its tool call");
       part.tool.question = { callId: event.callId, title: event.title, question: event.question, options: event.options, fields: event.fields };
       return;
     }
@@ -105,7 +105,7 @@ export function createReplyStream(reply: AgentMessage) {
   return { receive, finish };
 }
 
-// 父会话请求和转发的子会话事件共用消息归并，切换界面不改变正在接收的回复。
+// Parent session requests and forwarded sub-session events share message merging, so switching views does not affect a reply being received.
 export function createConversationStream(messages: Ref<AgentMessage[]>) {
   let reply: AgentMessage | undefined;
   let stream: ReturnType<typeof createReplyStream> | undefined;

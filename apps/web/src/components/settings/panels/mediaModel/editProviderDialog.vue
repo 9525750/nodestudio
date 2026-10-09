@@ -1,7 +1,7 @@
 <template>
   <el-dialog
     v-model="visible"
-    :title="`编辑媒体供应商：${provider?.label ?? ''}`"
+    :title="`Edit media provider: ${provider?.label ?? ''}`"
     width="min(800px, calc(100vw - 32px))"
     alignCenter
     appendToBody
@@ -13,12 +13,12 @@
       <messageMarkdown v-if="provider?.readme" class="providerReadme" :content="provider.readme" />
       <el-form labelPosition="top" :disabled="saving">
         <el-form-item label="API Key">
-          <el-input v-model="apiKey" :prefixIcon="IconKey" type="password" dir="ltr" showPassword autocomplete="off" aria-label="媒体供应商 API Key" />
+          <el-input v-model="apiKey" :prefixIcon="IconKey" type="password" dir="ltr" showPassword autocomplete="off" aria-label="Media provider API Key" />
         </el-form-item>
       </el-form>
       <div class="modelHeader">
-        <h4>模型配置 <el-text type="info">{{ models.length }}</el-text></h4>
-        <el-button :icon="IconPlus" size="small" :disabled="saving" @click="editModel()">手动添加</el-button>
+        <h4>Model settings <el-text type="info">{{ models.length }}</el-text></h4>
+        <el-button :icon="IconPlus" size="small" :disabled="saving" @click="editModel()">Add manually</el-button>
       </div>
       <div class="modelList">
         <el-card v-for="(item, index) in models" :key="index" class="modelCard" shadow="never">
@@ -31,8 +31,8 @@
               </div>
             </div>
             <div class="actionButtons">
-              <el-button text size="small" :icon="IconEdit" :disabled="saving" :aria-label="`编辑模型 ${item.label}`" @click="editModel(index)">编辑</el-button>
-              <el-button text size="small" type="danger" :icon="IconTrash" :disabled="saving" :aria-label="`删除模型 ${item.label}`" @click="models.splice(index, 1)">删除</el-button>
+              <el-button text size="small" :icon="IconEdit" :disabled="saving" :aria-label="`Edit model ${item.label}`" @click="editModel(index)">Edit</el-button>
+              <el-button text size="small" type="danger" :icon="IconTrash" :disabled="saving" :aria-label="`Delete model ${item.label}`" @click="models.splice(index, 1)">Delete</el-button>
             </div>
           </div>
           <div class="modelTags">
@@ -40,13 +40,13 @@
             <el-tag v-for="(tag, tagIndex) in modelTags(item)" :key="tagIndex" size="small" type="info">{{ tag }}</el-tag>
           </div>
         </el-card>
-        <el-text v-if="!models.length" type="info">暂无模型</el-text>
+        <el-text v-if="!models.length" type="info">No models</el-text>
       </div>
     </div>
     <el-alert v-if="formError" class="formError" :title="formError" type="error" :closable="false" showIcon />
     <template #footer>
-      <el-button :disabled="saving" @click="visible = false">取消</el-button>
-      <el-button type="primary" :icon="IconDeviceFloppy" :loading="saving" @click="saveModels">保存</el-button>
+      <el-button :disabled="saving" @click="visible = false">Cancel</el-button>
+      <el-button type="primary" :icon="IconDeviceFloppy" :loading="saving" @click="saveModels">Save</el-button>
     </template>
     <component
       :is="modelEditorDialog"
@@ -82,9 +82,9 @@ const revision = ref("");
 const formError = ref("");
 const modelTypes = { get image() { return translate("图片"); }, get video() { return translate("视频"); }, get audio() { return translate("音频"); }, get text() { return translate("文本"); } };
 const modeLabels: Record<string, string> = {
-  singleImage: "单图参考", multiReference: "多图参考", startEndRequired: "首尾帧必填",
-  endFrameOptional: "尾帧可选", startFrameOptional: "首帧可选",
-  imageReference: "图片参考", videoReference: "视频参考", audioReference: "音频参考",
+  singleImage: "Single image reference", multiReference: "Multi-image reference", startEndRequired: "Start/end frames required",
+  endFrameOptional: "End frame optional", startFrameOptional: "Start frame optional",
+  imageReference: "Image reference", videoReference: "Video reference", audioReference: "Audio reference",
 };
 
 watch(visible, isVisible => {
@@ -131,41 +131,41 @@ async function saveModels() {
     const values = models.value.map((item, index) => {
       const id = item.id.trim();
       const label = item.label.trim();
-      if (!id || !label) throw new Error(`请填写第 ${index + 1} 个模型的 ID 和显示名称`);
-      if (ids.has(id)) throw new Error(`模型 ID 重复：${id}`);
+      if (!id || !label) throw new Error(`Please enter the ID and display name of model ${index + 1}`);
+      if (ids.has(id)) throw new Error(`Duplicate model ID: ${id}`);
       ids.add(id);
       return { ...item, id, label };
     });
-    if (apiKey.value.length > 8192) throw new Error("API Key 过长");
+    if (apiKey.value.length > 8192) throw new Error("API Key is too long");
     saving.value = true;
     const nextKey = apiKey.value.trim();
     const { data } = await axios.put<{ code: number; data: MediaProvider; message?: string }>("/api/providers/media/save", {
       fileName, revision: revision.value, models: values,
     });
-    if (data.code !== 200 || !data.data) throw new Error(data.message || "保存模型失败");
+    if (data.code !== 200 || !data.data) throw new Error(data.message || "Failed to save models");
     revision.value = data.data.revision;
     modelsSaved = true;
     invalidateNodeModels("media");
     await saveSettings(settings => {
       const configs = settings.mediaProviderConfigs as Record<string, Record<string, unknown>> | undefined;
-      if (configs !== undefined && (!configs || typeof configs !== "object" || Array.isArray(configs))) throw new Error("媒体供应商配置格式无效");
+      if (configs !== undefined && (!configs || typeof configs !== "object" || Array.isArray(configs))) throw new Error("Invalid media provider configuration format");
       const current = configs?.[providerId];
-      if (current !== undefined && (!current || typeof current !== "object" || Array.isArray(current))) throw new Error("当前供应商配置格式无效");
+      if (current !== undefined && (!current || typeof current !== "object" || Array.isArray(current))) throw new Error("Invalid configuration format for this provider");
       if (nextKey === (current?.apiKey ?? "")) return;
       return { mediaProviderConfigs: { ...configs, [providerId]: { ...current, apiKey: nextKey } } };
     });
     configSaved = true;
     const response = await axios.get<{ code: number; data: MediaProvider[]; message?: string }>("/api/providers/media/list");
-    if (response.data.code !== 200 || !Array.isArray(response.data.data)) throw new Error(response.data.message || "读取最新模型失败");
+    if (response.data.code !== 200 || !Array.isArray(response.data.data)) throw new Error(response.data.message || "Failed to read the latest models");
     const latest = response.data.data.find(item => item.fileName === fileName);
-    if (!latest) throw new Error("供应商已不存在");
+    if (!latest) throw new Error("The provider no longer exists");
     revision.value = latest.revision;
     emit("saved", latest);
     visible.value = false;
   } catch (error) {
-    const message = axios.isAxiosError(error) ? error.response?.data?.message || error.message : error instanceof Error ? error.message : "保存失败，请重试";
-    formError.value = configSaved ? `模型与连接配置已保存，读取最新模型失败：${message}。请重新打开编辑。`
-      : modelsSaved ? `模型已保存，连接配置未保存：${message}。填写内容已保留，请重试。` : message;
+    const message = axios.isAxiosError(error) ? error.response?.data?.message || error.message : error instanceof Error ? error.message : "Failed to save, please try again";
+    formError.value = configSaved ? `Models and connection settings were saved, but reading the latest models failed: ${message}. Please reopen the editor.`
+      : modelsSaved ? `Models were saved, but the connection settings were not: ${message}. Your input has been kept, please try again.` : message;
   } finally {
     saving.value = false;
   }

@@ -10,72 +10,72 @@
   <panel position="bottom-left">
     <elCard shadow="never" :body-style="{ padding: '4px' }">
       <div class="canvasControls">
-        <el-tooltip :showArrow="false" :content="assetsVisible ? '关闭素材库' : '打开素材库'" placement="top" :hideAfter="0" :enterable="false" :triggerKeys="[]">
+        <el-tooltip :showArrow="false" :content="assetsVisible ? 'Close asset library' : 'Open asset library'" placement="top" :hideAfter="0" :enterable="false" :triggerKeys="[]">
           <el-button
             class="toolButton"
             text
             :type="assetsVisible ? 'primary' : 'default'"
             :aria-pressed="assetsVisible"
-            aria-label="素材库"
+            aria-label="Asset library"
             @click="assetsVisible = !assetsVisible">
             <icon-folders :size="17" />
           </el-button>
         </el-tooltip>
-        <!-- trigger 用 contextmenu 是为了让整理按钮只由 arrangeNodes 控制显隐，同时仍保留点击外部自动关闭 -->
-        <el-tooltip :showArrow="false" content="整理画布" placement="top" :hideAfter="0" :enterable="false" :triggerKeys="[]" :disabled="undoPopoverVisible">
+        <!-- trigger uses contextmenu so arrange button is only shown/hidden by arrangeNodes, while still auto-closing on outside click -->
+        <el-tooltip :showArrow="false" content="Arrange canvas" placement="top" :hideAfter="0" :enterable="false" :triggerKeys="[]" :disabled="undoPopoverVisible">
           <span class="toolTrigger">
             <el-popover trigger="contextmenu" placement="top-start" :width="180" v-model:visible="undoPopoverVisible">
               <template #reference>
-                <el-button class="toolButton" text :disabled="!canArrange" aria-label="整理画布" @click="arrangeNodes">
+                <el-button class="toolButton" text :disabled="!canArrange" aria-label="Arrange canvas" @click="arrangeNodes">
                   <icon-sitemap :size="17" />
                 </el-button>
               </template>
               <div class="zoomMenu">
-                <el-button class="zoomAction" style="width: 100%" text @click="undoArrange">撤销整理</el-button>
+                <el-button class="zoomAction" style="width: 100%" text @click="undoArrange">Undo arrangement</el-button>
               </div>
             </el-popover>
           </span>
         </el-tooltip>
-        <el-tooltip :showArrow="false" :content="showMap ? '隐藏地图' : '显示地图'" placement="top" :hideAfter="0" :enterable="false" :triggerKeys="[]">
+        <el-tooltip :showArrow="false" :content="showMap ? 'Hide map' : 'Show map'" placement="top" :hideAfter="0" :enterable="false" :triggerKeys="[]">
           <el-button
             class="toolButton"
             text
             :type="showMap ? 'primary' : 'default'"
             :aria-pressed="showMap"
-            aria-label="显示或隐藏地图"
+            aria-label="Toggle map"
             @click="showMap = !showMap">
             <icon-map :size="17" />
           </el-button>
         </el-tooltip>
-        <el-tooltip :showArrow="false" :content="snapEnabled ? '关闭网格吸附' : '开启网格吸附'" placement="top" :hideAfter="0" :enterable="false" :triggerKeys="[]">
+        <el-tooltip :showArrow="false" :content="snapEnabled ? 'Disable grid snap' : 'Enable grid snap'" placement="top" :hideAfter="0" :enterable="false" :triggerKeys="[]">
           <el-button
             class="toolButton"
             text
             :type="snapEnabled ? 'primary' : 'default'"
             :aria-pressed="snapEnabled"
-            aria-label="网格吸附"
+            aria-label="Grid snap"
             @click="snapEnabled = !snapEnabled">
             <icon-magnet :size="17" />
           </el-button>
         </el-tooltip>
-        <el-tooltip :showArrow="false" :content="showEdges ? '隐藏连线' : '显示连线'" placement="top" :hideAfter="0" :enterable="false" :triggerKeys="[]">
+        <el-tooltip :showArrow="false" :content="showEdges ? 'Hide connections' : 'Show connections'" placement="top" :hideAfter="0" :enterable="false" :triggerKeys="[]">
           <el-button
             class="toolButton"
             text
             :type="showEdges ? 'primary' : 'default'"
             :aria-pressed="showEdges"
-            aria-label="显示或隐藏连线"
+            aria-label="Toggle connections"
             @click="showEdges = !showEdges">
             <icon-arrow-guide :size="17" />
           </el-button>
         </el-tooltip>
-        <el-tooltip :showArrow="false" content="适应视图" placement="top" :hideAfter="0" :enterable="false" :triggerKeys="[]">
-          <el-button class="toolButton" text aria-label="适应视图" @click="fitView()">
+        <el-tooltip :showArrow="false" content="Fit view" placement="top" :hideAfter="0" :enterable="false" :triggerKeys="[]">
+          <el-button class="toolButton" text aria-label="Fit view" @click="fitView()">
             <icon-focus-centered :size="17" />
           </el-button>
         </el-tooltip>
         <el-tooltip :showArrow="false"
-          content="缩放菜单（滚轮调整缩放）"
+          content="Zoom menu (scroll to zoom)"
           placement="top"
           :hideAfter="0"
           :enterable="false"
@@ -87,7 +87,7 @@
                 <el-button
                   class="toolButton"
                   text
-                  aria-label="缩放菜单"
+                  aria-label="Zoom menu"
                   @wheel.stop.prevent="$event.deltaY && applyZoom(Math.min(800, Math.max(20, zoomPercent - Math.sign($event.deltaY))))">
                   {{ zoomPercent }}%
                 </el-button>
@@ -99,22 +99,22 @@
                   :min="20"
                   :max="800"
                   :controls="false"
-                  aria-label="缩放百分比"
+                  aria-label="Zoom percentage"
                   @change="applyZoom">
                   <template #suffix>%</template>
                 </el-input-number>
-                <el-button class="zoomAction" text @click="zoomIn()">放大</el-button>
-                <el-button class="zoomAction" text @click="zoomOut()">缩小</el-button>
-                <el-button class="zoomAction" text @click="fitView()">适合屏幕</el-button>
+                <el-button class="zoomAction" text @click="zoomIn()">Zoom in</el-button>
+                <el-button class="zoomAction" text @click="zoomOut()">Zoom out</el-button>
+                <el-button class="zoomAction" text @click="fitView()">Fit to screen</el-button>
               </div>
             </el-popover>
           </span>
         </el-tooltip>
-        <el-tooltip :showArrow="false" content="帮助" placement="top" :hideAfter="0" :enterable="false" :triggerKeys="[]" :disabled="helpVisible">
+        <el-tooltip :showArrow="false" content="Help" placement="top" :hideAfter="0" :enterable="false" :triggerKeys="[]" :disabled="helpVisible">
           <span class="toolTrigger">
             <el-popover v-model:visible="helpVisible" trigger="click" placement="top-end" :width="196">
               <template #reference>
-                <el-button class="toolButton" text aria-label="帮助">
+                <el-button class="toolButton" text aria-label="Help">
                   <icon-help :size="17" />
                 </el-button>
               </template>
@@ -128,7 +128,7 @@
                   target="_blank"
                   rel="noopener noreferrer"
                   @click="helpVisible = false">
-                  使用教程
+                  Tutorial
                 </el-button>
                 <el-button
                   class="helpAction"
@@ -138,12 +138,12 @@
                   href="https://docs.qq.com/smartsheet/form/EmvmQBrmlPmr%2Fss_vsqk2v%2FvhiGzE?tab=ss_vsqk2v"
                   target="_blank"
                   rel="noopener noreferrer"
-                  title="Toonflow 需求/BUG反馈表"
+                  title="Toonflow Feedback form"
                   @click="helpVisible = false">
-                  汇报 BUG
+                  Report bug
                 </el-button>
-                <el-button class="helpAction" text :icon="IconBrandWechat" @click="showContact('community')">加入交流群</el-button>
-                <el-button class="helpAction" text :icon="IconBriefcase" @click="showContact('business')">商务合作</el-button>
+                <el-button class="helpAction" text :icon="IconBrandWechat" @click="showContact('community')">Join community</el-button>
+                <el-button class="helpAction" text :icon="IconBriefcase" @click="showContact('business')">Business inquiries</el-button>
               </div>
             </el-popover>
           </span>
@@ -161,7 +161,7 @@
         bgColor="#ffffff"
         borderless
         role="img"
-        :aria-label="`${contactInfo.title}二维码`" />
+        :aria-label="`${contactInfo.title}QR code`" />
       <p class="contactTip">{{ contactInfo.tip }}</p>
     </div>
   </el-dialog>
@@ -191,14 +191,14 @@ const contactVisible = ref(false);
 const contactType = ref<"community" | "business">("community");
 const contacts = {
   community: {
-    title: "加入交流群",
+    title: "Join community",
     url: "https://work.weixin.qq.com/u/vc36adcc89845edcbe?v=5.0.3.63936&bb=85b8d228e8",
-    tip: "Toonflow 是为爱发电的开源项目。欢迎文明交流、友善反馈；回复可能需要一些时间，请避免责问或命令式沟通，感谢你的理解与尊重。",
+    tip: "Toonflow is a community-driven open source project. Replies may take some time.",
   },
   business: {
-    title: "商务合作",
+    title: "Business inquiries",
     url: "https://work.weixin.qq.com/u/vc0f54596c5837d05a?v=5.0.8.70675",
-    tip: "此联系方式仅用于商务合作接洽，不提供问题答疑。使用问题欢迎在交流群交流，需求与 BUG 可通过反馈表提交。感谢理解。",
+    tip: "This contact is for business inquiries only. For questions, please use the community group or feedback form.",
   },
 };
 const contactInfo = computed(() => contacts[contactType.value]);
@@ -256,7 +256,7 @@ async function arrangeNodes() {
       undoPopoverVisible.value = true;
     });
   } catch (error) {
-    if (!controller.signal.aborted) ElMessage.error(error instanceof Error ? error.message : "整理画布失败");
+    if (!controller.signal.aborted) ElMessage.error(error instanceof Error ? error.message : "Failed to arrange canvas");
   } finally {
     arrangeController = undefined;
     arranging.value = false;
@@ -276,7 +276,7 @@ async function undoArrange() {
       undoPopoverVisible.value = false;
     });
   } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : "撤销整理失败");
+    ElMessage.error(error instanceof Error ? error.message : "Failed to undo arrangement");
   }
 }
 </script>

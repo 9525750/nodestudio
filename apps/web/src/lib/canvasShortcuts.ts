@@ -33,26 +33,26 @@ export const canvasShortcutFields: {
   hold?: boolean;
   gesture?: "drag" | "wheel";
 }[] = [
-  { id: "group", label: "成组" },
-  { id: "mergeGroup", label: "合并分组" },
-  { id: "ungroup", label: "解组" },
-  { id: "addNode", label: "新建节点" },
-  { id: "copyOnDrag", label: "节点复制", hold: true, gesture: "drag" },
-  { id: "duplicateOnDrag", label: "创建副本", hold: true, gesture: "drag" },
-  { id: "zoomIn", label: "放大" },
-  { id: "zoomOut", label: "缩小" },
-  { id: "fitView", label: "适应画布" },
-  { id: "zoom", label: "鼠标滚轮", hold: true, gesture: "wheel" },
-  { id: "pan", label: "键盘与鼠标", hold: true },
-  { id: "moveTool", label: "移动" },
-  { id: "handTool", label: "抓手工具" },
-  { id: "arrange", label: "整理画布" },
-  { id: "undo", label: "撤销" },
-  { id: "redo", label: "重做" },
-  { id: "search", label: "画布节点搜索" },
-  { id: "delete", label: "删除" },
-  { id: "copy", label: "复制到剪贴板" },
-  { id: "paste", label: "粘贴节点" },
+  { id: "group", label: "Group" },
+  { id: "mergeGroup", label: "Merge group" },
+  { id: "ungroup", label: "Ungroup" },
+  { id: "addNode", label: "Add node" },
+  { id: "copyOnDrag", label: "Copy node", hold: true, gesture: "drag" },
+  { id: "duplicateOnDrag", label: "Duplicate", hold: true, gesture: "drag" },
+  { id: "zoomIn", label: "Zoom in" },
+  { id: "zoomOut", label: "Zoom out" },
+  { id: "fitView", label: "Fit to canvas" },
+  { id: "zoom", label: "Mouse wheel", hold: true, gesture: "wheel" },
+  { id: "pan", label: "Keyboard and mouse", hold: true },
+  { id: "moveTool", label: "Move" },
+  { id: "handTool", label: "Hand tool" },
+  { id: "arrange", label: "Arrange canvas" },
+  { id: "undo", label: "Undo" },
+  { id: "redo", label: "Redo" },
+  { id: "search", label: "Search canvas nodes" },
+  { id: "delete", label: "Delete" },
+  { id: "copy", label: "Copy to clipboard" },
+  { id: "paste", label: "Paste nodes" },
 ];
 
 const keyLabels: Record<string, string> = {
@@ -63,8 +63,8 @@ const keyLabels: Record<string, string> = {
   Minus: "−", Equal: "+", BracketLeft: "[", BracketRight: "]", Backslash: "\\",
   Semicolon: ";", Quote: "'", Comma: ",", Period: ".", Slash: "/", Backquote: "`",
   CapsLock: "CapsLock", NumLock: "NumLock", ScrollLock: "ScrollLock", Pause: "Pause", PrintScreen: "PrintScreen",
-  NumpadAdd: "小键盘 +", NumpadSubtract: "小键盘 -", NumpadMultiply: "小键盘 *", NumpadDivide: "小键盘 /",
-  NumpadDecimal: "小键盘 .", NumpadEnter: "小键盘 Enter", NumpadEqual: "小键盘 =",
+  NumpadAdd: "Numpad +", NumpadSubtract: "Numpad -", NumpadMultiply: "Numpad *", NumpadDivide: "Numpad /",
+  NumpadDecimal: "Numpad .", NumpadEnter: "Numpad Enter", NumpadEqual: "Numpad =",
 };
 
 export function normalizeShortcut(value: string): string | undefined {
@@ -117,5 +117,5 @@ export function shortcutPressed(event: Pick<KeyboardEvent, "ctrlKey" | "altKey" 
 
 export function shortcutLabel(binding: string) {
   return getShortcutBindings(binding).map(value => value.split("+")
-    .map(part => keyLabels[part] ?? part.replace(/^(?:Key|Digit)/, "").replace(/^Numpad/, "小键盘 ")).join(" + ")).join(" / ");
+    .map(part => keyLabels[part] ?? part.replace(/^(?:Key|Digit)/, "").replace(/^Numpad/, "Numpad ")).join(" + ")).join(" / ");
 }

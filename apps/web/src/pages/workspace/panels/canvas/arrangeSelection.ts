@@ -10,11 +10,11 @@ export function arrangeSelection(flow: ReturnType<typeof useVueFlow>, selection:
   const byId = new Map(nodes.map(node => [node.id, node]));
   const affected = new Set<GraphNode>();
   const items = roots.map(node => {
-    if (byId.get(node.id) !== node) throw new Error("节点已变化，请重新选择后整理");
-    if (node.draggable === false) throw new Error(`节点 ${node.id} 不允许移动`);
+    if (byId.get(node.id) !== node) throw new Error("Nodes have changed, please reselect and arrange");
+    if (node.draggable === false) throw new Error(`Node ${node.id} cannot be moved`);
     const { width, height } = node.dimensions;
     if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
-      throw new Error(`节点 ${node.id} 尚未完成尺寸测量，请等待节点显示后重试`);
+      throw new Error(`Node ${node.id} dimension measurement not complete, please wait for node to render`);
     }
     const position = { ...node.position };
     const parentPosition = { x: 0, y: 0 };
@@ -22,7 +22,7 @@ export function arrangeSelection(flow: ReturnType<typeof useVueFlow>, selection:
     let parentId = node.parentNode;
     while (parentId) {
       const parent = byId.get(parentId);
-      if (!parent || visited.has(parentId)) throw new Error(`节点 ${node.id} 的分组关系无效`);
+      if (!parent || visited.has(parentId)) throw new Error(`Node ${node.id} group relationship is invalid`);
       visited.add(parentId);
       parentPosition.x += parent.position.x;
       parentPosition.y += parent.position.y;
@@ -31,7 +31,7 @@ export function arrangeSelection(flow: ReturnType<typeof useVueFlow>, selection:
     }
     position.x += parentPosition.x;
     position.y += parentPosition.y;
-    if (!Number.isFinite(position.x) || !Number.isFinite(position.y)) throw new Error(`节点 ${node.id} 的位置无效`);
+    if (!Number.isFinite(position.x) || !Number.isFinite(position.y)) throw new Error(`Node ${node.id} position is invalid`);
     return { node, position, parentPosition };
   });
   items.sort((a, b) => mode === "horizontal"
@@ -66,10 +66,10 @@ export function arrangeSelection(flow: ReturnType<typeof useVueFlow>, selection:
       x: columnPositions[column]! + (mode === "vertical" ? (columnWidths[column]! - node.dimensions.width) / 2 : 0) - parentPosition.x,
       y: rowPositions[row]! + (mode === "horizontal" ? (rowHeights[row]! - node.dimensions.height) / 2 : 0) - parentPosition.y,
     };
-    if (!Number.isFinite(position.x) || !Number.isFinite(position.y)) throw new Error(`节点 ${node.id} 的排列位置无效`);
+    if (!Number.isFinite(position.x) || !Number.isFinite(position.y)) throw new Error(`Node ${node.id} arrange position is invalid`);
     return { node, position };
   });
   positions.forEach(({ node, position }) => { node.position = position; });
-  // ACT: 整理只贴合原分组边界，不执行拖动结束时按相交关系重新归组。
+  // ACT: Arrangement only fits to original group bounds; does not re-group by intersection on drag end.
   fitGroupBounds(nodes, affected);
 }

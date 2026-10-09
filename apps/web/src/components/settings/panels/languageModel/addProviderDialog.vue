@@ -1,7 +1,7 @@
 <template>
-  <el-dialog v-model="visible" title="添加供应商" width="min(860px, 94vw)" alignCenter appendToBody destroyOnClose :closeOnClickModal="false" :closeOnPressEscape="!saving" :showClose="!saving" @closed="resetForm">
+  <el-dialog v-model="visible" title="Add Provider" width="min(860px, 94vw)" alignCenter appendToBody destroyOnClose :closeOnClickModal="false" :closeOnPressEscape="!saving" :showClose="!saving" @closed="resetForm">
     <div class="providerPicker">
-      <aside class="providerSidebar" aria-label="选择厂商">
+      <aside class="providerSidebar" aria-label="Select vendor">
         <button
           v-for="item in languageProviders"
           :key="item.id"
@@ -22,29 +22,29 @@
             <el-tag v-if="activeProvider.version" size="small" type="info" effect="plain">v{{ activeProvider.version }}</el-tag>
           </div>
           <messageMarkdown v-if="providerReadme" class="providerReadme" :content="providerReadme" />
-          <el-divider v-if="providerReadme" contentPosition="left">连接配置</el-divider>
+          <el-divider v-if="providerReadme" contentPosition="left">Connection Settings</el-divider>
           <form-create v-model="formValues" v-model:api="formApi" :rule="providerRules" :option="formOptions" />
           <div class="modelHeader">
-            <el-text tag="strong">模型列表 <el-text type="info">{{ models.length }}</el-text></el-text>
-            <el-text v-if="fetching" type="info" size="small">正在获取…</el-text>
-            <el-button v-else-if="modelError" size="small" text :icon="IconRefresh" @click="modelRefresh++">重试</el-button>
+            <el-text tag="strong">Model List <el-text type="info">{{ models.length }}</el-text></el-text>
+            <el-text v-if="fetching" type="info" size="small">Fetching...</el-text>
+            <el-button v-else-if="modelError" size="small" text :icon="IconRefresh" @click="modelRefresh++">Retry</el-button>
           </div>
           <el-alert v-if="modelError" :title="modelError" type="error" :closable="false" showIcon />
-          <div v-else-if="models.length" class="modelList" :style="{ height: `${Math.min(280, models.length * 38 + 36)}px` }" aria-label="模型列表">
+          <div v-else-if="models.length" class="modelList" :style="{ height: `${Math.min(280, models.length * 38 + 36)}px` }" aria-label="Model list">
             <el-auto-resizer>
               <template #default="{ height, width }">
                 <el-table-v2 :columns="modelColumns" :data="models" :width="width" :height="height" :rowHeight="38" :headerHeight="36" rowKey="id" fixed />
               </template>
             </el-auto-resizer>
           </div>
-          <el-text v-else-if="!fetching" type="info" size="small">{{ activeProvider && isTfRouterProvider(activeProvider) ? '保存 API Key 后自动获取模型列表' : formValues.apiKey ? '未获取到模型' : '填写 API Key 后自动获取模型列表' }}</el-text>
+          <el-text v-else-if="!fetching" type="info" size="small">{{ activeProvider && isTfRouterProvider(activeProvider) ? 'Models are fetched automatically after the API Key is saved' : formValues.apiKey ? 'No models found' : 'Models are fetched automatically after you enter an API Key' }}</el-text>
           <el-alert v-if="formError" :title="formError" type="error" :closable="false" showIcon />
         </section>
       </el-scrollbar>
     </div>
     <template #footer>
-      <el-button :disabled="saving" @click="visible = false">取消</el-button>
-      <el-button type="primary" :loading="saving" :disabled="!activeProvider || fetching || !!modelError" @click="addProvider">确定添加供应商</el-button>
+      <el-button :disabled="saving" @click="visible = false">Cancel</el-button>
+      <el-button type="primary" :loading="saving" :disabled="!activeProvider || fetching || !!modelError" @click="addProvider">Add Provider</el-button>
     </template>
   </el-dialog>
 </template>
@@ -71,8 +71,8 @@ const fetching = ref(false);
 const modelError = ref("");
 const modelRefresh = ref(0);
 const modelColumns: Column[] = [
-  { key: "id", dataKey: "id", title: "模型 ID", width: 220, flexGrow: 1 },
-  { key: "label", dataKey: "label", title: "显示名称", width: 180, flexGrow: 1 },
+  { key: "id", dataKey: "id", title: "Model ID", width: 220, flexGrow: 1 },
+  { key: "label", dataKey: "label", title: "Display Name", width: 180, flexGrow: 1 },
 ];
 const saving = ref(false);
 const formError = ref("");
@@ -106,19 +106,19 @@ watch(
     if (!apiKey) return;
     const controller = new AbortController();
     fetching.value = true;
-    // ACT: 输入停顿后自动获取；输入变化时立即取消旧请求，避免逐字请求和结果串到新密钥。
+    // ACT: fetch automatically after typing pauses; when the input changes, cancel the previous request immediately to avoid per-keystroke requests and results leaking into a new key.
     const timer = setTimeout(async () => {
       try {
         const { data } = await axios.post("/api/providers/models", {
           apiUrl: provider.apiUrl, protocol: provider.protocol, apiKey,
         }, { signal: controller.signal, timeout: 35000 });
         if (controller.signal.aborted) return;
-        if (data.code !== 200 || !Array.isArray(data.data)) throw new Error(data.message || "获取模型列表失败");
+        if (data.code !== 200 || !Array.isArray(data.data)) throw new Error(data.message || "Failed to fetch the model list");
         models.value = data.data;
       } catch (error) {
         if (!controller.signal.aborted) modelError.value = axios.isAxiosError(error)
-          ? error.response?.data?.message || "获取模型列表失败，请检查 API Key 后重试"
-          : error instanceof Error ? error.message : "获取模型列表失败";
+          ? error.response?.data?.message || "Failed to fetch the model list. Check your API Key and try again"
+          : error instanceof Error ? error.message : "Failed to fetch the model list";
       } finally {
         if (!controller.signal.aborted) fetching.value = false;
       }
@@ -145,7 +145,7 @@ async function addProvider() {
   const values = formApi.value.formData();
   const apiKey = typeof values.apiKey === "string" ? values.apiKey.trim() : "";
   if (!apiKey) {
-    formError.value = "请填写 API Key";
+    formError.value = "Please enter an API Key";
     return;
   }
   saving.value = true;
@@ -160,15 +160,15 @@ async function addProvider() {
     };
     await saveSettings(settings => {
       const existing = settings.customProviders;
-      if (existing !== undefined && !Array.isArray(existing)) throw new Error("已保存的供应商配置格式不正确");
+      if (existing !== undefined && !Array.isArray(existing)) throw new Error("The saved provider configuration has an invalid format");
       if (existing?.some(item => typeof item?.id === "string" && item.id.toLowerCase() === provider.id.toLowerCase())) {
-        throw new Error("此供应商已添加，请在供应商列表中编辑");
+        throw new Error("This provider has already been added. Edit it in the provider list");
       }
       return { customProviders: [...(existing ?? []), addedProvider] };
     });
     visible.value = false;
   } catch (error) {
-    formError.value = error instanceof Error ? error.message : "保存失败，请重试；当前填写的内容已保留";
+    formError.value = error instanceof Error ? error.message : "Failed to save. Please try again; what you entered has been kept";
   } finally { saving.value = false; }
 }
 </script>

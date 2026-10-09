@@ -1,36 +1,36 @@
 <template>
   <div v-click-outside:[clickOutsideExclude]="closeMenu" class="mentionMenu" @keydown.capture="handleKeydown">
-    <el-button class="mentionButton" text circle :disabled="disabled" :aria-expanded="visible" :aria-controls="listId" aria-label="提及节点输出或素材" title="提及节点输出或素材" @mousedown.prevent @click="visible ? closeMenu() : openMenu()"><icon-at :size="16" /></el-button>
+    <el-button class="mentionButton" text circle :disabled="disabled" :aria-expanded="visible" :aria-controls="listId" aria-label="Reference node outputs or assets" title="Reference node outputs or assets" @mousedown.prevent @click="visible ? closeMenu() : openMenu()"><icon-at :size="16" /></el-button>
     <teleport to="body">
       <div v-if="visible" ref="popupElement" class="mentionMenu mentionOverlay" :style="popupStyle" @keydown.capture="handleKeydown">
         <el-card class="mentionPopup" shadow="always" :bodyStyle="{ padding: '0' }" :style="{ maxHeight: `${popupHeight}px` }">
-          <div class="mentionHeader"><strong>提及输出与素材</strong><el-button text circle size="small" aria-label="关闭提及" @click="closeMenu"><icon-x :size="14" /></el-button></div>
-          <div class="mentionScopes" aria-label="提及来源">
+          <div class="mentionHeader"><strong>Reference outputs and assets</strong><el-button text circle size="small" aria-label="Close reference menu" @click="closeMenu"><icon-x :size="14" /></el-button></div>
+          <div class="mentionScopes" aria-label="Reference source">
             <button v-for="item in scopes" :key="item.id" type="button" :class="{ selected: scope === item.id }" :aria-pressed="scope === item.id" @click="changeScope(item.id)">{{ item.name }}</button>
           </div>
           <div v-if="selectedNode || selectedCanvas || assetPath" class="mentionBreadcrumb">
-            <el-button text circle size="small" aria-label="返回上一级" @click="goBack"><icon-chevron-left :size="15" /></el-button>
+            <el-button text circle size="small" aria-label="Go back" @click="goBack"><icon-chevron-left :size="15" /></el-button>
             <span :title="breadcrumb">{{ breadcrumb }}</span>
           </div>
-          <div class="mentionSearch"><el-input v-model="search" clearable :placeholder="searchPlaceholder" aria-label="搜索提及内容"><template #prefix><icon-search :size="15" /></template></el-input></div>
+          <div class="mentionSearch"><el-input v-model="search" clearable :placeholder="searchPlaceholder" aria-label="Search references"><template #prefix><icon-search :size="15" /></template></el-input></div>
           <el-scrollbar ref="listScrollbar" class="mentionScroll" :maxHeight="`${Math.max(90, popupHeight - (selectedNode || selectedCanvas || assetPath ? 218 : 188))}px`">
-            <div :id="listId" class="mentionList" role="listbox" aria-label="可提及内容" :aria-busy="loading || selecting" :aria-multiselectable="!!selectedNode">
-              <div v-if="loading && !rows.length" class="mentionStatus" role="status">正在加载…</div>
-              <div v-else-if="loadError" class="mentionStatus" role="alert"><span>{{ loadError }}</span><el-button text type="primary" size="small" @click="loadList()">重试</el-button></div>
+            <div :id="listId" class="mentionList" role="listbox" aria-label="Mentionable items" :aria-busy="loading || selecting" :aria-multiselectable="!!selectedNode">
+              <div v-if="loading && !rows.length" class="mentionStatus" role="status">Loading…</div>
+              <div v-else-if="loadError" class="mentionStatus" role="alert"><span>{{ loadError }}</span><el-button text type="primary" size="small" @click="loadList()">Retry</el-button></div>
               <div v-else-if="!rows.length" class="mentionStatus" role="status">{{ emptyText }}</div>
               <div class="mentionRows" :style="{ height: `${listVirtualizer.getTotalSize()}px` }">
                 <button v-for="{ row, index, start } in visibleRows" :id="`${listId}-${index}`" :key="`${row.kind}-${row.id}`" class="mentionItem" :style="{ transform: `translateY(${start}px)` }" :class="{ active: index === activeIndex, unavailable: !row.available, checked: row.kind === 'output' && selectedOutputs.includes(row.id) }" type="button" role="option" :aria-selected="row.kind === 'output' ? selectedOutputs.includes(row.id) : index === activeIndex" :aria-disabled="!row.available || selecting" :aria-posinset="index + 1" :aria-setsize="rows.length" :title="row.name" @mouseenter="activeIndex = index" @mousedown.prevent @click="chooseRow(row)">
                   <mentionThumbnail :thumbnail="row.thumbnail" :directory="directory" :globalAsset="row.kind === 'file'"><component :is="row.kind === 'canvas' ? IconLayoutGrid : row.kind === 'directory' ? IconFolder : row.dataType === 'image' || row.dataType === 'mask' ? IconPhoto : row.dataType === 'video' ? IconMovie : row.dataType === 'audio' ? IconMusic : row.dataType ? IconFileText : IconBox" :size="18" /></mentionThumbnail>
                   <span class="mentionContent"><span class="mentionName">{{ row.name }}</span><span v-if="row.description" class="mentionDescription">{{ row.description }}</span></span>
-                  <span v-if="!row.available" class="mentionState">{{ row.kind === 'file' ? '不支持' : '暂无输出' }}</span>
+                  <span v-if="!row.available" class="mentionState">{{ row.kind === 'file' ? 'Unsupported' : 'No output' }}</span>
                   <span v-else-if="row.kind === 'output'" class="mentionCheck" :class="{ selected: selectedOutputs.includes(row.id) }"><icon-check v-if="selectedOutputs.includes(row.id)" :size="12" /></span>
                   <icon-chevron-right v-else-if="['canvas', 'directory'].includes(row.kind) || row.kind === 'node' && row.outputCount > 1" :size="14" class="mentionArrow" />
                 </button>
               </div>
-              <el-button v-if="hasMore && !loadError" class="mentionMore" text :loading="loading" :disabled="selecting" @click="loadMore">加载更多</el-button>
+              <el-button v-if="hasMore && !loadError" class="mentionMore" text :loading="loading" :disabled="selecting" @click="loadMore">Load more</el-button>
             </div>
           </el-scrollbar>
-          <div class="mentionFooter"><span>{{ selectedNode ? `已选 ${selectedOutputs.length} 项` : '↑ ↓ 选择 · Enter 确认 · Esc 关闭' }}</span><el-button v-if="selectedNode" type="primary" size="small" :loading="selecting" :disabled="!selectedOutputs.length" @click="confirmOutputs">插入引用</el-button><span v-else-if="selecting">正在插入…</span></div>
+          <div class="mentionFooter"><span>{{ selectedNode ? `${selectedOutputs.length} selected` : '↑ ↓ Select · Enter Confirm · Esc Close' }}</span><el-button v-if="selectedNode" type="primary" size="small" :loading="selecting" :disabled="!selectedOutputs.length" @click="confirmOutputs">Insert reference</el-button><span v-else-if="selecting">Inserting…</span></div>
           <div v-if="selectionError" class="mentionError" role="alert">{{ selectionError }}</div>
         </el-card>
       </div>
@@ -57,7 +57,7 @@ const listId = useId();
 const scopes = [{ id: "current", get name() { return translate("当前画布"); } }, { id: "other", get name() { return translate("其他画布"); } }, { id: "assets", get name() { return translate("全局素材"); } }] as const;
 type MentionScope = typeof scopes[number]["id"];
 type MentionRow = { id: string; name: string; kind: "canvas" | "node" | "output" | "file" | "directory"; available: boolean; description: string; dataType?: string; thumbnail?: { url: string; mimeType: string }; outputCount: number };
-const typeLabels: Record<string, string> = { STRING: "文本", INT: "整数", FLOAT: "数字", BOOLEAN: "布尔值", IMAGE: "图片", MASK: "遮罩", VIDEO: "视频", AUDIO: "音频", FILE: "文件" };
+const typeLabels: Record<string, string> = { STRING: "Text", INT: "Integer", FLOAT: "Number", BOOLEAN: "Boolean", IMAGE: "Image", MASK: "Mask", VIDEO: "Video", AUDIO: "Audio", FILE: "File" };
 const scope = ref<MentionScope>("current");
 const buttonVisible = ref(false);
 const visible = computed(() => props.active && !props.disabled && (buttonVisible.value || props.query !== undefined));
@@ -105,7 +105,7 @@ const listVirtualizer = useVirtualizer<HTMLDivElement, HTMLButtonElement>(comput
 const visibleRows = computed(() => listVirtualizer.value.getVirtualItems().map(item => ({ row: rows.value[item.index]!, index: item.index, start: item.start })));
 const hasMore = computed(() => !listingCanvases.value && !selectedNode.value && !!nextCursor.value);
 const breadcrumb = computed(() => selectedNode.value ? [selectedCanvas.value?.name ?? translate("当前画布"), selectedNode.value.name].join(" / ") : selectedCanvas.value?.name ?? assetPath.value);
-const searchPlaceholder = computed(() => selectedNode.value ? "搜索该节点的输出" : listingCanvases.value ? "搜索其他画布" : scope.value === "assets" ? "搜索素材" : "搜索节点名称或 ID");
+const searchPlaceholder = computed(() => selectedNode.value ? "Search outputs of this node" : listingCanvases.value ? "Search other canvases" : scope.value === "assets" ? "Search assets" : "Search by node name or ID");
 const emptyText = computed(() => scope.value === "current" && !canvasId.value ? translate("打开画布后即可提及节点输出") : search.value ? translate("没有找到匹配的内容") : selectedNode.value ? translate("该节点暂无可用输出") : listingCanvases.value ? translate("暂无其他画布") : scope.value === "assets" ? translate("暂无素材") : translate("当前画布暂无节点"));
 let requestController: AbortController | undefined;
 let selectionController: AbortController | undefined;
@@ -175,7 +175,7 @@ async function loadList(append = false) {
       nextCursor.value = result.nextCursor;
     }
   } catch (error) {
-    if (!controller.signal.aborted) loadError.value = error instanceof Error ? error.message : "加载失败，请重试";
+    if (!controller.signal.aborted) loadError.value = error instanceof Error ? error.message : "Failed to load, please try again";
   } finally {
     if (!controller.signal.aborted) loading.value = false;
   }
@@ -219,14 +219,14 @@ async function chooseRow(row: MentionRow) {
       const result = await sources.outputs({ canvasId: id, nodeId: row.id, signal: controller.signal });
       if (controller.signal.aborted) return;
       const output = result.find(item => item.available);
-      if (!output) throw new Error("该节点输出已不可用，请重新选择");
+      if (!output) throw new Error("This node output is no longer available, please select again");
       mention = await sources.selectCanvas({ canvasId: id, nodeId: row.id, outputId: output.id, signal: controller.signal });
     }
     if (controller.signal.aborted) return;
     emit("select", [mention]);
     closeMenu();
   } catch (error) {
-    if (!controller.signal.aborted) selectionError.value = error instanceof Error ? error.message : "引用失败，请重试";
+    if (!controller.signal.aborted) selectionError.value = error instanceof Error ? error.message : "Failed to reference, please try again";
   } finally {
     if (!controller.signal.aborted) selecting.value = false;
   }
@@ -246,7 +246,7 @@ async function confirmOutputs() {
     emit("select", mentions);
     closeMenu();
   } catch (error) {
-    if (!controller.signal.aborted) selectionError.value = error instanceof Error ? error.message : "引用失败，请重试";
+    if (!controller.signal.aborted) selectionError.value = error instanceof Error ? error.message : "Failed to reference, please try again";
   } finally {
     if (!controller.signal.aborted) selecting.value = false;
   }

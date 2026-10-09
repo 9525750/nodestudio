@@ -1,23 +1,23 @@
 <template>
   <component v-if="renderer" :is="renderer" :tool="tool" :directory="directory" @copy="emit('copy', $event)" />
-  <el-text v-if="rendererError" type="danger">工具界面加载失败，请停止后重试：{{ rendererError }}</el-text>
+  <el-text v-if="rendererError" type="danger">Failed to load the tool interface, please stop and try again: {{ rendererError }}</el-text>
   <chat-reasoning v-model:collapsed="collapsed" class="messageReasoning toolCall" expandIconPlacement="left">
     <template #header>
       <span class="toolHeader" :data-status="tool.status">
         <icon-tool :size="14" />
-        <span class="toolName">{{ renderer ? "操作工具" : tool.name || "工具调用" }}</span>
-        <span class="toolState">{{ tool.name === 'subAgent' && tool.status === 'success' ? '调用已返回' : toolStatusLabels[tool.status] }}</span>
+        <span class="toolName">{{ renderer ? "Operate tool" : tool.name || "Tool call" }}</span>
+        <span class="toolState">{{ tool.name === 'subAgent' && tool.status === 'success' ? 'Call returned' : toolStatusLabels[tool.status] }}</span>
       </span>
     </template>
     <div v-if="!collapsed" class="toolDetails">
       <template v-for="(data, index) in [args, result]" :key="index">
         <template v-if="data">
           <span class="toolLabel">
-            {{ index === 0 ? "参数" : "结果" }}
-            <el-button v-if="!data.markdown" text size="small" :icon="IconCopy" :aria-label="index === 0 ? '复制工具参数' : '复制工具结果'" @click="emit('copy', data.content)" />
+            {{ index === 0 ? "Arguments" : "Result" }}
+            <el-button v-if="!data.markdown" text size="small" :icon="IconCopy" :aria-label="index === 0 ? 'Copy tool arguments' : 'Copy tool result'" @click="emit('copy', data.content)" />
           </span>
           <messageMarkdown v-if="data.markdown" class="toolData" :class="{ toolError: index === 1 && tool.status === 'error' }" :content="data.markdown" :codeOptions="toolCodeOptions" />
-          <pre v-else class="toolData toolPlain" :class="{ toolError: index === 1 && tool.status === 'error' }" tabindex="0" :aria-label="index === 0 ? '工具参数' : '工具结果'">{{ data.content }}</pre>
+          <pre v-else class="toolData toolPlain" :class="{ toolError: index === 1 && tool.status === 'error' }" tabindex="0" :aria-label="index === 0 ? 'Tool arguments' : 'Tool result'">{{ data.content }}</pre>
         </template>
       </template>
     </div>
@@ -46,7 +46,7 @@ watch(() => [tool.name, tool.question?.callId] as const, async ([name], _previou
     const component = await loadToolComponent(name);
     if (active) {
       renderer.value = component;
-      if (!component && tool.status === "running" && tool.question?.callId) rendererError.value = "该工具未提供可用的交互组件";
+      if (!component && tool.status === "running" && tool.question?.callId) rendererError.value = "This tool does not provide a usable interactive component";
     }
   } catch (error) {
     if (active) rendererError.value = error instanceof Error ? error.message : String(error);
@@ -59,7 +59,7 @@ onErrorCaptured(error => {
   return false;
 });
 const collapsed = defineModel<boolean>("collapsed", { default: true });
-const toolStatusLabels = { running: "调用中…", success: "已完成", error: "调用失败", interrupted: "已中断" };
+const toolStatusLabels = { running: "Calling…", success: "Completed", error: "Call failed", interrupted: "Interrupted" };
 const toolCodeOptions = { maxHeight: 240, lineNumbers: false };
 const args = computed(() => formatToolData(tool.args));
 const result = computed(() => formatToolData(tool.result));
@@ -68,7 +68,7 @@ function formatToolData(value: unknown) {
   if (value === undefined) return;
   try {
     const content = JSON.stringify(typeof value === "string" ? JSON.parse(value) : value, null, 2) ?? "";
-    // ACT: 超过 16K 字符只渲染完整文本，限制高亮与 token DOM 开销；更大数据量可改为虚拟行。
+    // ACT: Beyond 16K characters only the plain full text is rendered to limit highlighting and token DOM overhead; larger data could use virtual rows.
     return { content, markdown: content.length <= 16_384 ? `~~~json\n${content}\n~~~` : undefined };
   } catch {
     return { content: String(value), markdown: undefined };

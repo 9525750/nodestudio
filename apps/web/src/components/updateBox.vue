@@ -14,9 +14,9 @@
       <div class="updateHeader">
         <div class="versionInfo">
           <h2 :id="titleId" class="updateTitle">Toonflow <span class="versionNumber">v{{ version }}</span></h2>
-          <div class="buildInfo"><span class="buildLabel">构建代码</span><code>{{ buildCode }}</code></div>
+          <div class="buildInfo"><span class="buildLabel">Build code</span><code>{{ buildCode }}</code></div>
         </div>
-        <button class="closeButton" type="button" aria-label="关闭更新说明" @click="close">
+        <button class="closeButton" type="button" aria-label="Close release notes" @click="close">
           <icon-x :size="20" aria-hidden="true" />
         </button>
       </div>
@@ -24,7 +24,7 @@
 
     <div class="updateBody">
       <div class="artworkSection">
-        <svg class="buildArtwork" viewBox="0 0 600 200" role="img" :aria-label="`构建 ${buildCode} 的色块图`">
+        <svg class="buildArtwork" viewBox="0 0 600 200" role="img" :aria-label="`Color block art for build ${buildCode}`">
           <g v-for="(tile, index) in buildTiles" :key="index" :transform="`translate(${index % 6 * 100} ${Math.floor(index / 6) * 100})`">
             <rect width="100" height="100" :fill="tile.background" />
             <g :transform="`rotate(${tile.rotation} 50 50)`" :fill="tile.foreground">
@@ -37,16 +37,16 @@
         </svg>
       </div>
 
-      <section class="releaseSection" aria-label="更新内容">
-        <h3 class="releaseTitle">更新内容</h3>
-        <div class="releaseContent" tabindex="0" role="region" aria-label="Markdown 更新说明">
+      <section class="releaseSection" aria-label="Release notes">
+        <h3 class="releaseTitle">Release notes</h3>
+        <div class="releaseContent" tabindex="0" role="region" aria-label="Markdown release notes">
           <messageMarkdown v-if="markdown.trim()" :content="markdown" />
         </div>
       </section>
     </div>
 
     <template #footer>
-      <el-button class="confirmButton" type="primary" @click="visible = false">开始使用<icon-arrow-right :size="16" aria-hidden="true" /></el-button>
+      <el-button class="confirmButton" type="primary" @click="visible = false">Get started<icon-arrow-right :size="16" aria-hidden="true" /></el-button>
     </template>
   </el-dialog>
 </template>
@@ -61,7 +61,7 @@ const { version, buildCode, markdown = updateNotes } = defineProps<{ version: st
 const messageMarkdown = defineAsyncComponent(() => import("./messageMarkdown.vue"));
 
 const buildTiles = computed(() => {
-  // ACT: 构建码仅用于生成稳定的装饰图案，不作为完整性校验。
+  // ACT: The build code is only used to generate a stable decorative pattern, not as an integrity check.
   let seed = 2166136261;
   for (const character of buildCode) seed = Math.imul(seed ^ character.codePointAt(0)!, 16777619) >>> 0;
   const palettes = [

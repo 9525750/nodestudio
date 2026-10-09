@@ -12,18 +12,18 @@ export async function renderImage(scene: SceneDocument, anchor: CameraAnchor, as
     applyCamera(runtime.camera, anchor);
     runtime.renderer.render(runtime.scene, runtime.camera);
     const blob = await new Promise<Blob>((resolve, reject) => runtime.renderer.domElement.toBlob(
-      value => value ? resolve(value) : reject(new Error("关键帧渲染失败")), "image/png",
+      value => value ? resolve(value) : reject(new Error("Keyframe render failed")), "image/png",
     ));
     signal.throwIfAborted();
-    return new File([blob], "关键帧.png", { type: "image/png" });
+    return new File([blob], "keyframe.png", { type: "image/png" });
   } finally { player?.dispose(); disposeStage(runtime); }
 }
 
 export async function renderVideo(scene: SceneDocument, plan: DirectorPlan, aspect: number, signal: AbortSignal, onProgress: (value: number) => void, lighting?: LightingSettings, settings?: SceneSettings) {
   signal.throwIfAborted();
   const mimeType = typeof MediaRecorder !== "undefined" && ["video/mp4;codecs=avc1.420028", "video/mp4"].find(type => MediaRecorder.isTypeSupported(type));
-  if (!mimeType) throw new Error("当前浏览器不支持 MP4 导出，请更新浏览器或桌面 WebView2 运行时");
-  if (document.hidden) throw new Error("请在当前窗口保持可见时导出视频");
+  if (!mimeType) throw new Error("Current browser does not support MP4 export, please update browser or desktop WebView2 runtime");
+  if (document.hidden) throw new Error("Please keep the current window visible when exporting video");
   const runtime = await createStage(document.createElement("canvas"), scene, undefined, aspect, lighting, settings);
   let player: ReturnType<typeof prepareSceneAnimation> | undefined;
   let stream: MediaStream | undefined;
@@ -54,17 +54,17 @@ export async function renderVideo(scene: SceneDocument, plan: DirectorPlan, aspe
         else if (error) reject(error);
       };
       cancel = () => stop(signal.reason);
-      checkVisibility = () => { if (document.hidden) stop(new Error("窗口已隐藏，视频导出已停止，请保持窗口可见后重试")); };
+      checkVisibility = () => { if (document.hidden) stop(new Error("Window is hidden, video export stopped. Please keep window visible and retry")); };
       recorder!.ondataavailable = event => {
         if (event.data.size) chunks.push(event.data);
         size += event.data.size;
-        if (size > 100 * 1024 * 1024) stop(new Error("导出视频超过 100 MB，请缩短动画时长"));
+        if (size > 100 * 1024 * 1024) stop(new Error("Export video exceeds 100 MB, please shorten animation duration"));
       };
-      recorder!.onerror = () => stop(new Error("MP4 编码失败，请重试"));
+      recorder!.onerror = () => stop(new Error("MP4 encoding failed, please retry"));
       recorder!.onstop = () => failure ? reject(failure) : resolve();
       signal.addEventListener("abort", cancel, { once: true });
       document.addEventListener("visibilitychange", checkVisibility);
-      // ACT: 使用浏览器原生录制，导出耗时约等于动画时长；离线逐帧编码需换用 WebCodecs 和 MP4 封装器。
+      // ACT: uses native browser recording; export time ~ animation duration. Offline frame-by-frame encoding requires WebCodecs + MP4 muxer.
       recorder!.start(1000);
       const started = performance.now();
       const renderFrame = () => {
@@ -74,7 +74,7 @@ export async function renderVideo(scene: SceneDocument, plan: DirectorPlan, aspe
           const time = Math.min(plan.duration, (now - started) / 1000);
           draw(time); onProgress(Math.min(99, Math.floor(time / plan.duration * 100)));
           if (time >= plan.duration) stop();
-          // ACT: 每帧后至少让出 8ms 给输入和弹窗动画，慢设备降低帧率而不追帧。
+          // ACT: yield at least 8ms per frame for input and popup animation; slow devices reduce FPS instead of frame chasing.
           else frame = window.setTimeout(renderFrame, Math.max(8, 1000 / 30 - (performance.now() - now)));
         } catch (error) { stop(error); }
       };
@@ -82,7 +82,7 @@ export async function renderVideo(scene: SceneDocument, plan: DirectorPlan, aspe
     });
     signal.throwIfAborted();
     const file = new File(chunks, `${plan.name}.mp4`, { type: "video/mp4" });
-    if (!file.size) throw new Error("未能生成视频内容");
+    if (!file.size) throw new Error("Failed to generate video content");
     return file;
   } finally {
     window.clearTimeout(frame);

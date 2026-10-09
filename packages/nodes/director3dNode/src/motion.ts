@@ -11,7 +11,7 @@ export const cameraFramesSchema = z.array(z.strictObject({
   time: z.number().min(0).max(300),
   view: cameraViewSchema,
   easing: z.enum(["linear", "smooth", "cut"]),
-})).min(1).max(120).refine(frames => frames.every((frame, index) => !index || frame.time > frames[index - 1]!.time), "镜头时间必须递增");
+})).min(1).max(120).refine(frames => frames.every((frame, index) => !index || frame.time > frames[index - 1]!.time), "Camera time must be increasing");
 
 export function applyCamera(camera: PerspectiveCamera, view: CameraView) {
   const { position, fov, near, far } = view.camera;
@@ -30,7 +30,7 @@ export function prepareMotion(value: z.infer<typeof cameraFramesSchema>) {
 }
 
 export function sampleMotion(camera: PerspectiveCamera, frames: ReturnType<typeof prepareMotion>, time: number) {
-  if (!Number.isFinite(time)) throw new Error("运镜时间无效");
+  if (!Number.isFinite(time)) throw new Error("Invalid camera motion time");
   const last = frames.at(-1)!;
   const end = frames.findIndex(frame => frame.time >= time);
   const next = frames[end < 0 ? frames.length - 1 : end]!;
