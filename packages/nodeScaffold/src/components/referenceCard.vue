@@ -8,7 +8,7 @@
       :previewSrcList="[previewUrl]"
       previewTeleported
       fit="cover"
-      :alt="`预览引用 ${index}`"
+      :alt="`Preview reference ${index}`"
       draggable="false"
       @click.stop
       @error="mediaError" />
@@ -28,8 +28,8 @@
       class="removeButton nodrag nopan"
       :icon="IconX"
       circle
-      :aria-label="`删除引用 ${index}`"
-      title="删除引用"
+      :aria-label="`Remove reference ${index}`"
+      title="Remove reference"
       @pointerdown.stop
       @mousedown.stop
       @dblclick.stop
@@ -58,8 +58,8 @@ const videoThumbnail = ref("");
 const media = computed(() => props.item.value !== undefined && (props.item.dataType === "IMAGE" || props.item.dataType === "VIDEO") ? { ...props.item.value } : undefined);
 const itemIcon = computed(() => props.item.dataType === "IMAGE" ? IconPhoto : props.item.dataType === "VIDEO" ? IconVideo : props.item.dataType === "AUDIO" ? IconMusic : IconFileText);
 const title = computed(() => {
-  const content = props.item.value === undefined ? "暂无内容" : props.item.dataType === "STRING" ? props.item.value : props.item.dataType === "VIDEO" ? "视频" : props.item.dataType === "AUDIO" ? "音频" : "图片";
-  return `引用 ${props.index}：${content}${previewError.value ? `（${previewError.value}）` : ""}`;
+  const content = props.item.value === undefined ? "No content" : props.item.dataType === "STRING" ? props.item.value : props.item.dataType === "VIDEO" ? "Video" : props.item.dataType === "AUDIO" ? "Audio" : "Image";
+  return `Reference ${props.index}: ${content}${previewError.value ? ` (${previewError.value})` : ""}`;
 });
 
 watch(media, () => {
@@ -69,7 +69,7 @@ watch(media, () => {
 });
 const { useFileUrl } = useNodeFiles();
 const previewUrl = useFileUrl(media, error => {
-  previewError.value = error instanceof Error ? error.message : "读取引用文件失败";
+  previewError.value = error instanceof Error ? error.message : "Failed to read reference file";
 });
 
 watch([previewUrl, previewError, videoThumbnail], ([url, error, thumbnail]) => {
@@ -77,7 +77,7 @@ watch([previewUrl, previewError, videoThumbnail], ([url, error, thumbnail]) => {
 }, { immediate: true });
 
 function mediaError() {
-  previewError.value = props.item.dataType === "VIDEO" ? "无法预览该视频" : "无法预览该图片";
+  previewError.value = props.item.dataType === "VIDEO" ? "Cannot preview this video" : "Cannot preview this image";
 }
 
 function readVideoPreview(event: Event) {

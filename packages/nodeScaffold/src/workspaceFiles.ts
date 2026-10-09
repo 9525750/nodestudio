@@ -18,7 +18,7 @@ export interface WorkspaceFiles {
 }
 
 function getNodeDirectory(nodeId: string) {
-  if (!nodeId || /[\\/]/.test(nodeId) || nodeId === "." || nodeId === "..") throw new Error("节点 ID 不能作为文件夹名称");
+  if (!nodeId || /[\\/]/.test(nodeId) || nodeId === "." || nodeId === "..") throw new Error("Node ID cannot be used as a folder name");
   return `assets/${nodeId}`;
 }
 
@@ -40,7 +40,7 @@ export function useNodeFiles() {
   const retainNodeFiles = inject("retainNodeFiles", false);
 
   function getWorkspaceFiles() {
-    if (!createFiles) throw new Error("当前画布未提供工作区文件能力");
+    if (!createFiles) throw new Error("Current canvas does not provide workspace file capabilities");
     return createFiles();
   }
 

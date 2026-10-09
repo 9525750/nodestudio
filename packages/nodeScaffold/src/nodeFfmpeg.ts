@@ -9,7 +9,7 @@ export function useNodeFfmpeg() {
   onScopeDispose(() => lifetime.abort());
 
   return (signal?: AbortSignal) => {
-    if (!getDirectory) throw new Error("当前画布未提供工作区目录");
+    if (!getDirectory) throw new Error("Current canvas does not provide a workspace directory");
     return createBrowserFfmpeg(getDirectory(), signal ? AbortSignal.any([lifetime.signal, signal]) : lifetime.signal);
   };
 }

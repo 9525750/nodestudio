@@ -22,7 +22,7 @@ export function useNodeReferences(handleId = "in") {
     typeof item.dataType === "string" && ["IMAGE", "VIDEO", "AUDIO", "STRING"].includes(item.dataType)
       ? [{
           id: referenceKey(item),
-          name: `参考 ${index + 1}`,
+          name: `Reference ${index + 1}`,
           value: `{{ref ${index + 1}}}`,
           avatar: previews.value.get(referenceKey(item)) || undefined,
         }]

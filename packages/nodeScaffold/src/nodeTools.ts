@@ -78,13 +78,13 @@ function getRegistry(flow: ReturnType<typeof useVueFlow>) {
 
 export const nodeTools = {
   register<Schema extends z.ZodType>(definition: NodeToolDefinition<Schema>) {
-    if (!getCurrentScope()) throw new Error("请在节点 setup 中注册 nodeTools");
+    if (!getCurrentScope()) throw new Error("Register nodeTools in node setup");
     const nodeId = useNodeId();
-    if (!nodeId) throw new Error("当前组件不属于画布节点");
-    if (!/^[a-z][a-zA-Z0-9]{0,63}$/.test(definition.name)) throw new Error("节点函数名必须使用小驼峰，最多 64 个字符");
+    if (!nodeId) throw new Error("Current component is not a canvas node");
+    if (!/^[a-z][a-zA-Z0-9]{0,63}$/.test(definition.name)) throw new Error("Node function names must use lowerCamelCase, max 64 characters");
     const parameters = z.toJSONSchema(definition.parameters, { io: "input", target: "draft-07" });
     if (!definition.description.trim() || parameters.type !== "object" || typeof definition.execute !== "function") {
-      throw new Error("节点函数需要描述、Zod 对象参数和 execute 方法");
+      throw new Error("Node functions require a description, Zod object parameters, and an execute method");
     }
     const { registry } = getRegistry(useVueFlow());
     const name = `node:${definition.name}` as const;
@@ -131,14 +131,14 @@ export function useNodeToolsContext() {
       callSignal.throwIfAborted();
       const key = `${nodeId}:${name}`;
       const entry = registry.get(key);
-      if (!entry) throw new Error(`节点未注册函数 ${name}，请先通过 getNodeTools 查询可用节点函数`);
-      if (!flow.findNode(nodeId)) throw new Error("节点函数已卸载或不属于本轮画布");
+      if (!entry) throw new Error(`Node has not registered function ${name}, query available node functions via getNodeTools first`);
+      if (!flow.findNode(nodeId)) throw new Error("Node function unloaded or not part of current canvas");
       let cancel: () => void = () => {};
       try {
         const result = await Promise.race([
           Promise.resolve().then(() => {
             callSignal.throwIfAborted();
-            if (registry.get(key) !== entry || !flow.findNode(nodeId)) throw new Error("节点函数已卸载或不属于本轮画布");
+            if (registry.get(key) !== entry || !flow.findNode(nodeId)) throw new Error("Node function unloaded or not part of current canvas");
             return entry.execute(args, { signal: callSignal });
           }),
           new Promise<never>((_resolve, reject) => {

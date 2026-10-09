@@ -65,7 +65,7 @@ export function groupNodeModels<T extends Pick<NodeAiModel, "providerId" | "prov
 
 async function readResult<T>(response: Response): Promise<T> {
   const result = await response.json();
-  if (!response.ok || result.code !== 200) throw new Error(result.message || `AI 请求失败（HTTP ${response.status}）`);
+  if (!response.ok || result.code !== 200) throw new Error(result.message || `AI request failed (HTTP ${response.status})`);
   return result.data;
 }
 
@@ -116,21 +116,21 @@ async function requestModel(input: NodeAiRequest, context: Context, model: Model
       body: JSON.stringify({ providerId, modelId, context, directory, references }), signal,
     });
     if (!response.ok) await readResult(response);
-    if (!response.body || !response.headers.get("content-type")?.includes("text/event-stream")) throw new Error("AI 未返回 SSE 数据流");
+    if (!response.body || !response.headers.get("content-type")?.includes("text/event-stream")) throw new Error("AI did not return SSE stream");
     const reader = response.body.pipeThrough(new TextDecoderStream()).pipeThrough(new EventSourceParserStream()).getReader();
     try {
       while (true) {
         const { value, done } = await reader.read();
         signal.throwIfAborted();
-        if (done) throw new Error("AI 数据流提前结束，请重试");
+        if (done) throw new Error("AI stream ended prematurely, please retry");
         const event = JSON.parse(value.data);
-        if (event.type === "error") throw new Error(event.message || "AI 生成失败");
+        if (event.type === "error") throw new Error(event.message || "AI generation failed");
         if (event.type === "text" || event.type === "reasoning") onEvent?.(event);
         if (event.type !== "done") continue;
         const message = event.message as AssistantMessage;
-        if (message?.role !== "assistant" || !Array.isArray(message.content)) throw new Error("AI 返回消息不完整，请确认服务端已更新");
-        if (message.stopReason === "deferred" || message.stopReason === "pending") throw new Error("AI 返回了未完成的任务");
-        if (message.stopReason === "error" || message.stopReason === "aborted") throw new Error(message.errorMessage || "AI 请求失败");
+        if (message?.role !== "assistant" || !Array.isArray(message.content)) throw new Error("AI returned incomplete message, please ensure server is updated");
+        if (message.stopReason === "deferred" || message.stopReason === "pending") throw new Error("AI returned an unfinished task");
+        if (message.stopReason === "error" || message.stopReason === "aborted") throw new Error(message.errorMessage || "AI request failed");
         // ACT: 增量直接通知 UI；SDK 只消费完整单轮消息，避免每个 token 传输全量快照。
         stream.push({ type: "start", partial: { ...message, content: [], stopReason: "pending" } });
         stream.push({ type: "done", reason: message.stopReason, message });
@@ -144,7 +144,7 @@ async function requestModel(input: NodeAiRequest, context: Context, model: Model
     const reason = signal.aborted ? "aborted" : "error";
     stream.push({ type: "error", reason, error: {
       role: "assistant", content: [], api: model.api, provider: model.provider, model: model.id, timestamp: Date.now(),
-      stopReason: reason, errorMessage: error instanceof Error ? error.message : "AI 请求失败",
+      stopReason: reason, errorMessage: error instanceof Error ? error.message : "AI request failed",
       usage: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, totalTokens: 0, cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 } },
     } });
   }
@@ -189,11 +189,11 @@ export function useNodeAi() {
     const signal = requestSignal(input.signal);
     const callSignal = input.tools?.length ? AbortSignal.any([signal, AbortSignal.timeout(600000)]) : signal;
     const { providerId, modelId, prompt, systemPrompt, onEvent } = input;
-    if (!prompt.trim()) throw new Error("请输入提示词");
+    if (!prompt.trim()) throw new Error("Please enter a prompt");
     const definitions = input.tools ?? [];
-    if (new Set(definitions.map(tool => tool.name)).size !== definitions.length) throw new Error("工具名称不能重复");
+    if (new Set(definitions.map(tool => tool.name)).size !== definitions.length) throw new Error("Tool names must be unique");
     const selected = (await getModels(callSignal)).find(model => model.providerId === providerId && model.modelId === modelId);
-    if (!selected) throw new Error("所选模型不存在，请重新选择");
+    if (!selected) throw new Error("Selected model not found, please select again");
     const model: Model<NodeAiModel["protocol"]> = {
       id: modelId, name: selected.label, provider: providerId, api: selected.protocol, baseUrl: "",
       reasoning: false, input: ["text", "image"],
@@ -204,7 +204,7 @@ export function useNodeAi() {
       name: tool.name, label: tool.name, description: tool.description, parameters: tool.parameters,
       async execute(_id, args, toolSignal) {
         callSignal.throwIfAborted();
-        if (!args || typeof args !== "object" || Array.isArray(args)) throw new Error("工具参数必须是对象");
+        if (!args || typeof args !== "object" || Array.isArray(args)) throw new Error("Tool parameters must be an object");
         const result = await tool.execute(args as Record<string, unknown>, toolSignal) ?? null;
         callSignal.throwIfAborted();
         return { content: [{ type: "text", text: JSON.stringify(result) ?? "null" }], details: undefined };
@@ -226,10 +226,10 @@ export function useNodeAi() {
     }, callSignal, (_model, context) => requestModel(input, context, model, callSignal));
     callSignal.throwIfAborted();
     const message = messages.findLast((message): message is AssistantMessage => message.role === "assistant");
-    if (!message) throw new Error("AI 未返回结果");
-    if (message.stopReason === "error" || message.stopReason === "aborted") throw new Error(message.errorMessage || "AI 请求失败");
-    if (definitions.length && message.stopReason === "length") throw new Error("模型输出达到上限，请精简任务后重试");
-    if (message.content.some(part => part.type === "toolCall")) throw new Error("AI 已达到 40 轮调用上限，请缩小任务后重试");
+    if (!message) throw new Error("AI returned no results");
+    if (message.stopReason === "error" || message.stopReason === "aborted") throw new Error(message.errorMessage || "AI request failed");
+    if (definitions.length && message.stopReason === "length") throw new Error("Model output limit reached, please simplify the task and retry");
+    if (message.content.some(part => part.type === "toolCall")) throw new Error("AI reached the 40-round call limit, please reduce the task and retry");
     const text = message.content.filter(part => part.type === "text").map(part => part.text).join("");
     const reasoning = message.content.filter(part => part.type === "thinking").map(part => part.thinking).join("");
     return { text, ...(reasoning ? { reasoning } : {}) };

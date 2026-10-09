@@ -9,11 +9,11 @@
         filterable
         :loading="modelsLoading"
         :disabled="disabled || generating"
-        placeholder="选择模型"
-        aria-label="局部重绘模型"
-        noDataText="请先在设置中添加图片模型"
+        placeholder="Select model"
+        aria-label="Inpaint model"
+        noDataText="Add an image model in settings first"
         placement="top-start"
-        @visible-change="visible => visible && loadModels().catch(error => showNodeError(error, '模型读取失败'))">
+        @visible-change="visible => visible && loadModels().catch(error => showNodeError(error, 'Failed to load models'))">
         <template #prefix><icon-sparkles :size="17" /></template>
         <el-option-group v-for="provider in modelGroups" :key="provider.id" :label="provider.label">
           <el-option v-for="item in provider.models" :key="item.modelId" :label="item.label" :value="JSON.stringify([item.providerId, item.modelId])" />
@@ -21,21 +21,21 @@
       </el-select>
       <el-popover trigger="click" placement="top-start" :width="260" :disabled="disabled || generating || !selectedModel" :showArrow="false">
         <template #reference>
-          <el-button class="settingsButton" text size="small" :disabled="disabled || generating || !selectedModel" aria-label="局部重绘设置">
-            <span>{{ ratio }} · {{ size }} · 1张</span>
+          <el-button class="settingsButton" text size="small" :disabled="disabled || generating || !selectedModel" aria-label="Inpaint settings">
+            <span>{{ ratio }} · {{ size }} · 1 image</span>
             <icon-chevron-up :size="14" aria-hidden="true" />
           </el-button>
         </template>
         <div class="inpaintSettings nodrag nopan nowheel" @pointerdown.stop @mousedown.stop @dblclick.stop @keydown.stop @wheel.stop>
           <label>
-            <span>分辨率</span>
-            <el-select v-model="size" :disabled="disabled || generating" aria-label="局部重绘分辨率">
+            <span>Resolution</span>
+            <el-select v-model="size" :disabled="disabled || generating" aria-label="Inpaint resolution">
               <el-option v-for="item in sizeOptions" :key="item" :label="item" :value="item" />
             </el-select>
           </label>
           <label>
-            <span>比例</span>
-            <el-select v-model="ratio" :disabled="disabled || generating" aria-label="局部重绘比例">
+            <span>Ratio</span>
+            <el-select v-model="ratio" :disabled="disabled || generating" aria-label="Inpaint ratio">
               <el-option v-for="item in ratioOptions" :key="item" :label="item" :value="item" />
             </el-select>
           </label>
@@ -45,8 +45,8 @@
         class="sendButton"
         :icon="generating ? IconPlayerStop : IconArrowUp"
         :disabled="!generating && (disabled || !prompt.trim() || !selectedModel)"
-        :title="generating ? '停止生成' : '局部重绘'"
-        :aria-label="generating ? '停止生成' : '局部重绘'"
+        :title="generating ? 'Stop generation' : 'Inpaint'"
+        :aria-label="generating ? 'Stop generation' : 'Inpaint'"
         @click="generating ? generationController?.abort() : startGeneration()" />
     </div>
   </el-card>
@@ -92,7 +92,7 @@ watch(selectedModel, choice => {
   if (!ratioOptions.value.includes(ratio.value)) ratio.value = ratioOptions.value.includes("16:9") ? "16:9" : ratioOptions.value[0]!;
 }, { flush: "sync" });
 
-onMounted(() => loadModels().catch(error => { if (!disposed) showNodeError(error, "模型读取失败"); }));
+onMounted(() => loadModels().catch(error => { if (!disposed) showNodeError(error, "Failed to load models"); }));
 onScopeDispose(() => {
   disposed = true;
   generationController?.abort();
@@ -130,7 +130,7 @@ async function startGeneration() {
       ratio: ratio.value,
     }, controller.signal);
   } catch (error) {
-    if (!controller.signal.aborted && !disposed) showNodeError(error, "局部重绘失败");
+    if (!controller.signal.aborted && !disposed) showNodeError(error, "Inpainting failed");
   } finally {
     generating.value = false;
     generationController = undefined;
