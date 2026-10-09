@@ -21,6 +21,6 @@ const app = await createApp({
 const { initializeMcpRuntime } = await import("./utils/mcp/runtime");
 app.listen(realPort, async () => {
   await initializeMcpRuntime(app, `http://127.0.0.1:${realPort}`, resolve(appDirectory, fromSource ? "packages/mcp/src/stdio.ts" : "build/mcp/stdio.js"));
-  console.log(`[服务启动成功]: http://localhost:${realPort}`);
-  console.log(`[启动耗时]: ${(Date.now() - startTime).toFixed(2)}ms`);
+  console.log(`[Server started]: http://localhost:${realPort}`);
+  console.log(`[Startup time]: ${(Date.now() - startTime).toFixed(2)}ms`);
 });

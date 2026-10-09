@@ -14,12 +14,12 @@
       @command="handleCommand">
       <template #dropdown>
         <el-dropdown-menu>
-          <el-dropdown-item v-if="assetOutputs.length && saveNodeToAssets" command="saveAsset" :icon="IconFolderPlus">保存到素材库</el-dropdown-item>
-          <el-dropdown-item :divided="!!(assetOutputs.length && saveNodeToAssets)" command="copy" :icon="IconCopy">复制节点</el-dropdown-item>
-          <el-dropdown-item command="duplicate" :icon="IconCopyPlus">创建副本</el-dropdown-item>
-          <el-dropdown-item command="delete" :icon="IconTrash">删除节点</el-dropdown-item>
+          <el-dropdown-item v-if="assetOutputs.length && saveNodeToAssets" command="saveAsset" :icon="IconFolderPlus">Save to assets</el-dropdown-item>
+          <el-dropdown-item :divided="!!(assetOutputs.length && saveNodeToAssets)" command="copy" :icon="IconCopy">Copy node</el-dropdown-item>
+          <el-dropdown-item command="duplicate" :icon="IconCopyPlus">Create duplicate</el-dropdown-item>
+          <el-dropdown-item command="delete" :icon="IconTrash">Delete node</el-dropdown-item>
           <el-dropdown-item divided command="clipboard" :icon="IconCopy" :disabled="!copyNodeToClipboard || copyingToClipboard">
-            复制到剪贴板
+            Copy to clipboard
           </el-dropdown-item>
         </el-dropdown-menu>
       </template>
@@ -39,9 +39,9 @@
             :icon="IconFolderPlus"
             :disabled="!assetOutputs.length || !saveNodeToAssets"
             text
-            title="添加到素材库"
-            aria-label="添加到素材库"
-            @click.stop="handleCommand('saveAsset')">添加到素材库</el-button>
+            title="Add to assets"
+            aria-label="Add to assets"
+            @click.stop="handleCommand('saveAsset')">Add to assets</el-button>
           <slot name="topActions" />
           <el-divider direction="vertical" />
           <slot name="topRightActions" />
@@ -54,8 +54,8 @@
             :loading="downloading"
             :aria-busy="downloading"
             text
-            :title="downloading ? '正在保存…' : '下载'"
-            aria-label="下载"
+            :title="downloading ? 'Saving...' : 'Download'"
+            aria-label="Download"
             @downloadstate="downloading = $event.detail"
             @click.stop />
           <el-button
@@ -63,8 +63,8 @@
             :icon="IconMaximize"
             :disabled="!downloadUrl"
             text
-            title="全屏"
-            aria-label="全屏"
+            title="Fullscreen"
+            aria-label="Fullscreen"
             @click.stop="emit('fullscreen')" />
         </el-card>
       </slot>
@@ -87,7 +87,7 @@
         ref="labelInput"
         v-model="labelDraft"
         class="labelInput nodrag nopan"
-        aria-label="节点名称"
+        aria-label="Node name"
         @pointerdown.stop
         @mousedown.stop
         @dblclick.stop
@@ -99,7 +99,7 @@
         v-else
         class="labelText"
         tabindex="0"
-        :title="`${label}（双击编辑名称）`"
+        :title="`${label} (double-click to rename)`"
         @dblclick.stop="editLabel"
         @keydown.enter.stop.prevent="editLabel">
         {{ label }}
@@ -110,10 +110,10 @@
           :loading="loading || reloading"
           :disabled="loading || !reloadRemoteNode"
           text
-          title="刷新节点"
-          aria-label="刷新节点"
+          title="Refresh node"
+          aria-label="Refresh node"
           @click.stop="reloadNode" />
-        <el-button :icon="IconX" text title="移除节点" aria-label="移除节点" @click.stop="deleteNode" :loading="deleting" />
+        <el-button :icon="IconX" text title="Remove node" aria-label="Remove node" @click.stop="deleteNode" :loading="deleting" />
       </div>
     </div>
     <div class="cardContainer">
@@ -123,9 +123,9 @@
         shadow="never"
         :bodyStyle="{ padding: '8px' }"
         :style="{ minHeight: `${cardHeight}px` }">
-        <div v-if="loading" class="loadingContent" role="status" aria-label="节点加载中">
+        <div v-if="loading" class="loadingContent" role="status" aria-label="Loading node">
           <icon-loader2 class="loadingIcon" :size="24" aria-hidden="true" />
-          <span>加载中...</span>
+          <span>Loading...</span>
         </div>
         <slot v-else-if="previewReady || documentTarget" />
       </el-card>
@@ -204,7 +204,7 @@ const props = withDefaults(
     }
   >(),
   {
-    label: "未命名节点",
+    label: "Unnamed node",
     handles: () => [],
     outputs: () => ({}),
     previewReady: true,
@@ -226,7 +226,7 @@ const canvasSize = shallowRef<{ width: string; height: string }>();
 let documentLease: symbol | undefined;
 function mountDocument(target: HTMLElement) {
   const element = skeletonElement.value;
-  if (!documentContext || !element || !target.isConnected) throw new Error("节点视图尚未就绪");
+  if (!documentContext || !element || !target.isConnected) throw new Error("Node view not ready");
   if (!documentTarget.value) canvasSize.value = {
     width: `${element.offsetWidth || node.dimensions.width || 220}px`,
     height: `${element.offsetHeight || node.dimensions.height || 128}px`,
@@ -378,7 +378,7 @@ async function reloadNode() {
   try {
     await reloadRemoteNode(node.type);
   } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : "节点刷新失败");
+    ElMessage.error(error instanceof Error ? error.message : "Node refresh failed");
   } finally {
     reloading.value = false;
   }
@@ -403,7 +403,7 @@ async function deleteNode() {
     removeNodes(nodeId);
   } catch (error) {
     const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message;
-    ElMessage.error(message || (error instanceof Error ? error.message : "节点删除失败"));
+    ElMessage.error(message || (error instanceof Error ? error.message : "Node deletion failed"));
   } finally {
     deleting.value = false;
   }
@@ -431,9 +431,9 @@ async function handleCommand(command: string) {
       const patch = await nodeEvent.emit("copy");
       const data = { ...node.data, ...patch };
       await copyNodeToClipboard({ type: node.type, data });
-      ElMessage.success("已复制，可在其他画布粘贴");
+      ElMessage.success("Copied, can be pasted in other canvases");
     } catch (error) {
-      ElMessage.error(error instanceof Error ? error.message : "节点复制失败");
+      ElMessage.error(error instanceof Error ? error.message : "Node copy failed");
     } finally {
       copyingToClipboard.value = false;
     }
@@ -445,7 +445,7 @@ async function handleCommand(command: string) {
       const patch = await nodeEvent.emit("copy");
       data = JSON.parse(JSON.stringify({ ...node.data, ...patch }));
     } catch (error) {
-      ElMessage.error(error instanceof Error ? error.message : "节点复制失败");
+      ElMessage.error(error instanceof Error ? error.message : "Node copy failed");
       return;
     }
     if (findNode(nodeId) !== node) return;
@@ -470,7 +470,7 @@ async function handleCommand(command: string) {
       zIndex: node.zIndex,
       type: node.type,
       position: copyPosition,
-      data: { ...data, label: `${props.label} - 副本` },
+      data: { ...data, label: `${props.label} - Copy` },
       parentNode: node.parentNode,
     });
     await nextTick();

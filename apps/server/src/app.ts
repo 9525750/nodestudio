@@ -106,19 +106,19 @@ export async function createApp({
     if (response.headersSent) return next(err);
     console.error(err);
     if (err instanceof z.ZodError) {
-      return response.status(400).json(error("参数错误", err.issues.map(issue => ({ ...issue, message: translateMessage(issue.message) })), 400));
+      return response.status(400).json(error("Invalid parameters", err.issues.map(issue => ({ ...issue, message: translateMessage(issue.message) })), 400));
     }
     const code = (err as NodeJS.ErrnoException).code;
     const status = err.status || ({ ENOENT: 404, ENOTDIR: 404, EEXIST: 409, ENOTEMPTY: 409, EACCES: 403, EPERM: 403 }[code ?? ""] ?? 500);
     const message =
       {
-        ENOENT: "找不到这个文件或文件夹，可能已被移动、删除，或者位置选错了。",
-        ENOTDIR: "你选中的是文件，但这里需要选择文件夹。请重新选择。",
-        EEXIST: "这个名称已经被占用了，请换一个名称。原来的内容不会被覆盖。",
-        ENOTEMPTY: "这个文件夹里还有内容，不能直接删除。请先清空或移走里面的文件。",
-        EACCES: "没有权限访问这个文件或文件夹。请检查权限，或换一个位置重试。",
-        EPERM: "系统不允许这次操作。文件可能正在被其他程序使用，请关闭后重试。",
-        EISDIR: "你选中的是文件夹，但这里需要的是文件。请重新选择具体文件。",
+        ENOENT: "File or folder not found. It may have been moved, deleted, or the path is incorrect.",
+        ENOTDIR: "You selected a file, but a folder is required. Please select again.",
+        EEXIST: "This name is already in use, please choose a different name. The original content will not be overwritten.",
+        ENOTEMPTY: "This folder is not empty and cannot be deleted directly. Please clear or move its contents first.",
+        EACCES: "No permission to access this file or folder. Please check permissions, or try a different location.",
+        EPERM: "The system does not allow this operation. The file may be in use by another program, please close it and retry.",
+        EISDIR: "You selected a folder, but a file is required. Please select a specific file.",
       }[code ?? ""] ?? translateError(err);
     response.status(status).json(error(message, code ? { code } : null, status));
   });
