@@ -32,7 +32,7 @@ export function createDocumentSession(resource: ExtResource, extension: ExtDefin
     get config() { return extensionConfig(extension.id); },
     saveConfig: config => saveExtensionConfig(extension.id, config),
     writeClipboardText, mountNode,
-    openFile: openFile ?? (async () => { throw new Error("当前宿主不支持打开链接文件"); }),
+    openFile: openFile ?? (async () => { throw new Error("The current host does not support opening linked files"); }),
     updateText(text) {
       if (disposed || context.loading || !extension.text || context.text === text) return;
       cancelRead();
@@ -65,10 +65,10 @@ export function createDocumentSession(resource: ExtResource, extension: ExtDefin
         const currentRevision = revision;
         const text = context.text;
         queuedRevision = currentRevision;
-        // ACT: 保存始终绑定打开时的目录和文件，排队期间切换 Tab 不改变写入目标。
+        // ACT: Save always binds to the directory and file from when it was opened; switching tabs during queuing does not change the write target.
         saving = saving.catch(() => {}).then(async () => {
           if (disposed) return;
-          if (!disk) throw new Error("文件尚未读取，不能保存");
+          if (!disk) throw new Error("File not yet read, cannot save");
           const nextRevision = await files.writeTextSnapshot(resource.path, text, disk);
           disk = { ...disk, text, revision: nextRevision };
         }).then(() => {
@@ -85,7 +85,7 @@ export function createDocumentSession(resource: ExtResource, extension: ExtDefin
       }
       const pending = saving;
       await pending;
-      // 保存期间仍可继续输入；退出工作区前必须一并落盘等待期间产生的新版本。
+      // Saving can continue while typing; before leaving the workspace, all versions produced during the wait must be flushed to disk.
       if (pending === saving && !context.dirty) return;
     }
   }

@@ -28,7 +28,7 @@ export function resolveMarkdownPath(source: string, documentPath = "") {
   for (const part of path.split("/")) {
     if (!part || part === ".") continue;
     if (part === "..") {
-      if (!parts.length) throw new Error("文件路径超出工作区");
+      if (!parts.length) throw new Error("File path is outside the workspace");
       parts.pop();
     } else parts.push(part);
   }
@@ -58,7 +58,7 @@ function protectHtmlCode(text: string) {
       copied = to;
     }
   }
-  // ACT: 只保护顶层 HTML token 内开始的 pre；代码围栏及引用代码中的字面 HTML 不参与转换。
+  // ACT: Only protect pre elements starting inside top-level HTML tokens; literal HTML in code fences and blockquotes is not transformed.
   return segments.length ? segments.join("") + source.slice(copied) : text;
 }
 
@@ -88,7 +88,7 @@ export function loadMarkdownImage(element: HTMLImageElement, source: string, pat
   try {
     if (/^https?:\/\//i.test(source)) { element.src = source; return release; }
     const relative = resolveMarkdownPath(source, path);
-    if (!relative || !files) throw new Error("当前宿主无法读取文档图片");
+    if (!relative || !files) throw new Error("The current host cannot read document images");
     const mimeTypes: Record<string, string> = { png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", webp: "image/webp", gif: "image/gif", svg: "image/svg+xml", avif: "image/avif", bmp: "image/bmp", ico: "image/x-icon" };
     const mime = mimeTypes[relative.split(".").at(-1)?.toLowerCase() || ""] || "application/octet-stream";
     const shared = files.acquireUrl?.(relative, mime);
@@ -99,7 +99,7 @@ export function loadMarkdownImage(element: HTMLImageElement, source: string, pat
       else release = () => URL.revokeObjectURL(url);
       return url;
     });
-    void pending.then(url => { if (!cancelled) element.src = url; }, () => { if (!cancelled) element.title = "图片读取失败"; });
-  } catch (error) { element.title = error instanceof Error ? error.message : "图片读取失败"; }
+    void pending.then(url => { if (!cancelled) element.src = url; }, () => { if (!cancelled) element.title = "Failed to load image"; });
+  } catch (error) { element.title = error instanceof Error ? error.message : "Failed to load image"; }
   return () => { cancelled = true; release(); };
 }

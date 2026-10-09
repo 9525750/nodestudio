@@ -19,7 +19,7 @@ export const useWorkspaceStore = defineStore("workspace", () => {
       params: { directory: path }, headers: { "x-toonflow-workspace": "1" }, signal,
     });
     signal?.throwIfAborted();
-    if (data.code !== 200 || !data.data?.directory) throw new Error(data.message || "工作目录校验失败");
+    if (data.code !== 200 || !data.data?.directory) throw new Error(data.message || "Working directory validation failed");
     const checkedDirectory = data.data.directory;
     pendingAgentMessage.value = null;
     const existing = projectList.value.find(project => project.directory === previousDirectory)

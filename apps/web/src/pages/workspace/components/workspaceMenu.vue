@@ -2,21 +2,21 @@
   <div class="workspaceMenu">
     <el-card shadow="never" :bodyStyle="{ padding: '5px 10px' }">
       <div class="menuContent">
-        <el-button class="toolButton" text aria-label="退出项目" title="退出项目" @click="exitVisible = true">
+        <el-button class="toolButton" text aria-label="Exit project" title="Exit project" @click="exitVisible = true">
           <icon-x :size="17" aria-hidden="true" />
         </el-button>
-        <el-button class="toolButton" text :aria-label="hasDesktopUpdate ? '设置，有新版本可用' : '设置'" title="设置" @click="emit('openSettings')">
+        <el-button class="toolButton" text :aria-label="hasDesktopUpdate ? 'Settings, update available' : 'Settings'" title="Settings" @click="emit('openSettings')">
           <el-badge isDot :hidden="!hasDesktopUpdate">
             <icon-settings :size="17" aria-hidden="true" />
           </el-badge>
         </el-button>
       </div>
     </el-card>
-    <el-dialog v-model="exitVisible" title="退出项目" width="360px" alignCenter appendToBody>
-      <span>是否退出当前项目并返回首页？</span>
+    <el-dialog v-model="exitVisible" title="Exit project" width="360px" alignCenter appendToBody>
+      <span>Exit the current project and return to the home page?</span>
       <template #footer>
-        <el-button @click="exitVisible = false">取消</el-button>
-        <el-button type="primary" :loading="leaving" @click="exitProject">退出项目</el-button>
+        <el-button @click="exitVisible = false">Cancel</el-button>
+        <el-button type="primary" :loading="leaving" @click="exitProject">Exit project</el-button>
       </template>
     </el-dialog>
   </div>

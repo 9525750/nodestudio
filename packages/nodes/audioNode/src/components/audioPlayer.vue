@@ -19,7 +19,7 @@
             step="0.01"
             :value="currentTime"
             :disabled="!duration || failed"
-            aria-label="音频播放进度"
+            aria-label="Audio playback progress"
             :aria-valuetext="`${formatTime(currentTime)} / ${formatTime(duration)}`"
             @pointerdown.stop
             @mousedown.stop
@@ -30,11 +30,11 @@
       </div>
     </div>
     <div class="playerControls">
-      <el-button class="playButton nodrag nopan nowheel" :icon="playing ? IconPlayerPause : IconPlayerPlay" :disabled="!duration || failed" circle :aria-label="playing ? '暂停音频' : '播放音频'" :title="playing ? '暂停' : '播放'" @pointerdown.stop @mousedown.stop @dblclick.stop @click="togglePlayback" />
+      <el-button class="playButton nodrag nopan nowheel" :icon="playing ? IconPlayerPause : IconPlayerPlay" :disabled="!duration || failed" circle :aria-label="playing ? 'Pause audio' : 'Play audio'" :title="playing ? 'Pause' : 'Play'" @pointerdown.stop @mousedown.stop @dblclick.stop @click="togglePlayback" />
       <span class="timeLabel"><slot name="time"><span>{{ formatTime(currentTime) }}</span><span class="timeSeparator">/</span>{{ formatTime(duration) }}</slot></span>
       <div class="volumeControl nodrag nopan nowheel" @pointerdown.stop @mousedown.stop @dblclick.stop>
-        <el-button class="volumeButton" :icon="muted || !volume ? IconVolumeOff : IconVolume" text circle :disabled="failed" :aria-label="muted || !volume ? '取消静音' : '静音音频'" :title="muted || !volume ? '取消静音' : '静音'" :aria-pressed="muted || !volume" @click="toggleMute" />
-        <input class="volumeInput" type="range" min="0" max="100" :value="muted ? 0 : volume" :disabled="failed" aria-label="音频音量" @input="setVolume" />
+        <el-button class="volumeButton" :icon="muted || !volume ? IconVolumeOff : IconVolume" text circle :disabled="failed" :aria-label="muted || !volume ? 'Unmute' : 'Mute audio'" :title="muted || !volume ? 'Unmute' : 'Mute'" :aria-pressed="muted || !volume" @click="toggleMute" />
+        <input class="volumeInput" type="range" min="0" max="100" :value="muted ? 0 : volume" :disabled="failed" aria-label="Audio volume" @input="setVolume" />
       </div>
     </div>
   </div>
@@ -46,7 +46,7 @@ import { ElButton, ElMessage } from "element-plus";
 import { IconPlayerPlay, IconPlayerPause, IconVolume, IconVolumeOff } from "@tabler/icons-vue";
 import { getWaveformPeaks } from "../audioWaveform";
 
-const { src, label = "节点音频" } = defineProps<{ src: string; label?: string }>();
+const { src, label = "Node audio" } = defineProps<{ src: string; label?: string }>();
 const emit = defineEmits<{ loadedmetadata: [event: Event]; play: [] }>();
 const audio = ref<HTMLAudioElement>();
 const peaks = shallowRef<number[]>([]);
@@ -72,16 +72,16 @@ watch(() => src, async (value, _previous, onCleanup) => {
   waveformLoading.value = true;
   try {
     const response = await fetch(value, { signal: controller.signal });
-    if (!response.ok) throw new Error("无法读取音频");
+    if (!response.ok) throw new Error("Unable to read audio");
     const content = await response.arrayBuffer();
     controller.signal.throwIfAborted();
-    // ACT: 使用浏览器完整解码后仅保留 128 个峰值；超长素材的解码内存开销可通过服务端分段提取优化。
+    // ACT: Full browser decode keeps only 128 peaks; memory overhead for very long assets can be optimized via server-side segmented extraction.
     const context = new OfflineAudioContext(1, 1, 48000);
     const buffer = await context.decodeAudioData(content);
     controller.signal.throwIfAborted();
     peaks.value = getWaveformPeaks(Array.from({ length: buffer.numberOfChannels }, (_, index) => buffer.getChannelData(index)));
   } catch {
-    // ACT: 浏览器能播放但不能解码的格式仍保留播放和定位，波形区域提示不可用。
+    // ACT: Formats the browser can play but cannot decode still retain playback and seeking; waveform area shows unavailable.
   } finally {
     if (!controller.signal.aborted) waveformLoading.value = false;
   }
@@ -135,7 +135,7 @@ async function togglePlayback() {
   if (!element.paused) return element.pause();
   try { await element.play(); }
   catch (error) {
-    if (!disposed && !(error instanceof DOMException && error.name === "AbortError")) ElMessage.error("音频播放失败");
+    if (!disposed && !(error instanceof DOMException && error.name === "AbortError")) ElMessage.error("Audio playback failed");
   }
 }
 
@@ -217,7 +217,7 @@ function mediaError() {
         margin: 0;
         opacity: 0;
         appearance: none;
-        // ACT: 只让位置线附近的滑块接收拖动，波形其余区域交给节点拖拽。
+        // ACT: Only let the slider near the position line receive drag; the rest of the waveform area is left to node dragging.
         pointer-events: none;
         touch-action: none;
         &::-webkit-slider-thumb { appearance: none; width: 12px; height: 96px; pointer-events: auto; cursor: ew-resize; }

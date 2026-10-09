@@ -1,41 +1,41 @@
 <template>
-  <el-dialog v-model="visible" title="工作区全文搜索" width="min(900px, calc(100vw - 32px))" alignCenter appendToBody
+  <el-dialog v-model="visible" title="Workspace full-text search" width="min(900px, calc(100vw - 32px))" alignCenter appendToBody
     :closeOnClickModal="false" :closeOnPressEscape="!replacing" :showClose="!replacing" @closed="onClosed">
     <div class="workspaceSearch">
       <form class="searchControls" @submit.prevent="search">
-        <el-input ref="queryInput" v-model="query" placeholder="查找文本（字面匹配）" aria-label="查找文本" :disabled="replacing" clearable />
-        <el-checkbox v-model="caseSensitive" :disabled="replacing">区分大小写</el-checkbox>
-        <el-button type="primary" nativeType="submit" :disabled="!query || !active || searching || replacing">搜索</el-button>
-        <el-button v-if="searching" @click="cancelSearch">取消</el-button>
+        <el-input ref="queryInput" v-model="query" placeholder="Find text (literal match)" aria-label="Find text" :disabled="replacing" clearable />
+        <el-checkbox v-model="caseSensitive" :disabled="replacing">Case sensitive</el-checkbox>
+        <el-button type="primary" nativeType="submit" :disabled="!query || !active || searching || replacing">Search</el-button>
+        <el-button v-if="searching" @click="cancelSearch">Cancel</el-button>
       </form>
       <div class="replaceControls">
-        <el-input v-model="replacement" placeholder="替换为（留空表示删除）" aria-label="替换文本" :disabled="replacing" />
-        <el-button :disabled="searching || replacing || !selectedFiles.length || !active" @click="previewing = true">预览替换</el-button>
+        <el-input v-model="replacement" placeholder="Replace with (leave empty to delete)" aria-label="Replacement text" :disabled="replacing" />
+        <el-button :disabled="searching || replacing || !selectedFiles.length || !active" @click="previewing = true">Preview replacement</el-button>
       </div>
-      <p class="searchScope">搜索磁盘内容；跳过回收目录、二进制和画布 JSON。单文件最多 2 MiB，本次最多检查 1000 个文件、1000 个目录、20 MiB 文本，展示 500 处匹配。</p>
-      <p class="searchStatus" role="status" aria-live="polite">{{ status ? translate(status) : '输入文本后搜索当前工作区及其子目录。' }}</p>
+      <p class="searchScope">Searches disk content; skips trash directories, binaries, and canvas JSON. Max 2 MiB per file, up to 1,000 files, 1,000 directories, 20 MiB text, showing 500 matches.</p>
+      <p class="searchStatus" role="status" aria-live="polite">{{ status ? translate(status) : 'Enter text to search the current workspace and its subdirectories.' }}</p>
       <p v-if="searched" class="searchCounts">
-        已读取 {{ scanned }} 个文本文件，{{ results.length }} 个文件命中 {{ matchCount }} 处。
-        跳过：二进制或不支持的编码 {{ skippedBinary }}，过大文件 {{ skippedLarge }}，画布 {{ skippedCanvas }}，读取失败 {{ readFailures }}。
+        Scanned {{ scanned }} text files, {{ results.length }} files matched with {{ matchCount }} occurrences.
+        Skipped: binary or unsupported encoding {{ skippedBinary }}, oversized files {{ skippedLarge }}, canvas {{ skippedCanvas }}, read failures {{ readFailures }}.
       </p>
       <el-alert v-if="issues.length" type="warning" :closable="false" :title="issues.join('；')" />
       <template v-if="previewing">
         <div class="previewHeader">
-          <strong>替换预览：{{ selectedFiles.length }} 个文件，{{ selectedMatchCount }} 处</strong>
-          <el-button size="small" :disabled="replacing" @click="previewing = false">返回结果</el-button>
+          <strong>Replacement preview: {{ selectedFiles.length }} files, {{ selectedMatchCount }} occurrences</strong>
+          <el-button size="small" :disabled="replacing" @click="previewing = false">Back to results</el-button>
         </div>
-        <p class="replaceNotice">仅替换勾选文件中已完整搜索的匹配。逐文件保存；冲突文件会保留原文，已完成的文件不会因其他文件失败而回滚。</p>
+        <p class="replaceNotice">Only replaces fully searched matches in selected files. Saved file by file; conflicting files keep the original text, and completed files will not be rolled back due to other failures.</p>
       </template>
       <div class="searchResults" :aria-busy="searching || replacing">
         <section v-for="file in shownFiles" :key="file.path" class="fileResult">
           <header class="fileHeader">
             <el-checkbox v-if="!previewing" :modelValue="file.selected" :disabled="file.truncated || replacing || !!file.saved"
-              :aria-label="`选择替换 ${file.path}`" @change="value => selectFile(file.path, value === true)" />
+              :aria-label="`Select for replacement: ${file.path}`" @change="value => selectFile(file.path, value === true)" />
             <span class="filePath" :title="file.path">{{ file.path }}</span>
-            <span>{{ file.matches.length }} 处</span>
-            <span v-if="file.saved" class="savedStatus">已替换</span>
+            <span>{{ file.matches.length }} matches</span>
+            <span v-if="file.saved" class="savedStatus">Replaced</span>
           </header>
-          <p v-if="file.truncated" class="fileNotice">此文件的匹配超过本次展示限制，暂不参与替换。</p>
+          <p v-if="file.truncated" class="fileNotice">This file has more matches than the display limit; it is excluded from replacement.</p>
           <p v-if="file.error" class="fileError" role="alert">{{ file.error }}</p>
           <div v-for="match in file.matches" :key="match.start" class="matchResult">
             <button v-if="!previewing" type="button" class="matchButton" :disabled="replacing || !!file.saved" @click="openMatch(file.path, match)">
@@ -45,8 +45,8 @@
             <div v-else class="matchPreview">
               <span class="matchPosition">{{ match.line }}:{{ match.column }}</span>
               <div class="previewLines">
-                <div class="beforeLine"><span aria-label="原内容">− </span>{{ match.before }}<mark>{{ match.text }}</mark>{{ match.after }}</div>
-                <div class="afterLine"><span aria-label="替换后">+ </span>{{ match.before }}<mark>{{ replacement }}</mark>{{ match.after }}</div>
+                <div class="beforeLine"><span aria-label="Original">− </span>{{ match.before }}<mark>{{ match.text }}</mark>{{ match.after }}</div>
+                <div class="afterLine"><span aria-label="After replacement">+ </span>{{ match.before }}<mark>{{ replacement }}</mark>{{ match.after }}</div>
               </div>
             </div>
           </div>
@@ -54,9 +54,9 @@
       </div>
     </div>
     <template #footer>
-      <el-button v-if="replacing" :disabled="replaceCancelled" @click="replaceCancelled = true">停止后续替换</el-button>
-      <el-button v-else @click="visible = false">关闭</el-button>
-      <el-button v-if="previewing" type="primary" :loading="replacing" :disabled="!selectedFiles.length || !active || replacing" @click="replaceSelected">确认替换勾选文件</el-button>
+      <el-button v-if="replacing" :disabled="replaceCancelled" @click="replaceCancelled = true">Stop remaining replacements</el-button>
+      <el-button v-else @click="visible = false">Close</el-button>
+      <el-button v-if="previewing" type="primary" :loading="replacing" :disabled="!selectedFiles.length || !active || replacing" @click="replaceSelected">Replace selected files</el-button>
     </template>
   </el-dialog>
 </template>
@@ -233,7 +233,7 @@ function openMatch(path: string, match: SearchMatch) {
 
 function onClosed() {
   cancelSearch();
-  // 关闭弹窗的焦点捕获后再定位编辑器，避免新建的原文输入框被弹窗夺回光标。
+  // Position the editor after the dialog's focus trap is removed, to prevent the dialog from recapturing focus from the newly created input.
   if (pendingTarget && props.active) emit("open", pendingTarget);
   pendingTarget = undefined;
 }

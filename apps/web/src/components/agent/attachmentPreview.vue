@@ -1,11 +1,11 @@
 <template>
   <div class="thumbnailItem" :class="{ textAttachment: isText }">
     <template v-if="isText">
-      <button class="textAttachmentButton" type="button" :title="attachment.name" :aria-label="`预览 ${attachment.name}`" @click="textPreviewVisible = true">
+      <button class="textAttachmentButton" type="button" :title="attachment.name" :aria-label="`Preview ${attachment.name}`" @click="textPreviewVisible = true">
         <icon-file-text :size="18" />
         <span>{{ attachment.name }}</span>
       </button>
-      <el-button v-if="restorable" class="restoreAttachment" text size="small" :disabled="disabled" @click="emit('restore')">还原到输入框</el-button>
+      <el-button v-if="restorable" class="restoreAttachment" text size="small" :disabled="disabled" @click="emit('restore')">Restore to input</el-button>
     </template>
     <el-image
       v-else-if="attachment.mimeType.startsWith('image/')"
@@ -19,7 +19,7 @@
       :title="attachment.name"
       tabindex="0"
       role="button"
-      :aria-label="`预览 ${attachment.name}`"
+      :aria-label="`Preview ${attachment.name}`"
       @keydown.enter.prevent="imageRef?.showPreview()"
       @keydown.space.prevent="imageRef?.showPreview()">
       <template #error><icon-photo :size="20" /></template>
@@ -28,12 +28,12 @@
       <video v-if="thumbnailUrl" :src="thumbnailUrl" preload="metadata" muted playsinline aria-hidden="true" />
       <icon-video class="videoIcon" :size="16" />
     </button>
-    <el-button v-if="removable" class="removeAttachment" circle :disabled="disabled" :aria-label="`移除 ${attachment.name}`" title="移除附件" @click="emit('remove')"><icon-x :size="10" /></el-button>
+    <el-button v-if="removable" class="removeAttachment" circle :disabled="disabled" :aria-label="`Remove ${attachment.name}`" title="Remove attachment" @click="emit('remove')"><icon-x :size="10" /></el-button>
     <el-dialog v-model="videoPreviewVisible" :title="attachment.name" width="min(800px, 90vw)" alignCenter appendToBody destroyOnClose>
       <video v-if="videoPreviewVisible" class="videoPreview" :src="thumbnailUrl" controls playsinline preload="metadata" />
     </el-dialog>
     <el-dialog v-model="textPreviewVisible" :title="attachment.name" width="min(720px, 90vw)" alignCenter appendToBody destroyOnClose>
-      <p v-if="textLoading || textError" :role="textError ? 'alert' : 'status'">{{ textLoading ? '正在读取…' : textError }}</p>
+      <p v-if="textLoading || textError" :role="textError ? 'alert' : 'status'">{{ textLoading ? 'Loading…' : textError }}</p>
       <pre v-else class="textPreview">{{ textContent }}</pre>
     </el-dialog>
   </div>
@@ -93,7 +93,7 @@ watch([textPreviewVisible, () => props.attachment, () => props.directory], async
     const text = await readTextAttachment(attachment, directory);
     if (!cancelled) textContent.value = text;
   } catch {
-    if (!cancelled) textError.value = "无法读取文本附件，请重试";
+    if (!cancelled) textError.value = "Failed to read text attachment, please retry";
   } finally {
     if (!cancelled) textLoading.value = false;
   }

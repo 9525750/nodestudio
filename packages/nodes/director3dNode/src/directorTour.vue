@@ -6,8 +6,8 @@
       :target="() => root?.querySelector<HTMLElement>(step.target) ?? null"
       :title="step.title"
       :description="step.description"
-      :prevButtonProps="{ children: '上一步' }"
-      :nextButtonProps="{ children: index === steps.length - 1 ? '开始使用' : '下一步' }" />
+      :prevButtonProps="{ children: 'Previous' }"
+      :nextButtonProps="{ children: index === steps.length - 1 ? 'Get started' : 'Next' }" />
     <template #indicators="{ current, total }">{{ current + 1 }} / {{ total }}</template>
   </el-tour>
 </template>
@@ -21,34 +21,34 @@ const storageKey = "toonflow.director3dTour";
 const open = ref(localStorage.getItem(storageKey) !== "true");
 const steps = [
   {
-    target: ".chatFooter",
-    title: "生成场景与方案",
-    description: "描述场景模型、人物动作和镜头要求，再点击“生成方案”。画布上如果有链接的文本、图片和视频，可以通过 @ 引用。",
+    target: “.chatFooter”,
+    title: “Generate scene and plan”,
+    description: “Describe scene models, character actions and camera requirements, then click \”Generate plan\”. If there are linked text, images and videos on the canvas, you can reference them via @.”,
   },
   {
-    target: ".planContent",
-    title: "查看与切换方案",
-    description: "生成的方案会出现在这里。点击方案从头预览对应动画，并查看生成时的输入提示词；也可以继续输入要求生成新方案。多个方案共用基础场景和模型。",
+    target: “.planContent”,
+    title: “View and switch plans”,
+    description: “Generated plans will appear here. Click a plan to preview its animation from the beginning and view the input prompt used for generation; you can also continue entering requirements to generate new plans. Multiple plans share the same base scene and models.”,
   },
   {
-    target: ".viewport",
-    title: "第一人称取景",
-    description: "点击三维画面后，用鼠标调整朝向。WASD 移动，空格上升，Shift 下降，滚轮调焦；左键或 Esc 退出取景。",
+    target: “.viewport”,
+    title: “First-person framing”,
+    description: “Click the 3D viewport, then use the mouse to adjust the direction. WASD to move, Space to go up, Shift to go down, scroll to zoom; left-click or Esc to exit framing.”,
   },
   {
-    target: ".stagePanel .referenceList",
-    title: "记录关键帧",
-    description: "取景时按右键，或点击“添加关键帧”记录当前镜头。这里的关键帧可以拖动排序、点击回看或删除。再次生成方案时，AI 会参考这些取景及其顺序设计运镜。点击导出按钮可以导出关键帧图片。",
+    target: “.stagePanel .referenceList”,
+    title: “Record keyframes”,
+    description: “Right-click while framing, or click \”Add keyframe\” to record the current camera. Keyframes here can be dragged to reorder, clicked to review or deleted. When generating a plan again, the AI will reference these framings and their order to design camera movement. Click the export button to export keyframe images.”,
   },
   {
-    target: ".playbackBar",
-    title: "播放与画面设置",
-    description: "用播放按钮和进度条检查动画；在这里调整画面比例、网格、天空与光照，让预演画面更符合你的想法。",
+    target: “.playbackBar”,
+    title: “Playback and display settings”,
+    description: “Use the play button and progress bar to check animations; adjust aspect ratio, grid, sky and lighting here to make the preview match your vision.”,
   },
   {
-    target: '[aria-label="导出视频节点"]',
-    title: "导出到画布",
-    description: "选中方案后，点击这里导出视频节点。关键帧缩略图上的导出按钮可以生成图片节点。视频导出期间请保持窗口可见，完成后回到画布查看结果。",
+    target: '[aria-label=”Export video node”]',
+    title: “Export to canvas”,
+    description: “After selecting a plan, click here to export a video node. The export button on keyframe thumbnails can generate image nodes. Please keep the window visible during video export; return to the canvas to view results when done.”,
   },
 ];
 

@@ -1,20 +1,20 @@
 <template>
   <section class="nodeMarkdownEditor">
-    <div class="editorToolbar" role="toolbar" aria-label="Markdown 编辑工具">
-      <button type="button" :disabled="locked || sourceMode || !ready" @mousedown.prevent @click="run('heading')">标题</button>
-      <button type="button" :disabled="locked || sourceMode || !ready" @mousedown.prevent @click="run('bold')">加粗</button>
-      <button type="button" :disabled="locked || sourceMode || !ready" @mousedown.prevent @click="run('italic')">斜体</button>
-      <button type="button" :disabled="locked || sourceMode || !ready" @mousedown.prevent @click="run('list')">列表</button>
-      <button type="button" :disabled="locked || sourceMode || !ready" @mousedown.prevent @click="run('undo')">撤销</button>
-      <button type="button" :disabled="locked || sourceMode || !ready" @mousedown.prevent @click="run('redo')">重做</button>
+    <div class="editorToolbar" role="toolbar" aria-label="Markdown editing tools">
+      <button type="button" :disabled="locked || sourceMode || !ready" @mousedown.prevent @click="run('heading')">Heading</button>
+      <button type="button" :disabled="locked || sourceMode || !ready" @mousedown.prevent @click="run('bold')">Bold</button>
+      <button type="button" :disabled="locked || sourceMode || !ready" @mousedown.prevent @click="run('italic')">Italic</button>
+      <button type="button" :disabled="locked || sourceMode || !ready" @mousedown.prevent @click="run('list')">List</button>
+      <button type="button" :disabled="locked || sourceMode || !ready" @mousedown.prevent @click="run('undo')">Undo</button>
+      <button type="button" :disabled="locked || sourceMode || !ready" @mousedown.prevent @click="run('redo')">Redo</button>
       <span class="toolbarSpacer" />
-      <button type="button" @click="copyText">复制正文</button>
-      <button type="button" :aria-pressed="sourceMode" @click="sourceMode = !sourceMode">{{ sourceMode ? '富文本' : '原文' }}</button>
+      <button type="button" @click="copyText">Copy text</button>
+      <button type="button" :aria-pressed="sourceMode" @click="sourceMode = !sourceMode">{{ sourceMode ? 'Rich text' : 'Source' }}</button>
     </div>
     <p v-if="error" class="editorError" role="alert">{{ error }}</p>
-    <textarea v-if="sourceMode" class="sourceEditor" :value="modelValue" :readonly="readonly" :disabled="disabled" :aria-label="ariaLabel || '编辑 Markdown 原文'" spellcheck="false" @input="updateSource" />
+    <textarea v-if="sourceMode" class="sourceEditor" :value="modelValue" :readonly="readonly" :disabled="disabled" :aria-label="ariaLabel || 'Edit Markdown source'" spellcheck="false" @input="updateSource" />
     <editor-content v-if="editor && !sourceMode" :editor="editor" class="richHost" />
-    <p class="editorHint">富文本会规范化 Markdown；保留原始 HTML 写法请使用原文。</p>
+    <p class="editorHint">Rich text normalizes Markdown; use Source to preserve raw HTML.</p>
   </section>
 </template>
 
@@ -48,7 +48,7 @@ function rebuild() {
       content: parseMarkdownContent(props.modelValue),
       editable: !locked.value,
       editorProps: {
-        attributes: { class: "textNodeMarkdown", "aria-label": props.ariaLabel || "编辑文本内容", role: "textbox", "aria-multiline": "true" },
+        attributes: { class: "textNodeMarkdown", "aria-label": props.ariaLabel || "Edit text content", role: "textbox", "aria-multiline": "true" },
         transformPastedHTML: parseMarkdownContent,
         handlePaste(_view, event) {
           const current = editor.value;
@@ -61,12 +61,12 @@ function rebuild() {
       onUpdate({ editor: current }) {
         if (!props.active || sourceMode.value) return;
         lastMarkdown = serializeMarkdown(current);
-        // 同步更新节点输出，关闭弹窗或保存画布时不等待防抖回调。
+        // Synchronously update node output; do not wait for debounce callback when closing dialog or saving canvas.
         emit("update:modelValue", lastMarkdown);
       },
     });
   } catch (cause) {
-    error.value = cause instanceof Error ? cause.message : "编辑器加载失败，可切换原文继续编辑";
+    error.value = cause instanceof Error ? cause.message : "Editor failed to load, switch to Source to continue editing";
   }
 }
 
@@ -76,7 +76,7 @@ watch(() => props.modelValue, value => {
   try {
     editor.value.commands.setContent(parseMarkdownContent(value), { emitUpdate: false });
     lastMarkdown = value;
-  } catch (cause) { error.value = cause instanceof Error ? cause.message : "正文更新失败"; }
+  } catch (cause) { error.value = cause instanceof Error ? cause.message : "Text update failed"; }
 });
 watch(locked, value => editor.value?.setEditable(!value, false));
 onBeforeUnmount(destroyEditor);
@@ -98,7 +98,7 @@ async function copyText() {
   try {
     if (props.writeClipboardText) await props.writeClipboardText(props.modelValue);
     else await navigator.clipboard.writeText(props.modelValue);
-  } catch (cause) { error.value = cause instanceof Error ? cause.message : "复制失败，请在原文中选择并复制"; }
+  } catch (cause) { error.value = cause instanceof Error ? cause.message : "Copy failed, please select and copy from source"; }
 }
 </script>
 

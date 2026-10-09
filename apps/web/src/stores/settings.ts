@@ -7,7 +7,7 @@ import { canvasShortcutFields, defaultCanvasShortcuts, getShortcutBindings, isSh
 import "element-plus/es/components/message/style/css";
 
 export const settings = ref<Record<string, unknown>>({});
-// ACT: 页面在 loadSettings 完成后才挂载，加载标记仅保留在设置初始化与自动保存内部。
+// ACT: Page mounts only after loadSettings completes; loading flag is only kept within settings initialization and auto-save.
 let settingsReady = false;
 let saveQueue = Promise.resolve();
 let applyingSettings = false;
@@ -16,7 +16,7 @@ export const settingsStorage = {
   getItem(key: string) {
     const stores = settings.value.stores as Record<string, unknown> | undefined;
     if (stores && Object.hasOwn(stores, key)) return JSON.stringify(stores[key]);
-    // ACT: 只迁移当前来源可读取的旧缓存，保留原值；不同端口的 localStorage 不能互读。
+    // ACT: Only migrate old cache readable by the current origin, keep original values; different ports' localStorage cannot be read across origins.
     const value = localStorage.getItem(key);
     if (value !== null) settingsStorage.setItem(key, value);
     return value;
@@ -100,23 +100,23 @@ export async function loadSettings() {
   const { data } = await axios.get("/api/settings/get", { headers: { "Cache-Control": "no-cache", "x-toonflow-workspace": "1" } });
   if (settingsReady) return;
   if (data.code !== 200 || !data.data || typeof data.data !== "object" || Array.isArray(data.data)) {
-    throw new Error("读取设置失败");
+    throw new Error("Failed to load settings");
   }
   settings.value = data.data;
-  // 等初始化引发的监听执行完，再允许自动保存。
+  // Wait for watchers triggered by initialization to complete before allowing auto-save.
   await nextTick();
   settingsReady = true;
 }
 
 export function saveSettings(update?: (current: Record<string, unknown>) => Record<string, unknown> | undefined) {
-  // ACT: 队列内读取最新配置再计算变更，确认成功后发布；仅协调当前页面的保存。
+  // ACT: Read latest config within queue then compute changes, publish after confirming success; only coordinates saves from the current page.
   const saving = saveQueue.then(async () => {
     const patch = update?.(settings.value);
     if (update && !patch) return false;
     const { data } = await axios.put<{ code: number; data: { customProviders?: CustomProvider[]; mediaProvider?: { id: string }; modelRefreshErrors?: string[] } | null }>(
       "/api/settings/save", { settings: { ...settings.value, ...patch } }, { headers: { "x-toonflow-workspace": "1" } },
     );
-    if (data.code !== 200) throw new Error("保存设置失败");
+    if (data.code !== 200) throw new Error("Failed to save settings");
     const providers = data.data?.customProviders;
     if ((patch && Object.hasOwn(patch, "customProviders")) || providers) invalidateNodeModels("language");
     if (patch || providers) {
@@ -128,7 +128,7 @@ export function saveSettings(update?: (current: Record<string, unknown>) => Reco
       invalidateNodeModels("media");
       window.dispatchEvent(new CustomEvent("toonflow:plugin-installed", { detail: { type: "provider", name: data.data.mediaProvider.id } }));
     }
-    if (data.data?.modelRefreshErrors?.length) ElMessage.warning(`API Key 已保存，部分模型获取失败：${data.data.modelRefreshErrors.join("；")}`);
+    if (data.data?.modelRefreshErrors?.length) ElMessage.warning(`API Key saved. Some models failed to refresh: ${data.data.modelRefreshErrors.join("; ")}`);
     return true;
   });
   saveQueue = saving.then(() => {}, () => {});
@@ -137,5 +137,5 @@ export function saveSettings(update?: (current: Record<string, unknown>) => Reco
 
 watch(settings, () => {
   if (!settingsReady || applyingSettings) return;
-  void saveSettings().catch(() => { ElMessage.error("设置保存失败，请稍后重试"); });
+  void saveSettings().catch(() => { ElMessage.error("Failed to save settings, please try again later"); });
 }, { deep: true, flush: "sync" });

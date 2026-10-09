@@ -13,11 +13,11 @@
     :style="{ maxWidth: 'calc(100vw - 24px)', maxHeight: 'calc(94vh - 12px)', overflow: 'auto' }">
     <div class="videoActionPanel nodrag nopan nowheel" @pointerdown.stop @mousedown.stop @dblclick.stop @keydown.stop>
       <template v-if="action === 'trim'">
-        <video ref="preview" class="clipPreview" :src="src" controls playsinline preload="metadata" aria-label="截取片段预览" @loadedmetadata="readDuration" @timeupdate="readTime" @play="playSelection" @error="duration = 0" />
+        <video ref="preview" class="clipPreview" :src="src" controls playsinline preload="metadata" aria-label="Trim clip preview" @loadedmetadata="readDuration" @timeupdate="readTime" @play="playSelection" @error="duration = 0" />
         <div class="clipTimeline" :class="{ unavailable: processing || !duration }">
           <div class="timelineHeader">
-            <span>拖动左右边界，选择保留的片段</span>
-            <span class="sourceDuration">原视频 {{ formatTime(duration) }}</span>
+            <span>Drag the left and right edges to select the segment to keep</span>
+            <span class="sourceDuration">Original video {{ formatTime(duration) }}</span>
           </div>
           <div class="timelineBody">
             <div ref="track" class="frameTrack" @pointerdown="seekTrack">
@@ -38,12 +38,12 @@
                 :class="{ startHandle: edge === 'start', endHandle: edge === 'end', dragging: dragging === edge }"
                 :style="{ left: `${edge === 'start' ? startPercent : endPercent}%` }"
                 role="slider"
-                :aria-label="edge === 'start' ? '片段开始边界' : '片段结束边界'"
+                :aria-label="edge === 'start' ? 'Clip start boundary' : 'Clip end boundary'"
                 aria-orientation="horizontal"
                 :aria-valuemin="edge === 'start' ? 0 : start + minimumLength"
                 :aria-valuemax="edge === 'start' ? Math.max(0, end - minimumLength) : clipLimit"
                 :aria-valuenow="edge === 'start' ? start : end"
-                :aria-valuetext="Number.isFinite(edge === 'start' ? start : end) ? `${(edge === 'start' ? start : end).toFixed(2)} 秒` : '未设置'"
+                :aria-valuetext="Number.isFinite(edge === 'start' ? start : end) ? `${(edge === 'start' ? start : end).toFixed(2)} seconds` : 'Not set'"
                 :disabled="processing || disabled || !duration"
                 @pointerdown.stop.prevent="beginDrag($event, edge)"
                 @pointermove.stop.prevent="moveDrag"
@@ -58,19 +58,19 @@
           </div>
         </div>
         <div class="clipTimes">
-          <label><span>开始时间</span><input v-model.number="start" class="timeInput" type="number" min="0" :max="clipLimit" step="0.01" :disabled="processing || !duration" aria-label="片段开始时间" @input="seekPreview(($event.target as HTMLInputElement).valueAsNumber)" /><span>秒</span></label>
-          <label><span>结束时间</span><input v-model.number="end" class="timeInput" type="number" min="0" :max="clipLimit" step="0.01" :disabled="processing || !duration" aria-label="片段结束时间" @input="seekPreview(($event.target as HTMLInputElement).valueAsNumber)" /><span>秒</span></label>
-          <span class="selectionDuration">时长 {{ validRange ? (end - start).toFixed(2) : '—' }} 秒</span>
+          <label><span>Start time</span><input v-model.number="start" class="timeInput" type="number" min="0" :max="clipLimit" step="0.01" :disabled="processing || !duration" aria-label="Clip start time" @input="seekPreview(($event.target as HTMLInputElement).valueAsNumber)" /><span>s</span></label>
+          <label><span>End time</span><input v-model.number="end" class="timeInput" type="number" min="0" :max="clipLimit" step="0.01" :disabled="processing || !duration" aria-label="Clip end time" @input="seekPreview(($event.target as HTMLInputElement).valueAsNumber)" /><span>s</span></label>
+          <span class="selectionDuration">Duration {{ validRange ? (end - start).toFixed(2) : '—' }} s</span>
         </div>
-        <p class="actionHint">{{ validRange ? '截取后生成新视频节点，原视频会保留。' : '请选择有效的起止时间。' }}</p>
+        <p class="actionHint">{{ validRange ? 'Trimming will create a new video node; the original video is preserved.' : 'Please select a valid start and end time.' }}</p>
       </template>
-      <p v-else class="actionHint">{{ action === 'extractAudio' ? '提取音轨并生成音频节点，保留原视频。' : '生成静音视频和音频两个节点，保留原视频。' }}</p>
+      <p v-else class="actionHint">{{ action === 'extractAudio' ? 'Extract audio track and create an audio node; the original video is preserved.' : 'Create a muted video node and an audio node; the original video is preserved.' }}</p>
       <div v-if="processing" class="processingStatus" role="status" aria-live="polite">
         <el-progress :percentage="100" :indeterminate="true" :showText="false" />
-        <span>{{ cancelling ? '正在取消并清理文件…' : '正在处理视频…' }}</span>
+        <span>{{ cancelling ? 'Canceling and cleaning up...' : 'Processing video...' }}</span>
       </div>
       <div class="panelActions">
-        <el-button :disabled="cancelling" @click="processing ? cancel() : visible = false">{{ processing ? '取消处理' : '取消' }}</el-button>
+        <el-button :disabled="cancelling" @click="processing ? cancel() : visible = false">{{ processing ? 'Cancel processing' : 'Cancel' }}</el-button>
         <el-button type="primary" :loading="processing" :disabled="disabled || !file || (action === 'trim' && !validRange)" @click="run">{{ actionLabels[action] }}</el-button>
       </div>
     </div>
@@ -92,7 +92,7 @@ const loadFfmpeg = useNodeFfmpeg();
 const nodeEvent = useNodeEvent();
 const getCanvas = inject<(() => { id: string } | undefined) | undefined>("canvas", undefined);
 const batchHistory = inject<(action: () => Promise<void>) => Promise<void>>("batchCanvasHistory", action => action());
-const actionLabels = { extractAudio: "提取音轨", separate: "分离音视频", trim: "截取片段" };
+const actionLabels = { extractAudio: "Extract audio track", separate: "Separate audio and video", trim: "Trim clip" };
 const action = ref<keyof typeof actionLabels>("trim");
 const visible = ref(false);
 const processing = ref(false);
@@ -137,7 +137,7 @@ watch(() => getCanvas?.()?.id, reset, { flush: "sync" });
 watch(visible, value => { if (!value) clearPreview(); });
 onBeforeUnmount(() => { cancel(); clearPreview(); });
 nodeEvent.on("save", reason => {
-  if (reason === "reload" && processing.value) throw new Error("视频处理中，请完成或取消后再刷新节点");
+  if (reason === "reload" && processing.value) throw new Error("Video is processing, please finish or cancel before reloading the node");
 });
 nodeEvent.on("delete", async () => { cancel(); await job; });
 
@@ -183,7 +183,7 @@ function loadThumbnails() {
   canvas.height = 96;
   const context = canvas.getContext("2d");
   if (!context) return void stopThumbnails();
-  // ACT: 只采样 10 张小图，缩略图数量与内存不随视频时长增长，不生成逐帧缓存。
+  // ACT: Only sample 10 small thumbnails; thumbnail count and memory do not grow with video duration; no per-frame cache.
   const seekFrame = () => {
     clearTimeout(thumbnailTimer);
     thumbnailTimer = window.setTimeout(stopThumbnails, 15000);
@@ -243,17 +243,17 @@ function setBoundary(edge: "start" | "end", value: number) {
   seekPreview(edge === "start" ? start.value : end.value);
 }
 
-/* ACT: 打开截取弹窗后，在 DevTools 控制台运行以下自检，检查实际边界交互；结束后恢复全选。
+/* ACT: After opening the trim dialog, run this self-check in the DevTools console to verify boundary interactions; restore full selection when done.
 (async () => {
   const handles = [...document.querySelectorAll(".videoActionPanel .trimHandle")];
-  if (handles.length !== 2 || handles.some(item => item.disabled)) throw new Error("请先打开已就绪的截取弹窗");
+  if (handles.length !== 2 || handles.some(item => item.disabled)) throw new Error("Please open a ready trim dialog first");
   for (const [index, key] of [[0, "Home"], [1, "End"], [0, "End"], [1, "Home"], [0, "Home"], [1, "Home"], [1, "End"]]) {
     handles[index].dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true }));
     await new Promise(requestAnimationFrame);
     const [start, end] = handles.map(item => Number(item.getAttribute("aria-valuenow")));
-    console.assert(start >= 0 && start < end && end <= Number(handles[1].getAttribute("aria-valuemax")), "裁剪边界交叉或越界", { start, end });
+    console.assert(start >= 0 && start < end && end <= Number(handles[1].getAttribute("aria-valuemax")), "Trim boundaries crossed or out of range", { start, end });
     const times = [...document.querySelectorAll(".videoActionPanel .timeInput")].map(item => item.valueAsNumber);
-    console.assert(times[0] === start && times[1] === end, "输入时间与轨道选区不同步");
+    console.assert(times[0] === start && times[1] === end, "Input times out of sync with track selection");
   }
 })();
 */
@@ -304,7 +304,7 @@ function run() {
 async function process() {
   const operation = action.value;
   const requiredTypes = operation === "extractAudio" ? ["remote-audioNode"] : operation === "trim" ? ["remote-videoNode"] : ["remote-videoNode", "remote-audioNode"];
-  if (requiredTypes.some(type => !nodeTypes?.value?.[type])) return void ElMessage.error("请先启用所需的视频或音频节点插件");
+  if (requiredTypes.some(type => !nodeTypes?.value?.[type])) return void ElMessage.error("Please enable the required video or audio node plugins first");
   const source = props.file!.url;
   const clipStart = start.value;
   const clipEnd = end.value;
@@ -353,24 +353,24 @@ async function process() {
       type: output.type,
       position: { x, y: y + index * 320 },
       data: {
-        label: `${node.data.label || "视频"} · ${output.audio ? "音轨" : operation === "separate" ? "静音视频" : `${clipStart.toFixed(2)}–${clipEnd.toFixed(2)} 秒`}`,
+        label: `${node.data.label || "Video"} · ${output.audio ? "Audio" : operation === "separate" ? "Muted video" : `${clipStart.toFixed(2)}–${clipEnd.toFixed(2)}s`}`,
         outputs: { [output.audio ? "audio" : "video"]: { dataType: output.audio ? "AUDIO" : "VIDEO", value: { url: output.path, mimeType: output.audio ? "audio/mp4" : "video/mp4" } } },
       },
     }));
     await batchHistory(async () => {
       current.signal.throwIfAborted();
-      if (findNode(node.id) !== node || requiredTypes.some(type => !nodeTypes?.value?.[type])) throw new Error("画布节点已变化，请重新处理");
+      if (findNode(node.id) !== node || requiredTypes.some(type => !nodeTypes?.value?.[type])) throw new Error("Canvas node has changed, please process again");
       addNodes(nodes);
       committed = true;
     });
     visible.value = false;
-    ElMessage.success(`${actionLabels[operation]}完成，已生成 ${nodes.length} 个节点`);
+    ElMessage.success(`${actionLabels[operation]} completed, ${nodes.length} node(s) created`);
   } catch (error) {
-    if (!current.signal.aborted) showNodeError(error, `${actionLabels[operation]}失败`);
+    if (!current.signal.aborted) showNodeError(error, `${actionLabels[operation]} failed`);
   } finally {
     if (!committed && workspace) {
       const results = await Promise.allSettled(createdDirectories.map(path => workspace!.remove(path, true)));
-      if (results.some(result => result.status === "rejected" && result.reason?.response?.data?.data?.code !== "ENOENT")) ElMessage.error("部分临时媒体文件清理失败");
+      if (results.some(result => result.status === "rejected" && result.reason?.response?.data?.data?.code !== "ENOENT")) ElMessage.error("Some temporary media files failed to clean up");
     }
     if (current.signal.aborted) visible.value = false;
     processing.value = cancelling.value = false;

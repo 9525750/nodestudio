@@ -1,26 +1,26 @@
 <template>
   <div class="agentConversation">
     <div class="messageViewport t-chat t-chat--normal">
-      <div ref="messageList" class="messageList t-chat__list" role="region" aria-label="对话消息" tabindex="0">
+      <div ref="messageList" class="messageList t-chat__list" role="region" aria-label="Conversation messages" tabindex="0">
         <chat-item v-if="!messages.length && !disabled" role="assistant" variant="text">
           <template #content>
-            <section class="welcomeMessage" aria-label="开始新对话">
+            <section class="welcomeMessage" aria-label="Start a new conversation">
               <div class="welcomeHeader">
                 <span class="welcomeIcon" aria-hidden="true"><span class="welcomeLogo" :style="{ maskImage: `url(${logoUrl})` }" /></span>
                 <div>
-                  <p class="welcomeLabel">你好，我是 Toonflow 助手</p>
-                  <h3>从一个想法开始</h3>
+                  <p class="welcomeLabel">Hi, I'm the Toonflow assistant</p>
+                  <h3>Start with an idea</h3>
                 </div>
               </div>
-              <p class="welcomeDescription">聊聊你的故事、画面或镜头，让我们一起把想法落到画布上。</p>
+              <p class="welcomeDescription">Tell me about your story, scenes, or shots — let's bring your ideas to the canvas.</p>
               <div class="welcomeSuggestions">
-                <el-button v-for="item in welcomeSuggestions" :key="item.label" class="welcomeSuggestion" text bg :disabled="locked" :aria-label="`填入提示：${item.label}`" @click="fillPrompt(item.prompt)">
+                <el-button v-for="item in welcomeSuggestions" :key="item.label" class="welcomeSuggestion" text bg :disabled="locked" :aria-label="`Fill prompt: ${item.label}`" @click="fillPrompt(item.prompt)">
                   <component :is="item.icon" :size="19" aria-hidden="true" />
                   <span class="suggestionContent"><strong>{{ item.label }}</strong><span>{{ item.description }}</span></span>
                   <icon-arrow-up-right class="suggestionArrow" :size="15" aria-hidden="true" />
                 </el-button>
               </div>
-              <p class="welcomeHint">点击填入提示，也可以直接输入，或粘贴图片、视频。</p>
+              <p class="welcomeHint">Click to fill a prompt, or type directly, or paste images and videos.</p>
             </section>
           </template>
         </chat-item>
@@ -37,14 +37,14 @@
             <chat-item :role="item.role" :variant="item.role === 'user' ? 'base' : 'text'" :textLoading="!!item.streaming && !compacting && !item.parts?.some(part => part.type === 'tool' || part.content)" animation="moving">
               <template #content>
                 <div class="messageContent">
-                  <div v-if="item.report" class="reportHeader"><icon-users-group :size="14" />{{ item.report.name }} 上报</div>
+                  <div v-if="item.report" class="reportHeader"><icon-users-group :size="14" />{{ item.report.name }} reported</div>
                   <template v-for="part in item.parts" :key="part.id">
                     <chat-reasoning v-if="part.type === 'thinking' && part.content" class="messageReasoning" :collapsed="part.collapsed ?? true" expandIconPlacement="left" @update:collapsed="part.collapsed = $event">
                       <template #header>
                         <span class="reasoningHeader">
                           <icon-atom :size="14" />
-                          <span>思考</span>
-                          <span v-if="part.duration !== undefined" class="thinkingDuration">{{ part.duration.toFixed(1) }} 秒</span>
+                          <span>Thinking</span>
+                          <span v-if="part.duration !== undefined" class="thinkingDuration">{{ part.duration.toFixed(1) }}s</span>
                         </span>
                       </template>
                       <messageMarkdown v-if="!(part.collapsed ?? true)" :content="part.content" :streaming="!!item.streaming" :directory="directory" />
@@ -60,38 +60,38 @@
             </chat-item>
             <div v-if="!item.streaming" class="messageActions">
               <template v-if="editingId === item.id">
-                <el-button text size="small" :disabled="busy || deletingId !== undefined" @click="cancelEdit"><icon-x :size="14" />取消</el-button>
-                <span class="editingHint">正在下方编辑</span>
+                <el-button text size="small" :disabled="busy || deletingId !== undefined" @click="cancelEdit"><icon-x :size="14" />Cancel</el-button>
+                <span class="editingHint">Editing below</span>
               </template>
               <template v-else>
-                <el-button v-if="item.content" class="messageAction" text circle aria-label="复制消息" title="复制消息" @click="copyMessage(mentionPlainText(item.content, item.mentions))"><icon-copy :size="14" /></el-button>
+                <el-button v-if="item.content" class="messageAction" text circle aria-label="Copy message" title="Copy message" @click="copyMessage(mentionPlainText(item.content, item.mentions))"><icon-copy :size="14" /></el-button>
                 <template v-if="item.role === 'user'">
-                  <el-button class="messageAction" text circle :disabled="locked || remoteRunning" aria-label="编辑消息" title="编辑消息" @click="editMessage(item)"><icon-pencil :size="14" /></el-button>
+                  <el-button class="messageAction" text circle :disabled="locked || remoteRunning" aria-label="Edit message" title="Edit message" @click="editMessage(item)"><icon-pencil :size="14" /></el-button>
                 </template>
-                <el-button v-if="!item.report" class="messageAction" text circle :loading="deletingId === item.id" :disabled="locked || remoteRunning" aria-label="删除消息" title="删除消息" @click="deleteMessage(item)"><icon-trash v-if="deletingId !== item.id" :size="14" /></el-button>
+                <el-button v-if="!item.report" class="messageAction" text circle :loading="deletingId === item.id" :disabled="locked || remoteRunning" aria-label="Delete message" title="Delete message" @click="deleteMessage(item)"><icon-trash v-if="deletingId !== item.id" :size="14" /></el-button>
               </template>
             </div>
           </div>
         </div>
       </div>
-      <el-button v-if="messages.length && !atLatestMessage" class="scrollBottom" circle aria-label="回到最新消息" title="回到最新消息" @click="messageVirtualizer.scrollToEnd()"><icon-arrow-down :size="18" /></el-button>
+      <el-button v-if="messages.length && !atLatestMessage" class="scrollBottom" circle aria-label="Scroll to latest message" title="Scroll to latest message" @click="messageVirtualizer.scrollToEnd()"><icon-arrow-down :size="18" /></el-button>
     </div>
     <div v-if="compacting" class="compactionStatus" role="status">
       <el-icon class="is-loading" aria-hidden="true"><icon-loader-2 :size="14" /></el-icon>
-      <span>正在压缩上下文…</span>
+      <span>Compressing context…</span>
     </div>
     <div class="messageInput">
-      <div v-if="editingId" class="editingBanner"><span>编辑消息</span><el-button text size="small" :disabled="busy" @click="cancelEdit">取消</el-button></div>
+      <div v-if="editingId" class="editingBanner"><span>Edit message</span><el-button text size="small" :disabled="busy" @click="cancelEdit">Cancel</el-button></div>
       <div
         class="senderResizeHandle"
         role="separator"
         aria-orientation="horizontal"
-        aria-label="调整输入框高度"
+        aria-label="Resize input area"
         aria-valuemin="44"
         :aria-valuemax="senderMaxHeight"
         :aria-valuenow="senderHeight"
         tabindex="0"
-        title="拖动调整输入框高度"
+        title="Drag to resize input area"
         @focus="senderHeight = sender?.chatElement.rollBox.clientHeight ?? 44"
         @pointerdown="startSenderResize"
         @pointermove="moveSenderResize"
@@ -117,12 +117,12 @@
           :showArrow="false"
           popperClass="agentContextPopover">
           <template #reference>
-            <el-button class="contextButton" text circle aria-label="查看上下文用量" title="查看上下文用量">
+            <el-button class="contextButton" text circle aria-label="View context usage" title="View context usage">
               <icon-circle-dashed :size="14" />
             </el-button>
           </template>
           <div class="contextUsage">
-            <div class="contextHeader"><span>上下文用量</span><span class="contextHint">估算</span></div>
+            <div class="contextHeader"><span>Context usage</span><span class="contextHint">Estimated</span></div>
             <template v-if="contextUsage?.tokens != null">
               <div class="contextTokens">
                 <span>{{ contextUsage.tokens.toLocaleString() }} / {{ contextWindow.toLocaleString() }} tok</span>
@@ -130,17 +130,17 @@
               </div>
               <el-progress :percentage="Math.min(100, contextPercent)" :showText="false" />
             </template>
-            <span v-else class="contextHint">{{ contextUsage ? "等待下一次回复更新用量" : "尚无用量数据" }}</span>
+            <span v-else class="contextHint">{{ contextUsage ? "Waiting for next reply to update usage" : "No usage data yet" }}</span>
             <div v-if="stats" class="contextStats">
-              <div class="contextHeader">对话累计用量</div>
-              <div class="contextTokens"><span>输入</span><span>{{ inputTokens.toLocaleString() }} tok</span></div>
-              <div class="contextTokens"><span>输出</span><span>{{ stats.tokens.output.toLocaleString() }} tok</span></div>
-              <div v-if="inputTokens > 0" class="contextTokens"><span>缓存命中</span><span>{{ (stats.tokens.cacheRead / inputTokens * 100).toFixed(1) }}%</span></div>
-              <div v-if="stats.tokensPerSecond !== undefined" class="contextTokens"><span>生成速度</span><span>{{ stats.tokensPerSecond.toFixed(1) }} tok/s</span></div>
+              <div class="contextHeader">Conversation total usage</div>
+              <div class="contextTokens"><span>Input</span><span>{{ inputTokens.toLocaleString() }} tok</span></div>
+              <div class="contextTokens"><span>Output</span><span>{{ stats.tokens.output.toLocaleString() }} tok</span></div>
+              <div v-if="inputTokens > 0" class="contextTokens"><span>Cache hit</span><span>{{ (stats.tokens.cacheRead / inputTokens * 100).toFixed(1) }}%</span></div>
+              <div v-if="stats.tokensPerSecond !== undefined" class="contextTokens"><span>Generation speed</span><span>{{ stats.tokensPerSecond.toFixed(1) }} tok/s</span></div>
             </div>
           </div>
         </el-popover>
-        <el-button class="sendButton" type="primary" circle :disabled="!busy && locked" :aria-label="busy ? '停止生成' : editingId ? '重发消息' : '发送消息'" :title="busy ? '停止生成' : editingId ? '重发消息' : '发送消息'" @click="busy ? stopMessage() : submitMessage()">
+        <el-button class="sendButton" type="primary" circle :disabled="!busy && locked" :aria-label="busy ? 'Stop generating' : editingId ? 'Resend message' : 'Send message'" :title="busy ? 'Stop generating' : editingId ? 'Resend message' : 'Send message'" @click="busy ? stopMessage() : submitMessage()">
           <icon-player-stop-filled v-if="busy" :size="14" />
           <icon-arrow-up v-else :size="16" />
         </el-button>
@@ -229,7 +229,7 @@ const messageVirtualizer = useVirtualizer<HTMLDivElement, HTMLDivElement>(comput
     scrollEndThreshold: 48,
     useAnimationFrameWithResizeObserver: true,
     useCachedMeasurements: !props.active,
-    // ACT: v-show 隐藏时保留视口与行高，避免零尺寸清空正在输入的工具表单。
+    // ACT: Keep viewport and row heights when hidden via v-show, preventing zero-size from clearing active tool forms.
     observeElementRect: (instance, onChange) => observeElementRect(instance, rect => { if (rect.height) onChange(rect); }),
     rangeExtractor: range => [...new Set([...defaultRangeExtractor(range), ...retained])].sort((left, right) => left - right),
     onChange(instance) {
@@ -283,9 +283,9 @@ const contextWindow = computed(() => contextUsage.value?.contextWindow ?? select
 const contextPercent = computed(() => (contextUsage.value?.tokens ?? 0) / contextWindow.value * 100);
 const inputTokens = computed(() => stats.value ? stats.value.tokens.input + stats.value.tokens.cacheRead + stats.value.tokens.cacheWrite : 0);
 const welcomeSuggestions = [
-  { label: "搭建创作画布", description: "把创意串成清晰的节点流程", icon: IconLayoutGrid, prompt: "帮我搭建一个创作画布，先和我确认需要的节点与流程。" },
-  { label: "梳理故事分镜", description: "拆解故事，安排画面与镜头", icon: IconMovie, prompt: "帮我把故事整理成分镜，先和我确认故事内容、时长和画面风格。" },
-  { label: "生成图片素材", description: "为角色和场景寻找视觉方向", icon: IconPhoto, prompt: "帮我生成图片素材，先和我确认画面内容、风格和使用的模型。" },
+  { label: "Build a creative canvas", description: "Organize ideas into a clear node workflow", icon: IconLayoutGrid, prompt: "Help me build a creative canvas — first confirm the nodes and workflow I need." },
+  { label: "Organize storyboard", description: "Break down the story, arrange scenes and shots", icon: IconMovie, prompt: "Help me organize the story into a storyboard — first confirm the story content, duration, and visual style." },
+  { label: "Generate image assets", description: "Find visual direction for characters and scenes", icon: IconPhoto, prompt: "Help me generate image assets — first confirm the content, style, and model to use." },
 ];
 watch([locked, () => props.active], ([locked, active]) => {
   if (!active || locked) sender?.disable();
@@ -361,7 +361,7 @@ async function insertMentions(mentions: AgentMention[]) {
   const instance = sender;
   if (!instance || locked.value || !props.active) return;
   const currentIds = new Set(instance.getTagData().mention.map(item => item.id));
-  if (currentIds.size + mentions.length > 20) return ElMessage.warning("每条消息最多提及 20 个输出或素材");
+  if (currentIds.size + mentions.length > 20) return ElMessage.warning("Each message can reference up to 20 outputs or assets");
   insertingMentions = true;
   try {
     if (mentionPosition?.node.instance.$el.isConnected) mentionPosition.node.instance.focus(mentionPosition.node.offset);
@@ -373,7 +373,7 @@ async function insertMentions(mentions: AgentMention[]) {
       await instance.setMention({ id: mention.id, name: mentionName(mention) });
     }
   } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : "添加提及失败");
+    ElMessage.error(error instanceof Error ? error.message : "Failed to add reference");
   } finally {
     mentionQuery.value = undefined;
     mentionPosition = undefined;
@@ -414,9 +414,9 @@ async function fillPrompt(prompt: string) {
 async function copyMessage(content: string) {
   try {
     await writeClipboardText(content);
-    ElMessage.success("已复制");
+    ElMessage.success("Copied");
   } catch {
-    ElMessage.error("复制失败，请重试");
+    ElMessage.error("Copy failed, please retry");
   }
 }
 
@@ -453,7 +453,7 @@ async function deleteMessage(item: AgentMessage) {
   deletingId.value = item.id;
   try {
     if (item.entryId || item.replyTo) {
-      if (!directory || !props.sessionFile) throw new Error("请重新打开对话后再删除");
+      if (!directory || !props.sessionFile) throw new Error("Please reopen the conversation before deleting");
       const { data } = await axios.delete<{ code: number; data: AgentConversation; message?: string }>("/api/agent/message", {
         data: {
           directory, sessionFile: props.sessionFile,
@@ -461,14 +461,14 @@ async function deleteMessage(item: AgentMessage) {
         },
         headers: { "x-toonflow-workspace": "1" },
       });
-      if (data.code !== 200) throw new Error(data.message || "删除消息失败");
+      if (data.code !== 200) throw new Error(data.message || "Failed to delete message");
       stats.value = data.data.stats;
       contextUsage.value = data.data.contextUsage;
     }
     messages.value = messages.value.filter(message => message.id !== item.id);
   } catch (error) {
     const message = axios.isAxiosError<{ message?: string }>(error) ? error.response?.data?.message : undefined;
-    ElMessage.error(message || (error instanceof Error ? error.message : "删除消息失败"));
+    ElMessage.error(message || (error instanceof Error ? error.message : "Failed to delete message"));
   } finally {
     deletingId.value = undefined;
   }
@@ -525,7 +525,7 @@ async function uploadAttachments(attachments: AgentAttachment[], directory: stri
 async function sendCanvasResult(event: Extract<AgentEvent, { type: "canvasCall" }>, canvasContext: CanvasContext | undefined, signal: AbortSignal) {
   let body: string;
   try {
-    if (!canvasContext) throw new Error("当前页面没有激活的画布");
+    if (!canvasContext) throw new Error("No active canvas on the current page");
     const result = await canvasContext.call(event, signal);
     body = JSON.stringify({ directory, callId: event.callId, result: result ?? null });
   } catch (error) {
@@ -542,7 +542,7 @@ async function sendCanvasResult(event: Extract<AgentEvent, { type: "canvasCall" 
   });
   if (!response.ok) {
     const error = await response.json().catch(() => null);
-    throw new Error(error?.message || "画布操作结果回传失败");
+    throw new Error(error?.message || "Failed to send canvas operation result");
   }
 }
 
@@ -555,15 +555,15 @@ async function sendMessage(source?: AgentMessage) {
     : instance?.getTagData().mention.map(mention => mention.id) ?? [];
   const references = source && !editing ? source.mentions ?? [] : draftMentions.value;
   const mentions = references.filter(mention => mentionedIds.includes(mention.id)).map(mention => ({ ...mention }));
-  if (mentionedIds.some(id => !mentions.some(mention => mention.id === id))) return ElMessage.warning("存在无法读取的提及，请删除后重新选择");
+  if (mentionedIds.some(id => !mentions.some(mention => mention.id === id))) return ElMessage.warning("Some references cannot be read — please remove and reselect");
   if (!source && editingId.value !== undefined) return;
   const resendIndex = source ? messages.value.findIndex(item => item.id === source.id) : -1;
   if (source && (source.role !== "user" || resendIndex < 0)) return;
   const resendFrom = source ? source.entryId ?? messages.value.slice(resendIndex + 1).find(item => item.role === "user" && item.entryId)?.entryId : undefined;
   if (locked.value || !instance || (!prompt && !attachments.length)) return;
   const model = selectedModelChoice.value;
-  if (!directory) return ElMessage.warning("请先打开项目");
-  if (!model) return ElMessage.warning("请先选择模型");
+  if (!directory) return ElMessage.warning("Please open a project first");
+  if (!model) return ElMessage.warning("Please select a model first");
 
   const requestController = new AbortController();
   const canvasContext = createCanvasContext?.();
@@ -598,7 +598,7 @@ async function sendMessage(source?: AgentMessage) {
       signal: requestController.signal,
     });
     for await (const event of readAgentEvents(response, requestController.signal)) {
-      // 子任务复用发起委派时的画布与取消通道，界面切换不改变工具执行目标。
+      // Sub-tasks reuse the canvas and cancellation channel from when delegation was initiated; UI switching does not change the tool execution target.
       let toolEvent: AgentEvent = event;
       let scope = "";
       while (toolEvent.type === "subAgentEvent") {
@@ -610,7 +610,7 @@ async function sendMessage(source?: AgentMessage) {
       if (toolEvent.type === "question") pendingQuestions.set(`${scope}${toolEvent.toolCallId}`, toolEvent.callId);
       if (toolEvent.type === "tool" && toolEvent.tool.status !== "running") pendingQuestions.delete(`${scope}${toolEvent.tool.id}`);
       if (toolEvent.type === "canvasCall") {
-        if (handledCanvasCalls.has(toolEvent.callId)) throw new Error("收到重复的画布调用");
+        if (handledCanvasCalls.has(toolEvent.callId)) throw new Error("Received duplicate canvas call");
         handledCanvasCalls.add(toolEvent.callId);
         await sendCanvasResult(toolEvent, canvasContext, requestController.signal);
         continue;

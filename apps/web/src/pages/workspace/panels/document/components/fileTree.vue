@@ -1,23 +1,23 @@
 <template>
-  <aside class="fileTree" aria-label="工作区文件">
+  <aside class="fileTree" aria-label="Workspace files">
     <header class="treeHeader" :class="{ dropTarget: dropTargetKey === 'root' }" @dragover.stop="dragOver($event, rootItem)" @dragleave="dragLeave" @drop.stop="dropFiles($event, rootItem)">
-      <span class="treeTitle"><icon-folder :size="16" aria-hidden="true" />工作区文件</span>
+      <span class="treeTitle"><icon-folder :size="16" aria-hidden="true" />Workspace files</span>
       <span class="treeActions">
-        <el-button text circle size="small" :disabled="!directory || creating || busy" aria-label="新建文件" title="在当前目录新建文件" @click="createEntry(false)">
+        <el-button text circle size="small" :disabled="!directory || creating || busy" aria-label="New file" title="Create new file in current directory" @click="createEntry(false)">
           <icon-file-plus :size="15" aria-hidden="true" />
         </el-button>
-        <el-button text circle size="small" :disabled="!directory || creating || busy" aria-label="新建文件夹" title="在当前目录新建文件夹" @click="createEntry(true)"><icon-folder-plus :size="15" /></el-button>
-        <el-button text circle size="small" :disabled="!directory" aria-label="刷新文件树" title="刷新文件树" @click="refreshTree">
+        <el-button text circle size="small" :disabled="!directory || creating || busy" aria-label="New folder" title="Create new folder in current directory" @click="createEntry(true)"><icon-folder-plus :size="15" /></el-button>
+        <el-button text circle size="small" :disabled="!directory" aria-label="Refresh file tree" title="Refresh file tree" @click="refreshTree">
           <icon-refresh :size="15" aria-hidden="true" />
         </el-button>
       </span>
     </header>
     <div class="treeTools">
-      <el-input v-model="searchTerm" size="small" clearable placeholder="搜索文件与节点" aria-label="搜索工作区文件与节点" :prefixIcon="IconSearch" />
-      <el-button text circle size="small" :disabled="!directory" aria-label="快速打开" title="快速打开" @click="emit('quickOpen'); props.params?.params.quickOpen?.()"><icon-file-search :size="15" /></el-button>
-      <el-button text circle size="small" :disabled="!directory" aria-label="全文搜索" title="全文搜索" @click="emit('search'); props.params?.params.search?.()"><icon-search :size="15" /></el-button>
-      <el-button text circle size="small" :disabled="!activeSelection" aria-label="定位当前标签" title="定位当前标签" @click="locateCurrent"><icon-focus-2 :size="15" /></el-button>
-      <el-button text circle size="small" :aria-pressed="multiple" aria-label="勾选多个文件" title="多选" @click="toggleMultiple"><icon-list-check :size="15" /></el-button>
+      <el-input v-model="searchTerm" size="small" clearable placeholder="Search files and nodes" aria-label="Search workspace files and nodes" :prefixIcon="IconSearch" />
+      <el-button text circle size="small" :disabled="!directory" aria-label="Quick open" title="Quick open" @click="emit('quickOpen'); props.params?.params.quickOpen?.()"><icon-file-search :size="15" /></el-button>
+      <el-button text circle size="small" :disabled="!directory" aria-label="Full-text search" title="Full-text search" @click="emit('search'); props.params?.params.search?.()"><icon-search :size="15" /></el-button>
+      <el-button text circle size="small" :disabled="!activeSelection" aria-label="Locate current tab" title="Locate current tab" @click="locateCurrent"><icon-focus-2 :size="15" /></el-button>
+      <el-button text circle size="small" :aria-pressed="multiple" aria-label="Select multiple files" title="Multi-select" @click="toggleMultiple"><icon-list-check :size="15" /></el-button>
     </div>
     <div v-if="multiple && checkedItems.length" class="batchActions">
       <span>已选 {{ checkedItems.length }} 项</span>

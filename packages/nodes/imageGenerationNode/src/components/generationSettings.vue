@@ -1,25 +1,25 @@
 <template>
   <el-popover trigger="click" placement="top-start" width="min(340px, calc(100vw - 24px))" :disabled="disabled" :showArrow="false" :popperStyle="{ padding: '14px' }">
     <template #reference>
-      <el-button class="settingsButton" text size="small" :disabled="disabled" aria-label="图片生成设置">
+      <el-button class="settingsButton" text size="small" :disabled="disabled" aria-label="Image generation settings">
         <span class="ratioShape" :style="ratioStyle(ratio)" aria-hidden="true" />
-        <span>{{ ratio }} · {{ size }} · 1张</span>
+        <span>{{ ratio }} · {{ size }} · 1 image</span>
         <icon-chevron-up :size="14" aria-hidden="true" />
       </el-button>
     </template>
     <div class="generationSettings nodrag nopan nowheel" @pointerdown.stop @mousedown.stop @dblclick.stop @keydown.stop @wheel.stop>
-      <div class="sectionLabel">分辨率</div>
-      <el-radio-group v-model="size" class="sizeOptions" :disabled="disabled" aria-label="图片分辨率">
+      <div class="sectionLabel">Resolution</div>
+      <el-radio-group v-model="size" class="sizeOptions" :disabled="disabled" aria-label="Image resolution">
         <el-radio-button v-for="item in sizes" :key="item" :value="item">{{ item }}</el-radio-button>
       </el-radio-group>
-      <div class="sectionLabel">比例</div>
-      <div class="ratioOptions" role="group" aria-label="图片比例">
+      <div class="sectionLabel">Ratio</div>
+      <div class="ratioOptions" role="group" aria-label="Image aspect ratio">
         <el-button
           v-for="item in ratios"
           :key="item"
           class="ratioButton"
           :disabled="disabled"
-          :aria-label="`比例 ${item}`"
+          :aria-label="`Ratio ${item}`"
           :aria-pressed="ratio === item"
           @click="ratio = item">
           <span class="ratioContent">

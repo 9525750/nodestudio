@@ -14,7 +14,7 @@ function cachePath(path: string) {
 }
 
 function invalidateUrls(directory: string, path: string) {
-  // ACT: 仅失效时保守合并路径写法；实际读取仍交服务端校验，区分大小写的文件最多多读一次。
+  // ACT: Conservatively merge path formats only on invalidation; actual reads rely on server validation, case-sensitive files may be read once extra at most.
   directory = cachePath(directory);
   path = cachePath(path);
   for (const [key, entry] of fileUrls) {
@@ -27,7 +27,7 @@ export default function useWorkspaceFiles(directory?: MaybeRefOrGetter<string | 
   const workspace = directory === undefined ? useWorkspaceStore() : undefined;
   function getDirectory() {
     const path = directory === undefined ? workspace?.project?.directory : toValue(directory);
-    if (!path) throw new Error("请先选择工作目录");
+    if (!path) throw new Error("Please select a working directory first");
     return path;
   }
 
@@ -63,14 +63,14 @@ export default function useWorkspaceFiles(directory?: MaybeRefOrGetter<string | 
         released = true;
         if (--current.users) return;
         if (fileUrls.get(key) === current) fileUrls.delete(key);
-        // 等待中的读取也要在最后一个使用者离开后释放，不撤销其他节点仍使用的 URL。
+        // Pending reads must also be released after the last user leaves; do not revoke URLs still used by other nodes.
         void current.url.then(url => URL.revokeObjectURL(url), () => {});
       },
     };
   }
 
   async function readText(path: string, maxBytes?: number, signal?: AbortSignal) {
-    if (maxBytes !== undefined && (!Number.isSafeInteger(maxBytes) || maxBytes < 1)) throw new Error("读取字节数必须为正整数");
+    if (maxBytes !== undefined && (!Number.isSafeInteger(maxBytes) || maxBytes < 1)) throw new Error("Read byte count must be a positive integer");
     try {
       const { data } = await client.get<string>("/read", {
         params: { directory: getDirectory(), path }, responseType: "text", transformResponse: [], signal,

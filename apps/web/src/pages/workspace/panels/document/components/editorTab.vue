@@ -4,22 +4,22 @@
     <icon-file-text v-else :size="14" />
     <span class="tabLabel">{{ session.context.resource.label }}</span>
     <span v-if="params.params.view.description" class="tabDescription">{{ params.params.view.description }}</span>
-    <span v-if="session.context.dirty" class="dirtyMark" aria-label="尚未保存">●</span>
-    <button class="closeTab" :disabled="session.closing" :aria-label="`关闭 ${session.context.resource.label}`" @pointerdown.stop @mousedown.stop @click.stop="close">
+    <span v-if="session.context.dirty" class="dirtyMark" aria-label="Unsaved">●</span>
+    <button class="closeTab" :disabled="session.closing" :aria-label="`Close ${session.context.resource.label}`" @pointerdown.stop @mousedown.stop @click.stop="close">
       <icon-x :size="13" />
     </button>
   </div>
   <el-dropdown ref="menu" trigger="contextmenu" virtualTriggering :virtualRef="menuAnchor" placement="bottom-start" :showArrow="false" @command="params.params.action">
     <template #dropdown>
       <el-dropdown-menu>
-        <el-dropdown-item v-if="params.params.view.preview" command="keepOpen">保留打开</el-dropdown-item>
-        <el-dropdown-item command="close">关闭</el-dropdown-item>
-        <el-dropdown-item command="closeOthers">关闭其他标签</el-dropdown-item>
-        <el-dropdown-item command="closeRight">关闭右侧标签</el-dropdown-item>
-        <el-dropdown-item command="closeAll">关闭全部标签</el-dropdown-item>
-        <el-dropdown-item command="reopen" divided>重新打开已关闭标签</el-dropdown-item>
-        <el-dropdown-item command="splitRight" divided>向右拆分</el-dropdown-item>
-        <el-dropdown-item command="splitDown">向下拆分</el-dropdown-item>
+        <el-dropdown-item v-if="params.params.view.preview" command="keepOpen">Keep open</el-dropdown-item>
+        <el-dropdown-item command="close">Close</el-dropdown-item>
+        <el-dropdown-item command="closeOthers">Close other tabs</el-dropdown-item>
+        <el-dropdown-item command="closeRight">Close tabs to the right</el-dropdown-item>
+        <el-dropdown-item command="closeAll">Close all tabs</el-dropdown-item>
+        <el-dropdown-item command="reopen" divided>Reopen closed tab</el-dropdown-item>
+        <el-dropdown-item command="splitRight" divided>Split right</el-dropdown-item>
+        <el-dropdown-item command="splitDown">Split down</el-dropdown-item>
       </el-dropdown-menu>
     </template>
   </el-dropdown>

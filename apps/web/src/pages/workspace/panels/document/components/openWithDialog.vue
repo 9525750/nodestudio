@@ -1,8 +1,8 @@
 <template>
-  <el-dialog :modelValue="visible" title="选择打开方式" width="min(520px, calc(100vw - 32px))" alignCenter appendToBody :beforeClose="cancel">
+  <el-dialog :modelValue="visible" title="Open with" width="min(520px, calc(100vw - 32px))" alignCenter appendToBody :beforeClose="cancel">
     <div class="openWithBody">
       <p class="resourceName" :title="resourceName">{{ resourceName }}</p>
-      <el-radio-group v-model="selectedId" class="extensionOptions" aria-label="文件扩展">
+      <el-radio-group v-model="selectedId" class="extensionOptions" aria-label="File extensions">
         <el-radio v-for="option in options" :key="option.id" :value="option.id" class="extensionOption" border>
           <span class="optionInfo">
             <span class="optionName">{{ option.displayName }}</span>
@@ -10,11 +10,11 @@
           </span>
         </el-radio>
       </el-radio-group>
-      <el-checkbox v-model="makeDefault">对此类文件设为默认</el-checkbox>
+      <el-checkbox v-model="makeDefault">Set as default for this file type</el-checkbox>
     </div>
     <template #footer>
-      <el-button @click="cancel">取消</el-button>
-      <el-button type="primary" :disabled="!selectedId" @click="confirm">打开</el-button>
+      <el-button @click="cancel">Cancel</el-button>
+      <el-button type="primary" :disabled="!selectedId" @click="confirm">Open</el-button>
     </template>
   </el-dialog>
 </template>

@@ -3,13 +3,13 @@
     <div v-if="context.error || runtimeError" class="extError" role="alert">
       <span>{{ context.error || runtimeError }}</span>
       <span class="errorActions">
-        <el-button v-if="session.conflict" text size="small" @click="reloadDisk">载入磁盘版本</el-button>
-        <el-button v-if="context.dirty && session.extension.text" text size="small" @click="saveCopy">另存副本</el-button>
-        <el-button v-if="runtimeError || context.dirty || !session.component" text size="small" @click="retry">重试</el-button>
+        <el-button v-if="session.conflict" text size="small" @click="reloadDisk">Load disk version</el-button>
+        <el-button v-if="context.dirty && session.extension.text" text size="small" @click="saveCopy">Save a copy</el-button>
+        <el-button v-if="runtimeError || context.dirty || !session.component" text size="small" @click="retry">Retry</el-button>
       </span>
     </div>
-    <div v-if="session.extensionChanged" class="extensionNotice" role="status">扩展已更新，关闭该扩展的所有标签后重新打开，以应用新版本。</div>
-    <div v-if="session.extensionDisabled" class="extensionNotice" role="status">扩展已停用。未保存内容仍保留，请重试保存、另存副本或重新启用扩展。</div>
+    <div v-if="session.extensionChanged" class="extensionNotice" role="status">Extension updated. Close all tabs using this extension and reopen them to apply the new version.</div>
+    <div v-if="session.extensionDisabled" class="extensionNotice" role="status">Extension disabled. Unsaved content is preserved. Please retry saving, save a copy, or re-enable the extension.</div>
     <div v-loading="context.loading && !session.extensionDisabled" class="extContent" :inert="session.extensionDisabled">
       <component v-if="session.component && !runtimeError" :is="session.component" :context="context" />
     </div>
@@ -48,7 +48,7 @@ function retry() {
 }
 async function reloadDisk() {
   try {
-    await ElMessageBox.confirm("将用磁盘内容替换当前未保存修改。需要保留当前内容时，请先另存副本。", "载入磁盘版本", { type: "warning", confirmButtonText: "载入", cancelButtonText: "取消" });
+    await ElMessageBox.confirm("This will replace unsaved changes with the disk content. To keep the current content, save a copy first.", "Load disk version", { type: "warning", confirmButtonText: "Load", cancelButtonText: "Cancel" });
     await session.value.reloadDisk();
   } catch (error) { if (error !== "cancel" && error !== "close") ElMessage.error(documentError(error)); }
 }
@@ -56,10 +56,10 @@ async function saveCopy() {
   try {
     const path = context.value.resource.path;
     const dot = path.lastIndexOf(".");
-    const suggested = dot > path.lastIndexOf("/") ? `${path.slice(0, dot)} 副本${path.slice(dot)}` : `${path} 副本`;
-    const { value } = await ElMessageBox.prompt("输入工作区内的相对路径，不会覆盖同名文件。", "另存副本", { inputValue: suggested, inputValidator: value => !!value?.trim() || "请输入文件路径", confirmButtonText: "保存", cancelButtonText: "取消" });
+    const suggested = dot > path.lastIndexOf("/") ? `${path.slice(0, dot)} copy${path.slice(dot)}` : `${path} copy`;
+    const { value } = await ElMessageBox.prompt("Enter a relative path within the workspace. Existing files will not be overwritten.", "Save a copy", { inputValue: suggested, inputValidator: value => !!value?.trim() || "Please enter a file path", confirmButtonText: "Save", cancelButtonText: "Cancel" });
     await context.value.files.write(value.trim(), context.value.text, true);
-    ElMessage.success("副本已保存");
+    ElMessage.success("Copy saved");
   } catch (error) { if (error !== "cancel" && error !== "close") ElMessage.error(documentError(error)); }
 }
 </script>

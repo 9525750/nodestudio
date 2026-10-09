@@ -259,7 +259,7 @@ async function exportToCanvas(kind: "image" | "video", key: string, aspect: numb
       try { await workspaceFiles!.remove(`assets/${id}`, true); }
       catch (cleanupError) {
         const code = (cleanupError as { response?: { data?: { data?: { code?: string } } } })?.response?.data?.data?.code;
-        if (!disposed && code !== "ENOENT") ElMessage.error("导出中断，临时素材清理失败");
+        if (!disposed && code !== "ENOENT") ElMessage.error("Export interrupted, failed to clean up temporary assets");
       }
     }
     if (kind === "video") exportingVideo.value = false;
@@ -274,7 +274,7 @@ function exportVideo(aspect: number) {
 }
 
 function exportImage(anchor: CameraAnchor, aspect: number, time: number) {
-  const name = `关键帧${anchors.value.findIndex(item => item.id === anchor.id) + 1}`;
+  const name = `Keyframe${anchors.value.findIndex(item => item.id === anchor.id) + 1}`;
   return exportToCanvas("image", anchor.id, aspect, async signal => {
     const file = await renderImage(scene.value, anchor, aspect, time, signal, selectedPlan.value, lighting.value, sceneSettings.value);
     return new File([file], `${name}.png`, { type: file.type });
@@ -289,10 +289,10 @@ async function loadModels() {
     if (disposed) return;
     models.value = available;
     const first = models.value[0];
-    // ACT: 只给空配置选默认模型，保留暂时不可用的旧选择。
+    // ACT: Only pick a default model for empty config; keep previously selected models even if temporarily unavailable.
     if (!model.value) model.value = first ? JSON.stringify([first.providerId, first.modelId]) : "";
   } catch (error) {
-    if (!disposed) ElMessage.error(error instanceof Error ? error.message : "模型加载失败");
+    if (!disposed) ElMessage.error(error instanceof Error ? error.message : "Failed to load models");
   } finally {
     modelsLoading.value = false;
   }
@@ -325,7 +325,7 @@ watch([scene, selectedPlan, lighting, sceneSettings, modelLoading, previewReady]
     if (plan) planPreviews.set(plan, { scene: value, lighting: light, settings, image });
     if (!disposed && version === previewVersion) preview.value = image;
   } catch (error) {
-    if (!disposed && version === previewVersion) ElMessage.error(error instanceof Error ? error.message : "预览生成失败");
+    if (!disposed && version === previewVersion) ElMessage.error(error instanceof Error ? error.message : "Failed to generate preview");
   }
 }, { immediate: true });
 
@@ -339,7 +339,7 @@ async function generate() {
   const choice = selectedModel.value;
   const requirement = prompt.value.trim();
   if (!choice || !requirement) return;
-  // 首次创建基础模型期间只接收一个请求，后续动画可并行生成。
+  // Only accept one request while creating the base model for the first time; subsequent animations can be generated in parallel.
   if (!scene.value.objectList.length && tasks.value.some(task => !task.error)) return;
   const baseScene = scene.value;
   const basePlanId = data.value.selectedPlanId ?? "";
@@ -348,7 +348,7 @@ async function generate() {
   setPrompt("");
   try {
     const workspaceFiles = files.getWorkspaceFiles();
-    if (refList.value.some(item => item.value === undefined)) throw new Error("引用节点暂无内容，请先补充引用内容");
+    if (refList.value.some(item => item.value === undefined)) throw new Error("Referenced nodes have no content yet, please add reference content first");
     const mediaReferences = refList.value
       .filter(item => item.value !== undefined && (item.dataType === "STRING" || item.dataType === "IMAGE" || item.dataType === "VIDEO"))
       .map(item => item.dataType === "STRING" ? { dataType: item.dataType, value: item.value } : { dataType: item.dataType, value: { ...item.value } });
@@ -374,19 +374,19 @@ async function generate() {
       tools: draft.tools,
     });
     if (disposed) return;
-    if (!draft.edited) throw new Error("Agent 未修改方案，原方案未修改，请重试。");
+    if (!draft.edited) throw new Error("Agent did not modify the plan, original plan unchanged, please try again.");
     const result = draft.read();
     const nextScene = draft.sceneChanged ? result.scene : baseScene;
     const plan = { ...result.plan, id: task.id, instruction: requirement };
-    // 工具仅编辑草稿；完成后验证实际渲染，成功落盘才替换当前方案。
+    // Tools only edit the draft; after completion, validate actual rendering and replace the current plan only after successful save.
     const previewLighting = { ...getSceneLighting(nextScene), ...data.value.lighting };
     const previewSettings = sceneSettings.value;
     const image = await renderPreview(nextScene, plan, previewLighting, previewSettings);
     if (disposed) return;
-    // 动画请求可以并行生成，同一模型文件顺序保存，写入成功后才替换当前场景。
+    // Animation requests can be generated in parallel; the same model file is saved sequentially, replacing the current scene only after successful write.
     const saving = modelSaving.then(async () => {
       if (disposed) return;
-      if (scene.value !== baseScene) throw new Error("基础模型已被另一条指令更新，请基于当前模型重试。");
+      if (scene.value !== baseScene) throw new Error("Base model has been updated by another instruction, please retry based on the current model.");
       const objects = new Map(nextScene.objectList.map(object => [object.threeJsonId, object]));
       const previousPlans = draft.sceneChanged
         ? plans.value.map(item => ({ ...item, tracks: item.tracks.filter(track => objects.has(track.objectId) && (!track.joint || objects.get(track.objectId)?.objType === "mannequin")) }))
@@ -403,7 +403,7 @@ async function generate() {
     await saving;
     tasks.value = tasks.value.filter(item => item.id !== task.id);
   } catch (error) {
-    if (!disposed) tasks.value = tasks.value.map(item => item.id === task.id ? { ...item, error: error instanceof Error ? error.message : "生成失败，请重试" } : item);
+    if (!disposed) tasks.value = tasks.value.map(item => item.id === task.id ? { ...item, error: error instanceof Error ? error.message : "Generation failed, please try again" } : item);
   }
 }
 </script>

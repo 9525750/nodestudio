@@ -8,48 +8,48 @@
     :style="{ width: previewUrl && videoWidth ? `${videoWidth + 18}px` : undefined }"
     @fullscreen="player?.enterFullscreen()">
     <template #topActions>
-      <el-button :icon="IconMusic" text :disabled="!outputFile || uploading || exporting || actions?.processing" @click.stop="actions?.open('extractAudio')">提取音轨</el-button>
-      <el-button :icon="IconLayersSubtract" text :disabled="!outputFile || uploading || exporting || actions?.processing" @click.stop="actions?.open('separate')">分离音视频</el-button>
-      <el-button :icon="IconScissors" text :disabled="!outputFile || uploading || exporting || actions?.processing" @click.stop="actions?.open('trim')">截取片段</el-button>
+      <el-button :icon="IconMusic" text :disabled="!outputFile || uploading || exporting || actions?.processing" @click.stop="actions?.open('extractAudio')">Extract audio track</el-button>
+      <el-button :icon="IconLayersSubtract" text :disabled="!outputFile || uploading || exporting || actions?.processing" @click.stop="actions?.open('separate')">Separate audio and video</el-button>
+      <el-button :icon="IconScissors" text :disabled="!outputFile || uploading || exporting || actions?.processing" @click.stop="actions?.open('trim')">Trim clip</el-button>
       <el-button
         :icon="IconTransfer"
         :loading="uploading"
         :disabled="exporting"
         text
-        title="替换视频"
-        aria-label="替换视频"
-        @click.stop="fileInput?.click()">替换视频</el-button>
+        title="Replace video"
+        aria-label="Replace video"
+        @click.stop="fileInput?.click()">Replace video</el-button>
     </template>
     <template #topRightActions>
       <el-dropdown trigger="click" placement="bottom-end" :disabled="!player?.ready || player?.capturing || uploading || exporting" @command="player?.captureFrame($event)">
-        <el-button :icon="IconPhotoScan" :loading="player?.capturing" :disabled="!player?.ready || player?.capturing || uploading || exporting" text title="截取视频帧" aria-label="截取视频帧" />
+        <el-button :icon="IconPhotoScan" :loading="player?.capturing" :disabled="!player?.ready || player?.capturing || uploading || exporting" text title="Capture video frame" aria-label="Capture video frame" />
         <template #dropdown>
           <el-dropdown-menu>
-            <el-dropdown-item command="current" :icon="IconPhotoScan">截取当前帧</el-dropdown-item>
-            <el-dropdown-item command="first" :icon="IconPlayerSkipBack">截取首帧</el-dropdown-item>
-            <el-dropdown-item command="last" :icon="IconPlayerSkipForward">截取尾帧</el-dropdown-item>
+            <el-dropdown-item command="current" :icon="IconPhotoScan">Capture current frame</el-dropdown-item>
+            <el-dropdown-item command="first" :icon="IconPlayerSkipBack">Capture first frame</el-dropdown-item>
+            <el-dropdown-item command="last" :icon="IconPlayerSkipForward">Capture last frame</el-dropdown-item>
           </el-dropdown-menu>
         </template>
       </el-dropdown>
     </template>
     <div class="videoContent nopan">
-      <div v-if="exporting" class="exportLoading" role="status" aria-label="视频导出中">
+      <div v-if="exporting" class="exportLoading" role="status" aria-label="Exporting video">
         <el-progress type="circle" :percentage="exportProgress" :width="64" :strokeWidth="3" />
-        <span>正在导出视频</span>
+        <span>Exporting video...</span>
       </div>
       <videoPlayer
         v-else-if="previewUrl"
         ref="player"
         :src="previewUrl"
         @loadedmetadata="resizeVideo" />
-      <input ref="fileInput" class="fileInput" type="file" accept="video/*" aria-label="选择视频" :disabled="uploading || exporting" @change="uploadVideo" />
+      <input ref="fileInput" class="fileInput" type="file" accept="video/*" aria-label="Select video" :disabled="uploading || exporting" @change="uploadVideo" />
       <el-button
         v-if="!exporting && !outputs.video"
         class="uploadButton"
         text
         :loading="uploading"
-        title="上传视频"
-        aria-label="上传视频"
+        title="Upload video"
+        aria-label="Upload video"
         @dblclick.stop
         @click="fileInput?.click()">
         <icon-upload v-if="!uploading" :size="48" stroke="1.5" />
@@ -70,10 +70,10 @@ import videoActions from "./components/videoActions.vue";
 defineOptions({
   inheritAttrs: false,
   icon: IconVideo,
-  handles: [{ id: "video", type: "source", dataType: "VIDEO", label: "视频输出" }] satisfies NodeHandle[],
+  handles: [{ id: "video", type: "source", dataType: "VIDEO", label: "Video output" }] satisfies NodeHandle[],
 });
 const { node, nodeProps, outputs, nodeEvent, files, updateNodeInternals } = useNode({
-  label: "视频",
+  label: "Video",
 });
 const fileInput = ref<HTMLInputElement>();
 const uploading = ref(false);
@@ -86,15 +86,15 @@ const videoWidth = ref(0);
 const outputFile = computed(() => outputs.value.video?.dataType === "VIDEO" ? outputs.value.video.value : undefined);
 const previewUrl = files.useFileUrl(
   outputFile,
-  (error) => showError(error, "视频读取失败")
+  (error) => showError(error, "Failed to load video")
 );
 
 nodeEvent.on("save", (reason) => {
-  if (uploading.value) throw new Error("视频处理中，请完成后再切换或刷新节点");
-  if (reason === "reload" && exporting.value) throw new Error("视频正在导出，请完成后再刷新节点");
+  if (uploading.value) throw new Error("Video is processing, please finish before switching or reloading the node");
+  if (reason === "reload" && exporting.value) throw new Error("Video is exporting, please finish before reloading the node");
 });
 nodeEvent.on("delete", () => {
-  if (uploading.value) throw new Error("视频上传中，请稍后删除节点");
+  if (uploading.value) throw new Error("Video is uploading, please delete the node later");
   uploading.value = true;
   return files.removeNodeFiles().finally(() => {
     uploading.value = false;
@@ -103,19 +103,19 @@ nodeEvent.on("delete", () => {
 
 nodeTools.register({
   name: "setVideo",
-  description: "选择工作区内已有的视频文件作为此节点的输出，path 使用工作区相对路径",
+  description: "Select an existing video file in the workspace as this node's output; path uses workspace-relative path",
   parameters: z.strictObject({
     path: z.string().min(1).max(4096),
     mimeType: z.string().regex(/^video\/[a-zA-Z0-9.+-]+$/),
   }),
   async execute({ path, mimeType }, { signal }) {
     signal?.throwIfAborted();
-    if (uploading.value || exporting.value) throw new Error("视频处理中，请稍后重试");
+    if (uploading.value || exporting.value) throw new Error("Video is processing, please try again later");
     uploading.value = true;
     try {
       const content = await files.getWorkspaceFiles().read(path);
       signal?.throwIfAborted();
-      if (!content.byteLength || content.byteLength > 100 * 1024 * 1024) throw new Error("视频不能为空且不能超过 100 MB");
+      if (!content.byteLength || content.byteLength > 100 * 1024 * 1024) throw new Error("Video cannot be empty and must not exceed 100 MB");
       outputs.value.video = { dataType: "VIDEO", value: { url: path, mimeType } };
       return outputs.value.video;
     } finally {
@@ -137,8 +137,8 @@ async function uploadVideo(event: Event) {
   const file = input.files?.[0];
   input.value = "";
   if (!file || uploading.value || exporting.value) return;
-  if (!file.type.startsWith("video/")) return void ElMessage.error("请选择视频文件");
-  if (!file.size || file.size > 100 * 1024 * 1024) return void ElMessage.error("视频不能为空且不能超过 100 MB");
+  if (!file.type.startsWith("video/")) return void ElMessage.error("Please select a video file");
+  if (!file.size || file.size > 100 * 1024 * 1024) return void ElMessage.error("Video cannot be empty and must not exceed 100 MB");
   uploading.value = true;
   try {
     const url = await files.uploadFile(file);

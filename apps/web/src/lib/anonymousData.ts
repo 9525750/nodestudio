@@ -53,7 +53,7 @@ export function registerAnonymousData() {
       elapsed += now - measuredAt;
       if (visible) {
         visibleElapsed += now - measuredAt;
-        // ACT: 交互后最多计入 60 秒活跃时间；不读取键值、坐标或输入内容。
+        // ACT: Count at most 60 seconds of active time after interaction; no key values, coordinates or input content read.
         activeElapsed += Math.max(0, Math.min(now, lastActivity + 60_000) - measuredAt);
       }
     }
@@ -116,7 +116,7 @@ export function registerAnonymousData() {
     const browser =
       ua.match(/Edg(?:A|iOS)?\/\d+/)?.[0] ?? ua.match(/(?:Firefox|FxiOS|Chrome|CriOS)\/\d+/)?.[0] ?? ua.match(/Version\/\d+/)?.[0] ?? "other";
     const mediaConfigs = settings.value.mediaProviderConfigs;
-    // ACT: 同一会话发送累计值，接收端按 sessionId + sequence 去重/取差值，不能把每次上报直接相加。
+    // ACT: Same session sends cumulative values; receiver deduplicates by sessionId + sequence, must not sum reports directly.
     const data = {
       schemaVersion: 2,
       anonymousId,

@@ -37,7 +37,7 @@ watch([content, () => props.modelValue, () => props.path, () => props.files, () 
       const dom = markdownDom(props.modelValue);
       for (const checkbox of dom.querySelectorAll<HTMLInputElement>('input[type="checkbox"]')) checkbox.disabled = true;
       for (const image of dom.querySelectorAll<HTMLImageElement>("img")) nextReleases.push(loadMarkdownImage(image, image.getAttribute("src") || "", props.path || "", props.files));
-      // 新批次先持有图片，再释放旧预览，避免同一路径的共享缓存归零后重取。
+      // Hold new batch images first, then release old preview, to avoid shared cache refetch when count drops to zero for the same path.
       clearPreview();
       element.replaceChildren(...dom.childNodes);
       releases = nextReleases;
@@ -45,7 +45,7 @@ watch([content, () => props.modelValue, () => props.path, () => props.files, () 
     } catch (cause) {
       nextReleases.forEach(release => release());
       clearPreview();
-      error.value = cause instanceof Error ? cause.message : "Markdown 预览失败";
+      error.value = cause instanceof Error ? cause.message : "Markdown preview failed";
     }
   });
 }, { immediate: true, flush: "post" });
@@ -60,8 +60,8 @@ async function openLink(event: MouseEvent) {
   try {
     const path = resolveMarkdownPath(source, props.path);
     if (path && props.openFile) await props.openFile(path);
-    else error.value = "请从文件树打开工作区内的链接";
-  } catch (cause) { error.value = cause instanceof Error ? cause.message : "无法打开链接"; }
+    else error.value = "Please open workspace links from the file tree";
+  } catch (cause) { error.value = cause instanceof Error ? cause.message : "Cannot open link"; }
 }
 </script>
 

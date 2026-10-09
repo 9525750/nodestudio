@@ -6,7 +6,7 @@
       class="floatingAgent"
       :class="{ docked, dragging: interaction?.mode === 'move' }"
       :style="panelStyle"
-      aria-label="AI 对话"
+      aria-label="AI chat"
       @pointerdown="startMenuMove"
       @pointermove="moveInteraction"
       @pointerup="stopInteraction"
@@ -31,8 +31,8 @@
           <el-button
             text
             circle
-            :aria-label="docked ? '切换为悬浮' : '停靠到右侧'"
-            :title="docked ? '切换为悬浮' : '停靠到右侧'"
+            :aria-label="docked ? 'Switch to floating' : 'Dock to the right'"
+            :title="docked ? 'Switch to floating' : 'Dock to the right'"
             @click="docked = !docked">
             <icon-app-window-bottom-right v-if="docked" :size="17" aria-hidden="true" />
             <icon-layout-sidebar-right v-else :size="17" aria-hidden="true" />
@@ -63,12 +63,12 @@ const height = computed(() =>
 const resizeHandles = computed(
   () =>
     [
-      { edge: "left", label: "从左侧调整对话宽度" },
+      { edge: "left", label: "Resize chat width from the left" },
       ...(docked.value
         ? []
         : [
-            { edge: "right", label: "从右侧调整对话宽度" },
-            { edge: "bottom", label: "从下方调整对话高度" },
+            { edge: "right", label: "Resize chat width from the right" },
+            { edge: "bottom", label: "Resize chat height from the bottom" },
           ]),
     ] as { edge: ResizeEdge; label: string }[]
 );

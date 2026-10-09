@@ -1,7 +1,7 @@
 <template>
   <el-popover trigger="click" placement="top-start" width="min(380px, calc(100vw - 24px))" :disabled="disabled" :showArrow="false" :popperStyle="{ padding: '16px' }">
     <template #reference>
-      <el-button class="settingsButton" text size="small" :disabled="disabled" aria-label="音频生成设置">
+      <el-button class="settingsButton" text size="small" :disabled="disabled" aria-label="Audio generation settings">
         <icon-adjustments-horizontal :size="15" aria-hidden="true" />
         <span>{{ languageLabel }} · {{ sampleRate / 1000 }}k · {{ format }}</span>
         <icon-chevron-up :size="14" aria-hidden="true" />
@@ -10,20 +10,20 @@
     <div class="generationSettings nodrag nopan nowheel" @pointerdown.stop @mousedown.stop @dblclick.stop @keydown.stop @wheel.stop>
       <div class="settingsHeader">
         <icon-adjustments-horizontal :size="17" aria-hidden="true" />
-        <span>音频参数</span>
+        <span>Audio Settings</span>
       </div>
       <div class="settingsFields">
         <div class="settingField">
-          <span class="fieldLabel">语种</span>
-          <el-segmented v-model="language" :options="languageOptions" :disabled="disabled" block aria-label="音频语种" />
+          <span class="fieldLabel">Language</span>
+          <el-segmented v-model="language" :options="languageOptions" :disabled="disabled" block aria-label="Audio language" />
         </div>
         <div class="settingField">
-          <span class="fieldLabel">采样率</span>
-          <el-segmented v-model="sampleRate" :options="sampleRates" :disabled="disabled" block aria-label="音频采样率" />
+          <span class="fieldLabel">Sample rate</span>
+          <el-segmented v-model="sampleRate" :options="sampleRates" :disabled="disabled" block aria-label="Audio sample rate" />
         </div>
         <div class="settingField">
-          <span class="fieldLabel">输出格式</span>
-          <el-segmented v-model="format" :options="formats" :disabled="disabled" block aria-label="音频输出格式" />
+          <span class="fieldLabel">Format</span>
+          <el-segmented v-model="format" :options="formats" :disabled="disabled" block aria-label="Audio output format" />
         </div>
       </div>
       <div class="settingsSummary">{{ languageLabel }} · {{ sampleRate / 1000 }} kHz · {{ formatLabels[format] ?? format }}</div>

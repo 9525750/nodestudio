@@ -111,7 +111,7 @@ defineOptions({
 });
 const vLoading = ElLoading.directive;
 const { id, node, nodeProps, nodeEvent, outputs, files, ai, updateNodeInternals } = useNode({
-  label: "图片生成",
+  label: "Image Generation",
 });
 type PromptModel = NonNullable<InstanceType<typeof promptInput>["$props"]["modelValue"]>;
 const data = computed(() => node.data as { prompt: string; promptModel: PromptModel; inpaintPrompt: string; inpaintPromptModel: PromptModel; model: string; size: string; ratio: string });
@@ -146,7 +146,7 @@ watch(
   selectedModel,
   (choice) => {
     if (!choice) return;
-    // ACT: 现有分辨率使用 K 单位；出现其他单位时再统一换算，未知名称排在数值选项之后。
+    // ACT: Current resolutions use K units; convert uniformly when other units appear. Unknown names sort after numeric options.
     if (!sizeOptions.value.includes(data.value.size)) data.value.size = sizeOptions.value.toSorted((left, right) =>
       (Number.parseFloat(left) || Infinity) - (Number.parseFloat(right) || Infinity)
     )[0]!;
@@ -158,7 +158,7 @@ const modelGroups = computed(() => groupNodeModels(models.value));
 const generationPrompt = computed(() =>
   [
     (editor.value?.mode === "inpaint" ? data.value.inpaintPrompt : data.value.prompt).trim(),
-    ...refList.value.flatMap((item, index) => (item.dataType === "STRING" && item.value?.trim() ? [`参考 ${index + 1}：\n${item.value.trim()}`] : [])),
+    ...refList.value.flatMap((item, index) => (item.dataType === "STRING" && item.value?.trim() ? [`Reference ${index + 1}:\n${item.value.trim()}`] : [])),
   ]
     .filter(Boolean)
     .join("\n\n")
@@ -166,10 +166,10 @@ const generationPrompt = computed(() =>
 const outputFile = computed(() => outputs.value.image?.dataType === "IMAGE" ? outputs.value.image.value : undefined);
 const previewUrl = files.useFileUrl(
   outputFile,
-  (error) => showNodeError(error, "图片读取失败")
+  (error) => showNodeError(error, "Image read failed")
 );
 
-onMounted(() => loadModels().catch((error) => showNodeError(error, "模型读取失败")));
+onMounted(() => loadModels().catch((error) => showNodeError(error, "Failed to load models")));
 onScopeDispose(() => {
   disposed = true;
   generationController?.abort();
@@ -180,8 +180,8 @@ async function replaceOutput(event: Event) {
   const file = input.files?.[0];
   input.value = "";
   if (!file || generating.value || deleting.value || uploading.value || disposed) return;
-  if (!file.type.startsWith("image/")) return void showNodeError("请选择图片文件", "图片替换失败");
-  if (!file.size || file.size > 100 * 1024 * 1024) return void showNodeError("图片不能为空且不能超过 100 MB", "图片替换失败");
+  if (!file.type.startsWith("image/")) return void showNodeError("Please select an image file", "Image replacement failed");
+  if (!file.size || file.size > 100 * 1024 * 1024) return void showNodeError("Image cannot be empty and cannot exceed 100 MB", "Image replacement failed");
   uploading.value = true;
   try {
     const workspace = files.getWorkspaceFiles();
@@ -190,10 +190,10 @@ async function replaceOutput(event: Event) {
       await workspace.remove(url);
       return;
     }
-    // ACT: 保留历史输出文件，避免破坏撤销记录和复制节点的引用。
+    // ACT: Keep historical output files to avoid breaking undo history and copied node references.
     outputs.value.image = { dataType: "IMAGE", value: { url, mimeType: file.type } };
   } catch (error) {
-    showNodeError(error, "图片替换失败");
+    showNodeError(error, "Image replacement failed");
   } finally {
     uploading.value = false;
   }
@@ -205,7 +205,7 @@ function loadModels() {
   modelsRequest = ai.getMediaModels().then((items) => {
     if (generating.value || deleting.value) return;
     models.value = items.filter((item) => item.type === "image");
-    // ACT: 只给空配置选默认模型，保留暂时不可用的旧选择及其参数。
+    // ACT: Only select a default model for empty config; preserve temporarily unavailable old selections and their parameters.
     if (!data.value.model) {
       const first = models.value[0];
       data.value.model = first ? JSON.stringify([first.providerId, first.modelId]) : "";
@@ -219,15 +219,15 @@ function loadModels() {
 
 async function startGeneration(inpaint = false) {
   const choice = selectedModel.value;
-  if (generating.value) throw new Error("图片正在生成，请等待完成");
-  if (uploading.value) throw new Error("图片正在替换，请等待完成");
-  if (deleting.value) throw new Error("节点正在删除");
-  if (editor.value?.busy || editor.value?.mode === "mark") throw new Error("请先完成图片标记");
+  if (generating.value) throw new Error("Image generation in progress, please wait");
+  if (uploading.value) throw new Error("Image replacement in progress, please wait");
+  if (deleting.value) throw new Error("Node is being deleted");
+  if (editor.value?.busy || editor.value?.mode === "mark") throw new Error("Please finish marking the image first");
   const inpaintEditor = editor.value?.mode === "inpaint" ? editor.value : undefined;
-  if (inpaint !== !!inpaintEditor) throw new Error(inpaint ? "请先进入局部重绘" : "请先退出局部重绘，再启动普通图片生成");
-  if (!choice) throw new Error("请先选择图片模型");
-  if (!generationPrompt.value) throw new Error("请输入生成提示词");
-  if (refList.value.some(item => item.value === undefined)) throw new Error("引用节点暂无内容，请先补充引用内容");
+  if (inpaint !== !!inpaintEditor) throw new Error(inpaint ? "Enter inpaint mode first" : "Please exit inpaint mode before starting normal image generation");
+  if (!choice) throw new Error("Please select an image model first");
+  if (!generationPrompt.value) throw new Error("Please enter a generation prompt");
+  if (refList.value.some(item => item.value === undefined)) throw new Error("Referenced nodes have no content yet, please add reference content first");
   const workspace = files.getWorkspaceFiles();
   const controller = new AbortController();
   const input = {
@@ -242,9 +242,9 @@ async function startGeneration(inpaint = false) {
   generationController = controller;
   if (inpaintEditor) {
     const imageReferences = refList.value.flatMap((item, index) => item.dataType === "IMAGE" && item.value ? [index + 1] : []);
-    if (imageReferences.length) input.prompt += `\n用户参考编号对应关系（前两张为原图和区域引导图）：${imageReferences.map((reference, index) => `参考 ${reference} / {{ref ${reference}}} 对应第 ${index + 3} 张图`).join("；")}。`;
+    if (imageReferences.length) input.prompt += `\nReference number mapping (first two are original and region guide): ${imageReferences.map((reference, index) => `Reference ${reference} / {{ref ${reference}}} corresponds to image ${index + 3}`).join("; ")}.`;
   }
-  // ACT: 工具立即返回，任务由节点持有，停止或卸载时取消。
+  // ACT: Tool returns immediately; task is held by the node, cancelled on stop or unmount.
   generation = generationState.run(() => inpaintEditor
     ? inpaintEditor.generate(input, controller.signal).then(value => {
       controller.signal.throwIfAborted();
@@ -259,10 +259,10 @@ async function startGeneration(inpaint = false) {
     })
     .then(([result]) => {
       controller.signal.throwIfAborted();
-      if (!result) throw new Error("供应商未返回图片");
+      if (!result) throw new Error("Provider returned no image");
       outputs.value.image = { dataType: "IMAGE", value: { url: result.path, mimeType: result.mimeType } };
     }))
-    .catch((error) => showNodeError(error, "图片生成失败"))
+    .catch((error) => showNodeError(error, "Image generation failed"))
     .finally(() => {
       generationController = undefined;
     });
@@ -270,10 +270,10 @@ async function startGeneration(inpaint = false) {
 }
 
 nodeEvent.on("save", (reason) => {
-  if (reason === "reload" && (generating.value || uploading.value || deleting.value || editor.value?.busy)) throw new Error("图片处理中，请完成后再刷新节点");
+  if (reason === "reload" && (generating.value || uploading.value || deleting.value || editor.value?.busy)) throw new Error("Image processing in progress, please finish before refreshing the node");
 });
 nodeEvent.on("delete", async () => {
-  if (uploading.value || (editor.value?.busy && !generating.value)) throw new Error("图片处理中，请稍后删除节点");
+  if (uploading.value || (editor.value?.busy && !generating.value)) throw new Error("Image processing in progress, please delete the node later");
   deleting.value = true;
   generationController?.abort();
   try {
@@ -306,7 +306,7 @@ function getConfig() {
 
 nodeTools.register({
   name: "getConfig",
-  description: "读取此图片生成节点的当前模型、分辨率、比例及可选图片模型能力，不含密钥；未声明分辨率或比例时分别使用 2K、16:9",
+  description: "Read this image generation node's current model, resolution, ratio, and available image model capabilities (no secrets); defaults to 2K resolution and 16:9 ratio when unspecified",
   parameters: z.strictObject({}),
   async execute(_args, { signal }) {
     signal?.throwIfAborted();
@@ -318,26 +318,26 @@ nodeTools.register({
 
 nodeTools.register({
   name: "setConfig",
-  description: "修改此图片生成节点的模型、分辨率或比例；先用 getConfig 查询可选能力，providerId 与 modelId 必须同时提供；不修改提示词、不启动生成",
+  description: "Modify this image generation node's model, resolution, or ratio; use getConfig first to query available capabilities. providerId and modelId must be provided together; does not modify the prompt or start generation",
   parameters: z.strictObject({
     providerId: z.string().min(1).optional(),
     modelId: z.string().min(1).optional(),
     size: z.string().min(1).optional(),
     ratio: z.string().min(1).optional(),
-  }).refine((args) => (args.providerId === undefined) === (args.modelId === undefined), "providerId 与 modelId 必须同时提供"),
+  }).refine((args) => (args.providerId === undefined) === (args.modelId === undefined), "providerId and modelId must be provided together"),
   async execute(args, { signal }) {
     signal?.throwIfAborted();
-    if (generating.value || deleting.value) throw new Error("节点正在生成或删除，请稍后修改配置");
+    if (generating.value || deleting.value) throw new Error("Node is generating or being deleted, please modify config later");
     await loadModels();
     signal?.throwIfAborted();
-    if (generating.value || deleting.value) throw new Error("节点正在生成或删除，请稍后修改配置");
+    if (generating.value || deleting.value) throw new Error("Node is generating or being deleted, please modify config later");
     const choice = args.modelId === undefined ? selectedModel.value
       : models.value.find((item) => item.providerId === args.providerId && item.modelId === args.modelId);
-    if (!choice) throw new Error("请选择 getConfig 返回的有效图片模型");
+    if (!choice) throw new Error("Please select a valid image model from getConfig results");
     const sizes = choice.imageSizes?.length ? choice.imageSizes : ["2K"];
     const ratios = choice.imageRatios?.length ? choice.imageRatios : ["16:9"];
-    if (args.size !== undefined && !sizes.includes(args.size)) throw new Error(`当前模型不支持分辨率 ${args.size}，可选：${sizes.join("、")}`);
-    if (args.ratio !== undefined && !ratios.includes(args.ratio)) throw new Error(`当前模型不支持比例 ${args.ratio}，可选：${ratios.join("、")}`);
+    if (args.size !== undefined && !sizes.includes(args.size)) throw new Error(`Current model does not support resolution ${args.size}, available: ${sizes.join(", ")}`);
+    if (args.ratio !== undefined && !ratios.includes(args.ratio)) throw new Error(`Current model does not support ratio ${args.ratio}, available: ${ratios.join(", ")}`);
     data.value.model = JSON.stringify([choice.providerId, choice.modelId]);
     if (args.size !== undefined) data.value.size = args.size;
     if (args.ratio !== undefined) data.value.ratio = args.ratio;
@@ -347,10 +347,10 @@ nodeTools.register({
 
 nodeTools.register({
   name: "setPrompt",
-  description: "修改此节点的普通图片生成提示词，支持 {{ref 1}} 等参考标记；不修改局部重绘提示词，不启动生成",
+  description: "Modify this node's normal image generation prompt, supports {{ref 1}} reference markers; does not modify the inpaint prompt or start generation",
   parameters: z.strictObject({ prompt: z.string() }),
   execute({ prompt: value }) {
-    if (deleting.value) throw new Error("节点正在删除，请稍后修改");
+    if (deleting.value) throw new Error("Node is being deleted, please modify later");
     data.value.prompt = value;
     data.value.promptModel = value.split("\n").map((text) => [{ type: "Write", text }]);
     return { prompt: value };
@@ -359,7 +359,7 @@ nodeTools.register({
 
 nodeTools.register({
   name: "generateImage",
-  description: "启动此节点的后台普通图片生成，使用普通生成提示词、模型、分辨率、比例和参考图片；局部重绘模式下须先退出；立即返回已开始，用 getGenerationStatus 查询完成结果，cancelGeneration 停止生成",
+  description: "Start this node's background normal image generation using the normal prompt, model, resolution, ratio, and reference images; must exit inpaint mode first. Returns immediately once started; use getGenerationStatus to query completion, cancelGeneration to stop",
   parameters: z.strictObject({}),
   execute(_args, { signal }) {
     signal?.throwIfAborted();
