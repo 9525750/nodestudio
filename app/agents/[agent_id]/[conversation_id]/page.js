@@ -79,7 +79,7 @@ async function fetchUserData(apiKey) {
   try {
     const res = await fetch(`${BASE_URL}/api/v1/account/balance`, {
       cache: "no-store",
-      headers: { "x-api-key": apiKey },
+      headers: { "Authorization": `Bearer ${apiKey}` },
     });
     if (!res.ok) return null;
     return await res.json();
