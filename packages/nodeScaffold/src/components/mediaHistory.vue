@@ -1,12 +1,12 @@
 <template>
-  <el-button :icon="IconHistory" :disabled="disabled" text title="历史记录" aria-label="历史记录" @click.stop="visible = true">历史记录</el-button>
-  <el-dialog v-model="visible" :title="`${mediaType === 'image' ? '图片' : '视频'}历史记录`" width="min(760px, calc(100vw - 32px))" appendToBody destroyOnClose>
+  <el-button :icon="IconHistory" :disabled="disabled" text title="History" aria-label="History" @click.stop="visible = true">History</el-button>
+  <el-dialog v-model="visible" :title="`${mediaType === 'image' ? 'Image' : 'Video'} History`" width="min(760px, calc(100vw - 32px))" appendToBody destroyOnClose>
     <div v-loading="loading" class="mediaHistory nodrag nopan nowheel" @pointerdown.stop @mousedown.stop @dblclick.stop @keydown.stop>
       <el-alert v-if="loadError" :title="loadError" type="error" :closable="false" />
-      <el-empty v-else-if="!loading && !items.length" description="暂无历史记录" />
+      <el-empty v-else-if="!loading && !items.length" description="No history" />
       <template v-else-if="items.length">
         <div class="historyContent">
-          <div class="historyList" aria-label="历史文件">
+          <div class="historyList" aria-label="History files">
             <button
               v-for="item in pageItems"
               :key="item.url"
@@ -17,21 +17,21 @@
               :title="item.url"
               @click="selected = item">
               <span class="fileName">{{ item.url.split('/').at(-1) }}</span>
-              <span v-if="item.url === current?.url.replaceAll('\\', '/')" class="currentLabel">当前结果</span>
+              <span v-if="item.url === current?.url.replaceAll('\\', '/')" class="currentLabel">Current result</span>
             </button>
           </div>
           <div class="historyPreview" v-loading="!!selected && !previewReady && !previewError">
             <el-alert v-if="previewError" :title="previewError" type="error" :closable="false" />
-            <img v-else-if="previewUrl && mediaType === 'image'" :src="previewUrl" alt="历史图片预览" @load="previewReady = true" @error="previewError = '无法预览该图片'" />
-            <video v-else-if="previewUrl" :src="previewUrl" controls playsinline preload="auto" aria-label="历史视频预览" @loadeddata="previewReady = true" @error="previewError = '无法预览该视频'" />
+            <img v-else-if="previewUrl && mediaType === 'image'" :src="previewUrl" alt="History image preview" @load="previewReady = true" @error="previewError = 'Cannot preview this image'" />
+            <video v-else-if="previewUrl" :src="previewUrl" controls playsinline preload="auto" aria-label="History video preview" @loadeddata="previewReady = true" @error="previewError = 'Cannot preview this video'" />
           </div>
         </div>
         <el-pagination v-model:currentPage="page" :pageSize="pageSize" :total="items.length" layout="prev, pager, next" hideOnSinglePage />
       </template>
     </div>
     <template #footer>
-      <el-button @click="visible = false">关闭</el-button>
-      <el-button type="primary" :disabled="disabled || loading || !selected || !previewUrl || !previewReady || !!previewError" @click="selectOutput">设为当前结果</el-button>
+      <el-button @click="visible = false">Close</el-button>
+      <el-button type="primary" :disabled="disabled || loading || !selected || !previewUrl || !previewReady || !!previewError" @click="selectOutput">Set as current result</el-button>
     </template>
   </el-dialog>
 </template>
@@ -67,7 +67,7 @@ const mimeTypes: Record<string, string> = {
 const previewFile = computed(() => visible.value ? selected.value : undefined);
 watch(previewFile, () => { previewError.value = ""; }, { flush: "sync" });
 // ACT: 目录列表仅保存路径，每页显示 20 条，只读取选中文件；海量目录需服务端分页时再扩展 list。
-const previewUrl = files.useFileUrl(previewFile, () => { previewError.value = "历史文件读取失败，文件可能已被移动或删除"; });
+const previewUrl = files.useFileUrl(previewFile, () => { previewError.value = "Failed to read history file, it may have been moved or deleted"; });
 watch([previewFile, previewUrl], () => { previewReady.value = false; }, { flush: "sync" });
 
 watch(() => props.disabled, disabled => { if (disabled) visible.value = false; });
@@ -103,7 +103,7 @@ watch(visible, async (open, _previous, onCleanup) => {
   } catch (error) {
     if (!cancelled) {
       const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      loadError.value = message || (error instanceof Error ? error.message : "历史记录读取失败");
+      loadError.value = message || (error instanceof Error ? error.message : "Failed to read history records");
     }
   } finally {
     if (!cancelled) loading.value = false;

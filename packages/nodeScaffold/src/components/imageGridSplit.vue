@@ -11,10 +11,10 @@
     :popperStyle="{ maxWidth: 'calc(100vw - 24px)', padding: '16px', borderRadius: '12px' }">
     <div class="gridSplitPanel nodrag nopan nowheel" @pointerdown.stop @mousedown.stop @dblclick.stop @keydown.stop @keydown.esc.prevent="visible = false; trigger?.focus()">
       <div class="panelHeader">
-        <strong>宫格切分</strong>
-        <span>保留原图</span>
+        <strong>Grid split</strong>
+        <span>Keep original</span>
       </div>
-      <div class="gridPresets" aria-label="常用宫格">
+      <div class="gridPresets" aria-label="Grid presets">
         <button
           v-for="size in [2, 3, 4, 5]"
           :key="size"
@@ -27,29 +27,29 @@
           <span class="presetIcon" :style="{ gridTemplateColumns: `repeat(${size}, 1fr)` }" aria-hidden="true">
             <i v-for="cell in size * size" :key="cell" />
           </span>
-          <span>{{ size * size }} 宫格</span>
+          <span>{{ size * size }} grid</span>
           <small>{{ size }} × {{ size }}</small>
         </button>
       </div>
       <div class="customGrid">
-        <label><span>行数</span><el-input-number v-model="rows" :min="1" :max="10" :precision="0" :disabled="splitting" controlsPosition="right" aria-label="切分行数" /></label>
+        <label><span>Rows</span><el-input-number v-model="rows" :min="1" :max="10" :precision="0" :disabled="splitting" controlsPosition="right" aria-label="Split rows" /></label>
         <span class="gridMultiply">×</span>
-        <label><span>列数</span><el-input-number v-model="columns" :min="1" :max="10" :precision="0" :disabled="splitting" controlsPosition="right" aria-label="切分列数" /></label>
+        <label><span>Columns</span><el-input-number v-model="columns" :min="1" :max="10" :precision="0" :disabled="splitting" controlsPosition="right" aria-label="Split columns" /></label>
       </div>
       <div v-if="visible" class="previewArea">
         <div class="previewImage">
-          <img :src="src" alt="宫格切分预览" @load="readSize" @error="imageSize = { width: 0, height: 0 }" />
+          <img :src="src" alt="Grid split preview" @load="readSize" @error="imageSize = { width: 0, height: 0 }" />
           <div v-if="validGrid" class="previewGrid" :style="{ gridTemplateColumns: `repeat(${columns}, 1fr)`, gridTemplateRows: `repeat(${rows}, 1fr)` }" aria-hidden="true">
             <span v-for="cell in rows * columns" :key="cell"><small>{{ cell }}</small></span>
           </div>
         </div>
       </div>
       <div class="splitSummary" aria-live="polite">
-        <span>{{ validGrid ? `共 ${rows * columns} 张图片` : '请设置有效行列数' }}</span>
-        <span>从左到右，逐行切分</span>
+        <span>{{ validGrid ? `${rows * columns} images total` : 'Please set valid rows and columns' }}</span>
+        <span>Left to right, row by row</span>
       </div>
       <el-button class="splitButton" type="primary" :loading="splitting" :disabled="!canSplit || disabled" @click="splitImage">
-        {{ splitting ? `正在切分 ${completed} / ${rows * columns}` : '切分为图片节点' }}
+        {{ splitting ? `Splitting ${completed} / ${rows * columns}` : 'Split into image nodes' }}
       </el-button>
     </div>
   </el-popover>
@@ -110,7 +110,7 @@ function readSize(event: Event) {
 
 async function splitImage() {
   if (splitting.value || props.disabled || !canSplit.value) return;
-  if (!nodeTypes?.value?.["remote-imageNode"]) return void ElMessage.error("请先启用图片节点插件");
+  if (!nodeTypes?.value?.["remote-imageNode"]) return void ElMessage.error("Please enable the image node plugin first");
   splitting.value = true;
   completed.value = 0;
   const controller = splitController = new AbortController();
@@ -128,9 +128,9 @@ async function splitImage() {
     await source.decode();
     controller.signal.throwIfAborted();
     const { naturalWidth: width, naturalHeight: height } = source;
-    if (width < columnCount || height < rowCount) throw new Error("图片尺寸小于切分行列数");
+    if (width < columnCount || height < rowCount) throw new Error("Image dimensions are smaller than the split grid");
     const context = canvas.getContext("2d");
-    if (!context) throw new Error("无法创建图片画布");
+    if (!context) throw new Error("Cannot create image canvas");
     for (let row = 0; row < rowCount; row++) {
       for (let column = 0; column < columnCount; column++) {
         controller.signal.throwIfAborted();
@@ -140,7 +140,7 @@ async function splitImage() {
         canvas.width = Math.floor((column + 1) * width / columnCount) - left;
         canvas.height = Math.floor((row + 1) * height / rowCount) - top;
         context.drawImage(source, left, top, canvas.width, canvas.height, 0, 0, canvas.width, canvas.height);
-        const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob(value => value ? resolve(value) : reject(new Error("图片切分失败")), "image/png"));
+        const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob(value => value ? resolve(value) : reject(new Error("Image split failed")), "image/png"));
         controller.signal.throwIfAborted();
         const id = crypto.randomUUID();
         pendingIds.push(id);
@@ -150,12 +150,12 @@ async function splitImage() {
           id,
           type: "remote-imageNode",
           position: { x: 0, y: 0 },
-          data: { label: `${node.data.label || "图片"} · ${row + 1}-${column + 1}`, outputs: { image: { dataType: "IMAGE", value: { url: path, mimeType: "image/png" } } } },
+          data: { label: `${node.data.label || "Image"} · ${row + 1}-${column + 1}`, outputs: { image: { dataType: "IMAGE", value: { url: path, mimeType: "image/png" } } } },
         });
         completed.value++;
       }
     }
-    if (findNode(node.id) !== node || !nodeTypes?.value?.["remote-imageNode"]) throw new Error("画布节点已变化，请重新切分");
+    if (findNode(node.id) !== node || !nodeTypes?.value?.["remote-imageNode"]) throw new Error("Canvas node has changed, please split again");
     const tileWidth = Math.ceil(width / columnCount) / Math.floor(height / rowCount) * 240 + 18;
     const gridWidth = columnCount * (tileWidth + 40) - 40;
     const gridHeight = rowCount * 320 - 20;
@@ -176,16 +176,16 @@ async function splitImage() {
       committed = true;
     });
     visible.value = false;
-    ElMessage.success(`已切分为 ${nodes.length} 个图片节点`);
+    ElMessage.success(`Split into ${nodes.length} image nodes`);
   } catch (error) {
-    if (!controller.signal.aborted) showNodeError(error, "宫格切分失败");
+    if (!controller.signal.aborted) showNodeError(error, "Grid split failed");
   } finally {
     source.removeAttribute("src");
     canvas.width = canvas.height = 0;
     if (!committed && workspace) {
       const results = await Promise.allSettled(pendingIds.map(id => workspace!.remove(`assets/${id}`, true)));
       if (results.some(result => result.status === "rejected" && result.reason?.response?.data?.data?.code !== "ENOENT")) {
-        ElMessage.error("切分中断，部分临时图片清理失败");
+        ElMessage.error("Split interrupted, failed to clean up some temporary images");
       }
     }
     splitting.value = false;
