@@ -24,7 +24,7 @@
       @keydown.space.prevent="imageRef?.showPreview()">
       <template #error><icon-photo :size="20" /></template>
     </el-image>
-    <button v-else class="thumbnailButton" type="button" :title="attachment.name" :aria-label="`预览 ${attachment.name}`" :disabled="!thumbnailUrl" @click="videoPreviewVisible = true">
+    <button v-else class="thumbnailButton" type="button" :title="attachment.name" :aria-label="`Preview ${attachment.name}`" :disabled="!thumbnailUrl" @click="videoPreviewVisible = true">
       <video v-if="thumbnailUrl" :src="thumbnailUrl" preload="metadata" muted playsinline aria-hidden="true" />
       <icon-video class="videoIcon" :size="16" />
     </button>

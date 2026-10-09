@@ -18,7 +18,7 @@
         Scanned {{ scanned }} text files, {{ results.length }} files matched with {{ matchCount }} occurrences.
         Skipped: binary or unsupported encoding {{ skippedBinary }}, oversized files {{ skippedLarge }}, canvas {{ skippedCanvas }}, read failures {{ readFailures }}.
       </p>
-      <el-alert v-if="issues.length" type="warning" :closable="false" :title="issues.join('；')" />
+      <el-alert v-if="issues.length" type="warning" :closable="false" :title="issues.join('; ')" />
       <template v-if="previewing">
         <div class="previewHeader">
           <strong>Replacement preview: {{ selectedFiles.length }} files, {{ selectedMatchCount }} occurrences</strong>
@@ -153,7 +153,7 @@ function failureMessage(error: unknown) {
 
 function recordReadFailure(path: string, error: unknown) {
   readFailures.value++;
-  if (issues.value.length < 5) issues.value.push(`${path || t`工作区根目录`}：${failureMessage(error)}`);
+  if (issues.value.length < 5) issues.value.push(`${path || t`工作区根目录`}: ${failureMessage(error)}`);
 }
 
 async function search() {
