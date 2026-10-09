@@ -174,7 +174,7 @@ function getDurations(choice: NodeMediaModel) {
 }
 
 function getResolutions(choice: NodeMediaModel, duration?: number) {
-  // ACT: 当前视频分辨率使用 p 单位；出现其他单位时再统一换算。
+  // ACT: Video resolutions currently use the p unit; normalize conversions when other units appear.
   return [...new Set((choice.durationResolutionMap ?? []).filter((item) => item.duration.includes(duration!)).flatMap((item) => item.resolution))]
     .sort((left, right) => (Number.parseFloat(left) || Infinity) - (Number.parseFloat(right) || Infinity));
 }
@@ -233,10 +233,10 @@ async function replaceOutput(event: Event) {
       await workspace.remove(url);
       return;
     }
-    // ACT: 保留历史输出文件，避免破坏撤销记录和复制节点的引用。
+    // ACT: Keep historical output files to avoid breaking undo history and copied node references.
     outputs.value.video = { dataType: "VIDEO", value: { url, mimeType: file.type } };
   } catch (error) {
-    showNodeError(error, "视频替换失败");
+    showNodeError(error, "Video replacement failed");
   } finally {
     uploading.value = false;
   }
@@ -248,7 +248,7 @@ function loadModels() {
   modelsRequest = ai.getMediaModels().then((items) => {
     if (generating.value || deleting.value) return;
     models.value = items.filter((item) => item.type === "video");
-    // ACT: 只给空配置选默认模型，保留暂时不可用的旧选择及其参数。
+    // ACT: Only select default model for empty config; keep unavailable old selection and its parameters.
     if (!data.value.model) {
       const first = models.value[0];
       data.value.model = first ? JSON.stringify([first.providerId, first.modelId]) : "";
@@ -262,14 +262,14 @@ function loadModels() {
 
 async function startGeneration() {
   const choice = selectedModel.value;
-  if (generating.value) throw new Error("视频正在生成，请等待完成");
-  if (uploading.value) throw new Error("视频正在替换，请等待完成");
-  if (deleting.value) throw new Error("节点正在删除");
-  if (!choice) throw new Error("请先选择视频模型");
-  if (!generationPrompt.value) throw new Error("请输入生成提示词");
-  if (refList.value.some(item => item.value === undefined)) throw new Error("引用节点暂无内容，请先补充引用内容");
+  if (generating.value) throw new Error("Video is generating, please wait");
+  if (uploading.value) throw new Error("Video is being replaced, please wait");
+  if (deleting.value) throw new Error("Node is being deleted");
+  if (!choice) throw new Error("Please select a video model first");
+  if (!generationPrompt.value) throw new Error("Please enter a generation prompt");
+  if (refList.value.some(item => item.value === undefined)) throw new Error("Referenced node has no content yet, please add content first");
   const images = refList.value.flatMap((item) => item.dataType === "IMAGE" && item.value ? [{ path: item.value.url, mimeType: item.value.mimeType }] : []);
-  if (choice.mode?.length && !matchingModes.value.length) throw new Error("当前模型没有适合这些参考素材的生成模式，请更换模型或调整引用");
+  if (choice.mode?.length && !matchingModes.value.length) throw new Error("The current model has no generation mode suitable for these reference materials, please switch models or adjust references");
   const workspace = files.getWorkspaceFiles();
   const controller = new AbortController();
   const input: Omit<NodeVideoRequest, "directory"> = {
@@ -289,7 +289,7 @@ async function startGeneration() {
     audios: refList.value.flatMap((item) => item.dataType === "AUDIO" && item.value ? [{ path: item.value.url, mimeType: item.value.mimeType }] : []),
   };
   generationController = controller;
-  // ACT: 工具立即返回，任务由节点持有，停止或卸载时取消。
+  // ACT: The tool returns immediately; the task is owned by the node and cancelled on stop or unmount.
   generation = generationState.run(() => workspace
     .list()
     .then(({ directory }) => {
@@ -298,10 +298,10 @@ async function startGeneration() {
     })
     .then(([result]) => {
       controller.signal.throwIfAborted();
-      if (!result) throw new Error("供应商未返回视频");
+      if (!result) throw new Error("The provider returned no video");
       outputs.value.video = { dataType: "VIDEO", value: { url: result.path, mimeType: result.mimeType } };
     }))
-    .catch((error) => showNodeError(error, "视频生成失败"))
+    .catch((error) => showNodeError(error, "Video generation failed"))
     .finally(() => {
       generationController = undefined;
     });
@@ -309,10 +309,10 @@ async function startGeneration() {
 }
 
 nodeEvent.on("save", (reason) => {
-  if (reason === "reload" && (generating.value || uploading.value || deleting.value)) throw new Error("视频处理中，请完成后再刷新节点");
+  if (reason === "reload" && (generating.value || uploading.value || deleting.value)) throw new Error("Video is being processed, please reload the node after it finishes");
 });
 nodeEvent.on("delete", async () => {
-  if (uploading.value) throw new Error("视频正在替换，请稍后删除节点");
+  if (uploading.value) throw new Error("Video is being replaced, please delete the node later");
   deleting.value = true;
   generationController?.abort();
   try {
@@ -350,7 +350,7 @@ function getConfig() {
 
 nodeTools.register({
   name: "getConfig",
-  description: "读取此视频生成节点的当前配置、可选视频模型能力、通用比例及适合当前引用的模式，不含密钥；时长与分辨率须符合 durationResolutionMap",
+  description: "Read the current configuration of this video generation node, available video model capabilities, common ratios, and modes suitable for the current references, without secrets; duration and resolution must conform to durationResolutionMap",
   parameters: z.strictObject({}),
   async execute(_args, { signal }) {
     signal?.throwIfAborted();
@@ -362,7 +362,7 @@ nodeTools.register({
 
 nodeTools.register({
   name: "setConfig",
-  description: "修改此视频生成节点的模型、时长、分辨率、比例、模式或声音；先用 getConfig 查询能力，providerId 与 modelId 必须同时提供；mode 使用返回的原始字符串或数组，须匹配当前引用；不修改提示词、不启动生成",
+  description: "Change the model, duration, resolution, ratio, mode, or audio of this video generation node; query capabilities with getConfig first; providerId and modelId must be provided together; mode uses the original string or array returned and must match the current references; does not change the prompt or start generation",
   parameters: z.strictObject({
     providerId: z.string().min(1).optional(),
     modelId: z.string().min(1).optional(),
@@ -371,24 +371,24 @@ nodeTools.register({
     ratio: z.enum(ratioOptions).optional(),
     mode: z.union([z.string().min(1), z.array(z.string().min(1)).min(1)]).optional(),
     generateAudio: z.boolean().optional(),
-  }).refine((args) => (args.providerId === undefined) === (args.modelId === undefined), "providerId 与 modelId 必须同时提供"),
+  }).refine((args) => (args.providerId === undefined) === (args.modelId === undefined), "providerId and modelId must be provided together"),
   async execute(args, { signal }) {
     signal?.throwIfAborted();
-    if (generating.value || deleting.value) throw new Error("节点正在生成或删除，请稍后修改配置");
+    if (generating.value || deleting.value) throw new Error("Node is generating or being deleted, please change the configuration later");
     await loadModels();
     signal?.throwIfAborted();
-    if (generating.value || deleting.value) throw new Error("节点正在生成或删除，请稍后修改配置");
+    if (generating.value || deleting.value) throw new Error("Node is generating or being deleted, please change the configuration later");
     const choice = args.modelId === undefined ? selectedModel.value
       : models.value.find((item) => item.providerId === args.providerId && item.modelId === args.modelId);
-    if (!choice) throw new Error("请选择 getConfig 返回的有效视频模型");
+    if (!choice) throw new Error("Please select a valid video model returned by getConfig");
     const durations = getDurations(choice);
-    if (args.duration !== undefined && !durations.includes(args.duration)) throw new Error(`当前模型不支持时长 ${args.duration}，可选：${durations.join("、")}`);
+    if (args.duration !== undefined && !durations.includes(args.duration)) throw new Error(`The current model does not support duration ${args.duration}, available: ${durations.join(", ")}`);
     const duration = args.duration ?? (durations.includes(data.value.duration!) ? data.value.duration : durations[0]);
     const resolutions = getResolutions(choice, duration);
-    if (args.resolution !== undefined && !resolutions.includes(args.resolution)) throw new Error(`当前时长不支持分辨率 ${args.resolution}，可选：${resolutions.join("、")}`);
+    if (args.resolution !== undefined && !resolutions.includes(args.resolution)) throw new Error(`The current duration does not support resolution ${args.resolution}, available: ${resolutions.join(", ")}`);
     const resolution = args.resolution ?? (resolutions.includes(data.value.resolution) ? data.value.resolution : resolutions[0] ?? "");
-    if (args.mode !== undefined && !getMatchingModes(choice).some((item) => JSON.stringify(item) === JSON.stringify(args.mode))) throw new Error("所选模式不受当前模型支持或不适用于当前引用，请根据模型能力及已连接素材选择");
-    if (args.generateAudio !== undefined && choice.audio !== "optional" && args.generateAudio !== (choice.audio === true)) throw new Error("当前模型不支持切换声音，请查看 getConfig 返回的 audio 能力");
+    if (args.mode !== undefined && !getMatchingModes(choice).some((item) => JSON.stringify(item) === JSON.stringify(args.mode))) throw new Error("The selected mode is not supported by the current model or does not apply to the current references, please choose according to model capabilities and connected materials");
+    if (args.generateAudio !== undefined && choice.audio !== "optional" && args.generateAudio !== (choice.audio === true)) throw new Error("The current model does not support toggling audio, see the audio capability returned by getConfig");
     data.value.model = JSON.stringify([choice.providerId, choice.modelId]);
     data.value.duration = duration;
     data.value.resolution = resolution;
@@ -401,10 +401,10 @@ nodeTools.register({
 
 nodeTools.register({
   name: "setPrompt",
-  description: "修改此节点的视频生成提示词，支持 {{ref 1}} 等参考标记；只修改提示词，不启动生成",
+  description: "Change the video generation prompt of this node, supporting reference markers such as {{ref 1}}; only changes the prompt and does not start generation",
   parameters: z.strictObject({ prompt: z.string() }),
   execute({ prompt: value }) {
-    if (deleting.value) throw new Error("节点正在删除，请稍后修改");
+    if (deleting.value) throw new Error("Node is being deleted, please change it later");
     data.value.prompt = value;
     data.value.promptModel = value.split("\n").map((text) => [{ type: "Write", text }]);
     return { prompt: value };
@@ -413,7 +413,7 @@ nodeTools.register({
 
 nodeTools.register({
   name: "generateVideo",
-  description: "启动此节点的后台视频生成，使用当前提示词、模型、模式、时长、分辨率、比例和参考素材；立即返回已开始，用 getGenerationStatus 查询完成结果，cancelGeneration 停止生成",
+  description: "Start background video generation for this node using the current prompt, model, mode, duration, resolution, ratio, and reference materials; returns immediately once started, use getGenerationStatus to query the result and cancelGeneration to stop generation",
   parameters: z.strictObject({}),
   execute(_args, { signal }) {
     signal?.throwIfAborted();
