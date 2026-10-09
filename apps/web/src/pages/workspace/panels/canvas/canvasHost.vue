@@ -221,7 +221,7 @@ function checkNodeResources(path: string) {
         if (typeof reference !== "string" || !reference || /^(?:[a-z][a-z\d+.-]*:|[\\/])/i.test(reference)) continue;
         const resource = reference.replaceAll("\\", "/").split("/").filter(part => part && part !== ".").join("/").toLowerCase();
         // ACT: Includes undo history with conservative case merge; refuse move when node resources are still held by runtime to prevent background generation writing to old path.
-        if (containsPath(requested, resource) || containsPath(resource, requested)) throw new Error(`”${path}” is still used by canvas “${panel.canvasId}” nodes, cannot rename or move`);
+        if (containsPath(requested, resource) || containsPath(resource, requested)) throw new Error(`"${path}" is still used by canvas "${panel.canvasId}" nodes, cannot rename or move`);
       }
     }
   }

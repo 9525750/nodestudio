@@ -248,7 +248,7 @@ const resultMessage = computed(() => {
   if (action.value === "read") return translate("正在确认客户端的更新状态，请稍候…");
   if (action.value === "apply") return translate("客户端即将关闭，更新完成后会自动重新打开。");
   if (working.value) return translate("正在下载并校验更新包，可以关闭此弹窗继续使用。");
-  if (snapshot.value?.updateReady) return translate("点击“重启并更新”安装新版本，请先完成正在进行的任务。");
+  if (snapshot.value?.updateReady) return translate("点击"重启并更新"安装新版本，请先完成正在进行的任务。");
   if (!snapshot.value?.updateAvailable) return t`当前已是最新版本 v${currentVersion.value}`;
   return snapshot.value.canUpdate ? translate("有新的版本可用，下载完成后可重启更新。") : translate("当前客户端不支持应用内更新，请下载安装包。");
 });

@@ -218,7 +218,7 @@ async function removeCanvas(canvas: Canvas) {
   busy.value = true;
   canvasListVisible.value = false;
   try {
-    const confirmed = await ElMessageBox.confirm(`Confirm delete “${canvas.name}”? The corresponding ${id} file and exclusive node assets will be deleted. Shared assets will be kept. This cannot be undone.`, “Delete canvas”, {
+    const confirmed = await ElMessageBox.confirm(`Confirm delete "${canvas.name}"? The corresponding ${id} file and exclusive node assets will be deleted. Shared assets will be kept. This cannot be undone.`, "Delete canvas", {
       type: "warning", confirmButtonText: "Delete", cancelButtonText: "Cancel", closeOnClickModal: false,
     }).then(() => true, () => false);
     if (!confirmed) return;

@@ -136,7 +136,7 @@ export async function copyCanvasFiles(files: Files, path: string, target: string
   } catch (error) {
     const cleanup = await Promise.allSettled([...copiedAssets, ...(copied ? [temporary] : [])].map(path => files.remove(path, true)));
     if (createdAssets) cleanup.push(...await Promise.allSettled([files.remove("assets")]));
-    if (cleanup.some(result => result.status === “rejected”)) throw new Error(`Copy failed and some copies could not be cleaned up, please check “${target}”: ${error instanceof Error ? error.message : “File operation failed”}`);
+    if (cleanup.some(result => result.status === "rejected")) throw new Error(`Copy failed and some copies could not be cleaned up, please check "${target}": ${error instanceof Error ? error.message : "File operation failed"}`);
     throw error;
   }
 }

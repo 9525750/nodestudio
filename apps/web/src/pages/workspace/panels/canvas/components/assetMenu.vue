@@ -141,7 +141,7 @@ async function handleCommand(command: string) {
       await relocate(entry, parent === "." ? value.trim() : parent + "/" + value.trim());
     }
     if (command === "delete") {
-      await ElMessageBox.confirm('Confirm delete “' + entry.name + '”?', “Delete asset”, { type: “warning”, confirmButtonText: “Delete”, cancelButtonText: “Cancel” });
+      await ElMessageBox.confirm('Confirm delete "' + entry.name + '"?', "Delete asset", { type: "warning", confirmButtonText: "Delete", cancelButtonText: "Cancel" });
       busy.value = true;
       try {
         await axios.delete("/api/assets/remove", { data: { path: entry.path } });

@@ -488,7 +488,7 @@ async function handleCommand(command: string, item = menuItem.value, source = cl
       if (!items.length) return;
       total = items.length;
       const detail = item.type === "node" ? t`该节点会从画布中删除。` : items.some(item => item.type === "directory" || item.type === "canvas") ? t`所选文件夹的全部内容、画布的全部节点会一并删除。` : "";
-      await ElMessageBox.confirm(`Delete ${items.length === 1 ? `”${items[0]!.name}”` : `these ${items.length} items`}? ${detail}This action cannot be undone.`, item.type === “node” ? “Delete node” : “Delete file”, { type: “warning”, confirmButtonText: “Delete”, cancelButtonText: “Cancel”, closeOnClickModal: false });
+      await ElMessageBox.confirm(`Delete ${items.length === 1 ? `"${items[0]!.name}"` : `these ${items.length} items`}? ${detail}This action cannot be undone.`, item.type === "node" ? "Delete node" : "Delete file", { type: "warning", confirmButtonText: "Delete", cancelButtonText: "Cancel", closeOnClickModal: false });
       if (currentDirectory !== directory.value) return;
       for (const entry of items) {
         if (currentDirectory !== directory.value) throw new Error("Working directory changed");
@@ -608,11 +608,11 @@ async function createEntry(folder: boolean, item = currentItem()) {
   const destination = item.type === "directory" ? item.path : parentPath(item.path);
   let value: string;
   try {
-    ({ value } = await ElMessageBox.prompt(`Create a new ${folder ? “folder” : “file”} in “${destination || “workspace root”}”`, folder ? “New folder” : “New file”, {
-      inputValue: folder ? “New folder” : “document.md”,
-      inputValidator: name => !!name?.trim() && !/[\\/\0]/.test(name) && ![“.”, “..”].includes(name.trim()) || “Please enter a valid name without slashes”,
-      confirmButtonText: “Create”,
-      cancelButtonText: “Cancel”,
+    ({ value } = await ElMessageBox.prompt(`Create a new ${folder ? "folder" : "file"} in "${destination || "workspace root"}"`, folder ? "New folder" : "New file", {
+      inputValue: folder ? "New folder" : "document.md",
+      inputValidator: name => !!name?.trim() && !/[\\/\0]/.test(name) && ![".", ".."].includes(name.trim()) || "Please enter a valid name without slashes",
+      confirmButtonText: "Create",
+      cancelButtonText: "Cancel",
     }));
   } catch {
     return;
@@ -657,7 +657,7 @@ function readNodeIndex(currentDirectory: string, signal: AbortSignal) {
   if (cached) return cached;
   // ACT: A full canvas scan is only needed for asset ownership; search and tree each hold their own cancellable cache, and failures are not cached.
   const pending = (props.params?.params.readNodes(currentDirectory, { signal, onError: (path, error) => {
-    if (!signal.aborted && currentDirectory === directory.value) loadError.value = `Unable to read nodes from “${path}”; other files are still available: ${error instanceof Error ? error.message : “please check the file”}`;
+    if (!signal.aborted && currentDirectory === directory.value) loadError.value = `Unable to read nodes from "${path}"; other files are still available: ${error instanceof Error ? error.message : "please check the file"}`;
   } }) ?? Promise.resolve([])).then(nodes => {
     const index = new Map<string, DocumentNode[]>();
     for (const node of nodes) {
@@ -713,7 +713,7 @@ async function readDirectory(currentDirectory: string, path: string, signal: Abo
       } catch (error) {
         signal.throwIfAborted();
         items.push(item);
-        if (version === treeVersion.value && currentDirectory === directory.value) loadError.value = `Unable to identify “${entry.path}”; other files are still available: ${error instanceof Error ? error.message : “please check the file”}`;
+        if (version === treeVersion.value && currentDirectory === directory.value) loadError.value = `Unable to identify "${entry.path}"; other files are still available: ${error instanceof Error ? error.message : "please check the file"}`;
       }
     }
   }));
@@ -742,7 +742,7 @@ watch([searchTerm, directory, treeVersion], ([term, currentDirectory], _previous
         try { items = await readDirectory(currentDirectory, pending[index]!, controller.signal); }
         catch (error) {
           controller.signal.throwIfAborted();
-          if (revision === searchRevision) loadError.value = `Skipped unreadable directory “${pending[index] || “workspace”}”: ${error instanceof Error ? error.message : “please check permissions”}`;
+          if (revision === searchRevision) loadError.value = `Skipped unreadable directory "${pending[index] || "workspace"}": ${error instanceof Error ? error.message : "please check permissions"}`;
           continue;
         }
         if (revision !== searchRevision) return;
@@ -756,7 +756,7 @@ watch([searchTerm, directory, treeVersion], ([term, currentDirectory], _previous
               results.push(...nodes.filter(node => `${node.name}\n${node.nodeId}\n${node.path}`.toLocaleLowerCase().includes(query)));
             } catch (error) {
               controller.signal.throwIfAborted();
-              if (revision === searchRevision) loadError.value = `Skipped unreadable canvas “${item.path}”: ${error instanceof Error ? error.message : “please check the file”}`;
+              if (revision === searchRevision) loadError.value = `Skipped unreadable canvas "${item.path}": ${error instanceof Error ? error.message : "please check the file"}`;
             }
           }
         }
