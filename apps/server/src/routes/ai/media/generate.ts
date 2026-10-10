@@ -12,7 +12,7 @@ export default Router().post("/", validateFields({
   const { directory, mediaType, ...request } = req.body;
   const parsed = (mediaType === "image" ? imageGenerationSchema : mediaType === "video" ? videoGenerationSchema : audioGenerationSchema).safeParse(request, validationOptions());
   if (!parsed.success) {
-    res.status(400).json(error("参数错误", parsed.error.issues.map(issue => ({ ...issue, message: translateMessage(issue.message) })), 400));
+    res.status(400).json(error("Invalid parameters", parsed.error.issues.map(issue => ({ ...issue, message: translateMessage(issue.message) })), 400));
     return;
   }
   const cwd = await u.workspace.resolveWorkspace(req, directory);

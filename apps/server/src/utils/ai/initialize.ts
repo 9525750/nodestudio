@@ -1,8 +1,5 @@
-import tfRouter from "@toonflow/providers/language/tfRouter";
-import tfRouterMedia from "@toonflow/providers/media/tfRouter";
 import conf from "@/utils/conf";
 import { fetchProviderModels } from "@/utils/ai/models";
-import { getMediaProviderApiKey, refreshMediaProviderModels } from "@/utils/media/provider";
 
 let initialization: Promise<void> | undefined;
 
@@ -10,61 +7,55 @@ function normalizeApiKey(value: unknown) {
   return typeof value === "string" ? value.trim().replace(/^Bearer(?:\s+|$)/i, "").trim() : "";
 }
 
-function getLanguageProvider(settings: Record<string, unknown>) {
-  const providers = settings.customProviders;
-  if (!Array.isArray(providers)) return;
-  return providers.find(item => typeof item?.id === "string" && item.id.toLowerCase() === tfRouter.id.toLowerCase()
-    && typeof item.apiUrl === "string" && URL.canParse(item.apiUrl) && new URL(item.apiUrl).origin === new URL(tfRouter.apiUrl).origin);
-}
-
-async function refreshLanguageModels(previousSettings?: Record<string, unknown>) {
-  const provider = getLanguageProvider(conf.get("settings", {}));
-  const apiKey = normalizeApiKey(provider?.apiKey);
-  if (!apiKey || (previousSettings && apiKey === normalizeApiKey(getLanguageProvider(previousSettings)?.apiKey))) return;
-  const models = await fetchProviderModels({ apiUrl: provider.apiUrl, protocol: provider.protocol, apiKey });
-  if (!models.length) throw new Error("未获取到文本模型，保留原有列表");
-  const current = conf.get("settings.customProviders");
-  if (!Array.isArray(current)) return;
-  const index = current.findIndex(item => item?.id === provider.id && item.apiUrl === provider.apiUrl
-    && item.protocol === provider.protocol && item.apiKey === provider.apiKey);
-  if (index === -1) return;
-  const providers = current.map((item, itemIndex) => itemIndex === index ? { ...item, models } : item);
-  conf.set("settings.customProviders", providers);
-  return providers;
-}
-
-async function refreshMediaModels(previousSettings: Record<string, unknown> | undefined, errors: string[]) {
-  const apiKey = getMediaProviderApiKey(tfRouterMedia.id);
-  const configs = previousSettings?.mediaProviderConfigs as Record<string, { apiKey?: unknown }> | undefined;
-  if (!apiKey || (previousSettings && apiKey === normalizeApiKey(configs?.[tfRouterMedia.id]?.apiKey))) return;
-  let provider: Awaited<ReturnType<typeof refreshMediaProviderModels>> | undefined;
-  // ACT: 同一供应商文件按类型串行保存，避免两个刷新读取相同版本后互相冲突。
-  for (const type of ["video", "audio"] as const) {
-    if (getMediaProviderApiKey(tfRouterMedia.id) !== apiKey) break;
-    try { provider = await refreshMediaProviderModels(`${tfRouterMedia.id}.ts`, undefined, type, apiKey); }
-    catch (error) {
-      if (getMediaProviderApiKey(tfRouterMedia.id) !== apiKey) break;
-      errors.push(`TF-Router ${type === "video" ? "视频" : "音频"}模型更新失败：${error instanceof Error ? error.message : "未知错误"}`);
-    }
-  }
-  return provider;
-}
-
 export async function refreshProviderModels(previousSettings?: Record<string, unknown>) {
   const errors: string[] = [];
-  const [language, media] = await Promise.allSettled([refreshLanguageModels(previousSettings), refreshMediaModels(previousSettings, errors)]);
-  for (const [result, label] of [[language, "文本"], [media, "媒体"]] as const) {
-    if (result.status === "rejected") errors.push(`TF-Router ${label}模型更新失败：${result.reason instanceof Error ? result.reason.message : "未知错误"}`);
+  const providers = conf.get("settings.customProviders");
+  if (!Array.isArray(providers)) return { ...(errors.length ? { modelRefreshErrors: errors } : {}) };
+  const previousProviders = previousSettings?.customProviders;
+  const changed: number[] = [];
+  for (let i = 0; i < providers.length; i++) {
+    const provider = providers[i];
+    if (!provider || typeof provider.id !== "string" || typeof provider.apiUrl !== "string" || typeof provider.protocol !== "string") continue;
+    const apiKey = normalizeApiKey(provider.apiKey);
+    if (!apiKey) continue;
+    if (previousSettings) {
+      const prev = Array.isArray(previousProviders) ? previousProviders.find((item: { id?: string }) => item?.id === provider.id) : undefined;
+      if (prev && apiKey === normalizeApiKey(prev.apiKey) && provider.apiUrl === prev.apiUrl && provider.protocol === prev.protocol) continue;
+    }
+    changed.push(i);
   }
+  if (!changed.length) return { ...(errors.length ? { modelRefreshErrors: errors } : {}) };
+  const results = await Promise.allSettled(changed.map(async i => {
+    const provider = providers[i];
+    const models = await fetchProviderModels({ apiUrl: provider.apiUrl, protocol: provider.protocol, apiKey: provider.apiKey });
+    if (!models.length) return;
+    return { index: i, id: provider.id, models };
+  }));
+  let updated = false;
+  const current = conf.get("settings.customProviders");
+  if (!Array.isArray(current)) return { ...(errors.length ? { modelRefreshErrors: errors } : {}) };
+  const merged = current.map((item: Record<string, unknown>) => {
+    for (const result of results) {
+      if (result.status !== "fulfilled" || !result.value) continue;
+      const { id, models } = result.value;
+      if (item?.id === id) {
+        updated = true;
+        return { ...item, models };
+      }
+    }
+    return item;
+  });
+  for (const result of results) {
+    if (result.status === "rejected") errors.push(`Model refresh failed: ${result.reason instanceof Error ? result.reason.message : "unknown error"}`);
+  }
+  if (updated) conf.set("settings.customProviders", merged);
   return {
-    ...(language.status === "fulfilled" && language.value ? { customProviders: conf.get("settings.customProviders") as typeof language.value } : {}),
-    ...(media.status === "fulfilled" && media.value ? { mediaProvider: media.value } : {}),
+    ...(updated ? { customProviders: conf.get("settings.customProviders") as typeof merged } : {}),
     ...(errors.length ? { modelRefreshErrors: errors } : {}),
   };
 }
 
 export default function initializeProviderModels() {
-  // ACT: 每个进程启动时仅尝试一次；失败保留已有模型，下次启动再更新。
   return initialization ??= refreshProviderModels().then(result => {
     result.modelRefreshErrors?.forEach(error => console.warn(error));
   });

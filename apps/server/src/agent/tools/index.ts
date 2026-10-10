@@ -59,7 +59,7 @@ export function createAgentToolContext(cwd: string, config: Record<string, unkno
     cwd, config, files, resolvePath, writeFile: files.writeFile, canvas, question, skills: createSkillContext(cwd),
     ffmpeg: signal => createWorkspaceFfmpeg(cwd, signal),
     media: {
-      listModels: listMediaModels,
+      listModels: async () => listMediaModels(),
       generateImage: (request, signal) => generateMedia(cwd, "image", request, signal),
       generateVideo: (request, signal) => generateMedia(cwd, "video", request, signal),
       generateAudio: (request, signal) => generateMedia(cwd, "audio", request, signal),

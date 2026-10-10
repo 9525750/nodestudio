@@ -19,7 +19,7 @@
             <keep-alive include="personalization">
               <component
                 :is="activePanel.component"
-                v-bind="['pluginMarket', 'languageModel', 'mediaModel', 'personalization'].includes(activePanel.id) ? { visible } : {}" />
+                v-bind="['pluginMarket', 'api', 'personalization'].includes(activePanel.id) ? { visible } : {}" />
             </keep-alive>
           </transition>
         </div>
@@ -34,27 +34,25 @@ import { hasDesktopUpdate } from "@/stores/desktopUpdate";
 import {
   IconPalette,
   IconSettings,
-  IconPhotoVideo,
   IconBuildingStore,
   IconInfoCircle,
   IconCode,
   IconShieldLock,
   IconPlugConnected,
   IconUserCog,
-  IconSubtitlesAi,
+  IconApi,
 } from "@tabler/icons-vue";
 
 const settingsPanels = [
   { id: "ui", label: "UI", icon: IconPalette, component: defineAsyncComponent(() => import("./panels/ui.vue")) },
   { id: "general", label: "General", icon: IconSettings, component: defineAsyncComponent(() => import("./panels/general/index.vue")) },
   {
-    id: "languageModel",
-    label: "Language Model",
-    icon: IconSubtitlesAi,
+    id: "api",
+    label: "API",
+    icon: IconApi,
     groupLabel: "Models",
     component: defineAsyncComponent(() => import("./panels/languageModel/index.vue")),
   },
-  { id: "mediaModel", label: "Media Model", icon: IconPhotoVideo, component: defineAsyncComponent(() => import("./panels/mediaModel/index.vue")) },
   {
     id: "pluginMarket",
     label: "Plugin Market",

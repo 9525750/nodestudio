@@ -84,7 +84,7 @@ export const privacySettings = computed(() => {
   };
 });
 
-export type CustomProviderModel = { id: string; label: string; contextWindow?: number; maxOutputTokens?: number };
+export type CustomProviderModel = { id: string; label: string; type?: "text" | "image" | "video" | "audio"; contextWindow?: number; maxOutputTokens?: number };
 export type CustomProvider = { id: string; label: string; version?: string; apiUrl: string; apiKey: string; protocol: string; models: CustomProviderModel[] };
 export const customProviders = computed<CustomProvider[]>(() => Array.isArray(settings.value.customProviders)
   ? settings.value.customProviders.filter((item): item is CustomProvider => !!item && typeof item.id === "string" && typeof item.label === "string" && Array.isArray(item.models)
@@ -113,20 +113,19 @@ export function saveSettings(update?: (current: Record<string, unknown>) => Reco
   const saving = saveQueue.then(async () => {
     const patch = update?.(settings.value);
     if (update && !patch) return false;
-    const { data } = await axios.put<{ code: number; data: { customProviders?: CustomProvider[]; mediaProvider?: { id: string }; modelRefreshErrors?: string[] } | null }>(
+    const { data } = await axios.put<{ code: number; data: { customProviders?: CustomProvider[]; modelRefreshErrors?: string[] } | null }>(
       "/api/settings/save", { settings: { ...settings.value, ...patch } }, { headers: { "x-toonflow-workspace": "1" } },
     );
     if (data.code !== 200) throw new Error("Failed to save settings");
     const providers = data.data?.customProviders;
-    if ((patch && Object.hasOwn(patch, "customProviders")) || providers) invalidateNodeModels("language");
+    if ((patch && Object.hasOwn(patch, "customProviders")) || providers) {
+      invalidateNodeModels("language");
+      invalidateNodeModels("media");
+    }
     if (patch || providers) {
       applyingSettings = true;
       try { settings.value = { ...settings.value, ...patch, ...(providers ? { customProviders: providers } : {}) }; }
       finally { applyingSettings = false; }
-    }
-    if (data.data?.mediaProvider) {
-      invalidateNodeModels("media");
-      window.dispatchEvent(new CustomEvent("toonflow:plugin-installed", { detail: { type: "provider", name: data.data.mediaProvider.id } }));
     }
     if (data.data?.modelRefreshErrors?.length) ElMessage.warning(`API Key saved. Some models failed to refresh: ${data.data.modelRefreshErrors.join("; ")}`);
     return true;

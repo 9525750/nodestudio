@@ -56,7 +56,7 @@ const reasoningOptions = [
   { label: "Medium", value: "medium" },
   { label: "High", value: "high" },
 ];
-const modelGroups = computed(() => customProviders.value.toSorted((left, right) => Number(right.id === "tfRouter") - Number(left.id === "tfRouter")));
+const modelGroups = computed(() => customProviders.value);
 const selectedModelChoice = computed(() => modelChoices.value.find(item => item.value === selectedModel.value));
 const reasoningLabel = computed(() => reasoningOptions.find(item => item.value === reasoningEffort.value)?.label ?? "Default");
 watch(selectedModel, () => { reasoningEffort.value = ""; });
