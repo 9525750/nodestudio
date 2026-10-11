@@ -40,7 +40,8 @@ export async function resolveA2aWorkspace(path = getA2aSettings().directory) {
     throw error;
   });
   if (!(await stat(directory)).isDirectory()) throw Object.assign(new Error("A2A 工作目录必须是文件夹"), { status: 400 });
-  const localWorkspace = ["win32", "darwin"].includes(process.platform) && (process.env.NODE_ENV === "dev" || process.env.toonflowDesktop === "1");
+  if (process.env.NODE_ENV === "dev") return directory;
+  const localWorkspace = ["win32", "darwin"].includes(process.platform) && process.env.toonflowDesktop === "1";
   if (localWorkspace) return directory;
   const root = await realpath(resolve(dirname(conf.path), "workspaces")).catch((error: NodeJS.ErrnoException) => {
     if (error.code === "ENOENT") return;
