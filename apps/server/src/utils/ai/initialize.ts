@@ -1,5 +1,6 @@
 import conf from "@/utils/conf";
 import { fetchProviderModels } from "@/utils/ai/models";
+import { refreshKieModels } from "@/utils/ai/kie";
 
 let initialization: Promise<void> | undefined;
 
@@ -56,7 +57,10 @@ export async function refreshProviderModels(previousSettings?: Record<string, un
 }
 
 export default function initializeProviderModels() {
-  return initialization ??= refreshProviderModels().then(result => {
-    result.modelRefreshErrors?.forEach(error => console.warn(error));
-  });
+  return initialization ??= Promise.all([
+    refreshKieModels().catch(err => console.warn("KIE model refresh failed:", err instanceof Error ? err.message : err)),
+    refreshProviderModels().then(result => {
+      result.modelRefreshErrors?.forEach(error => console.warn(error));
+    }),
+  ]).then(() => {});
 }

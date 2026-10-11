@@ -1,6 +1,7 @@
 import { mkdir, readFile, realpath, stat, unlink } from "@toonflow/file";
 import { join, relative } from "node:path";
 import type { GeneratedMedia, MediaGenerationRequest, MediaModel, MediaReference } from "@toonflow/tools-scaffold/runtime";
+import { kieApiKey, kieCreateTaskUrl, kieRecordInfoUrl } from "@/utils/ai/kie";
 import { lockWorkspaceFiles, resolveWorkspacePath, writeWorkspaceFile } from "@/utils/workspace/files";
 
 const maxMediaSize = 100 * 1024 * 1024;
@@ -12,9 +13,6 @@ const mediaExtensions: Record<string, string> = {
   "audio/flac": "flac", "audio/aac": "aac", "audio/mp4": "m4a", "audio/opus": "opus", "audio/pcm": "pcm",
 };
 
-const kieApiKey = "cf3158422e4a71de3c2d4e27fc371008";
-const kieCreateTaskUrl = "https://api.kie.ai/api/v1/jobs/createTask";
-const kieRecordInfoUrl = "https://api.kie.ai/api/v1/jobs/recordInfo";
 
 const kieMediaModels: MediaModel[] = [
   { providerId: "kie", providerLabel: "KIE", modelId: "kling-3.0/video", label: "Kling 3.0", type: "video" },

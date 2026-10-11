@@ -7,6 +7,7 @@ import { z } from "zod";
 import conf from "@/utils/conf";
 import { readReference } from "@/utils/media/generation";
 import modelContextLimits from "@/utils/ai/modelContextLimits";
+import { kieApiKey, kieApiUrl, kieProviderId, kieProviderLabel, kieProtocol, getKieTextModels } from "@/utils/ai/kie";
 
 export { fetchProviderModels } from "@/utils/ai/models";
 export { refreshProviderModels } from "@/utils/ai/initialize";
@@ -44,6 +45,17 @@ export function getModelLimits(providerId: string, model: z.infer<typeof provide
 }
 
 export function getConfiguredModel(providerId: string, modelId: string) {
+  if (providerId === kieProviderId) {
+    const kieModels = getKieTextModels();
+    const model = kieModels.find(item => item.id === modelId);
+    if (!model) throw Object.assign(new Error("Selected model not found, please select again"), { status: 400 });
+    const limits = getModelLimits(providerId, model);
+    return {
+      provider: { apiUrl: kieApiUrl, apiKey: kieApiKey, protocol: kieProtocol, models: kieModels },
+      model: { ...model, contextWindow: limits.contextWindow, maxOutputTokens: limits.maxTokens },
+      baseUrl: kieApiUrl,
+    };
+  }
   const providers = conf.get("settings", {}).customProviders;
   const parsed = providerSchema.safeParse(Array.isArray(providers) ? providers.find(item => item?.id === providerId) : undefined);
   if (!parsed.success) throw Object.assign(new Error("Please configure the model provider in settings first"), { status: 400 });
@@ -57,9 +69,18 @@ export function getConfiguredModel(providerId: string, modelId: string) {
 }
 
 export function listAiModels() {
+  const kieModels = getKieTextModels()
+    .filter(m => !m.type || m.type === "text")
+    .map(model => {
+      const limits = getModelLimits(kieProviderId, model);
+      return {
+        providerId: kieProviderId, providerLabel: kieProviderLabel, protocol: kieProtocol, modelId: model.id, label: model.label,
+        contextWindow: limits.contextWindow, maxOutputTokens: limits.maxTokens,
+      };
+    });
   const providers = conf.get("settings", {}).customProviders;
-  if (!Array.isArray(providers)) return [];
-  return providers.flatMap(item => {
+  if (!Array.isArray(providers)) return kieModels;
+  const custom = providers.flatMap(item => {
     const parsed = providerSchema.extend({ id: z.string().min(1), label: z.string() }).safeParse(item);
     if (!parsed.success) return [];
     const provider = parsed.data;
@@ -71,6 +92,7 @@ export function listAiModels() {
       };
     });
   });
+  return [...kieModels, ...custom];
 }
 
 const aiApis = {
