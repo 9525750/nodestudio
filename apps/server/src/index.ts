@@ -5,6 +5,7 @@ const startTime = Date.now();
 const realPort = 3000;
 // 源码位于 apps/server/src，生产构建位于 build/server，均从文件位置定位根目录。
 const fromSource = import.meta.path.endsWith(".ts");
+if (fromSource && !process.env.NODE_ENV) process.env.NODE_ENV = "dev";
 const appDirectory = resolve(import.meta.dirname, fromSource ? "../../.." : "../..");
 const dataDirectory = process.env.TOONFLOW_DATA_DIR ?? resolve(appDirectory, "data");
 const app = await createApp({
