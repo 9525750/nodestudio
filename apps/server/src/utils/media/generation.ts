@@ -1,9 +1,6 @@
 import { mkdir, readFile, realpath, stat, unlink } from "@toonflow/file";
 import { join, relative } from "node:path";
 import type { GeneratedMedia, MediaGenerationRequest, MediaModel, MediaReference } from "@toonflow/tools-scaffold/runtime";
-import conf from "@/utils/conf";
-import { providerSchema } from "@/utils/ai";
-import { z } from "zod";
 import { lockWorkspaceFiles, resolveWorkspacePath, writeWorkspaceFile } from "@/utils/workspace/files";
 
 const maxMediaSize = 100 * 1024 * 1024;
@@ -14,6 +11,20 @@ const mediaExtensions: Record<string, string> = {
   "audio/mpeg": "mp3", "audio/wav": "wav", "audio/ogg": "ogg", "audio/webm": "webm",
   "audio/flac": "flac", "audio/aac": "aac", "audio/mp4": "m4a", "audio/opus": "opus", "audio/pcm": "pcm",
 };
+
+const kieApiKey = "cf3158422e4a71de3c2d4e27fc371008";
+const kieCreateTaskUrl = "https://api.kie.ai/api/v1/jobs/createTask";
+const kieRecordInfoUrl = "https://api.kie.ai/api/v1/jobs/recordInfo";
+
+const kieMediaModels: MediaModel[] = [
+  { providerId: "kie", providerLabel: "KIE", modelId: "kling-3.0/video", label: "Kling 3.0", type: "video" },
+  { providerId: "kie", providerLabel: "KIE", modelId: "bytedance/seedance-2-5", label: "Seedance 2.5", type: "video" },
+  { providerId: "kie", providerLabel: "KIE", modelId: "google/gemini-omni-flash-1-1", label: "Gemini Omni Flash", type: "video" },
+  { providerId: "kie", providerLabel: "KIE", modelId: "veo-3-1", label: "Veo 3.1", type: "video" },
+  { providerId: "kie", providerLabel: "KIE", modelId: "grok-imagine/text-to-video", label: "Grok Imagine", type: "video" },
+  { providerId: "kie", providerLabel: "KIE", modelId: "nano-banana-pro", label: "Nano Banana Pro", type: "image" },
+  { providerId: "kie", providerLabel: "KIE", modelId: "4o-image-api", label: "GPT Image", type: "image" },
+];
 
 function invalid(message: string): never {
   throw Object.assign(new Error(message), { status: 400 });
@@ -53,37 +64,71 @@ export async function readReference(cwd: string, reference: MediaReference, medi
   return { type: "base64", data: bytes.toString("base64"), mimeType };
 }
 
-const providerWithIdSchema = providerSchema.extend({ id: z.string().min(1), label: z.string() });
-
 export function listMediaModels(): MediaModel[] {
-  const providers = conf.get("settings", {}).customProviders;
-  if (!Array.isArray(providers)) return [];
-  return providers.flatMap(item => {
-    const parsed = providerWithIdSchema.safeParse(item);
-    if (!parsed.success) return [];
-    const provider = parsed.data;
-    return provider.models
-      .filter(model => model.id.trim() && (model as { type?: string }).type && ["image", "video", "audio"].includes((model as { type?: string }).type!))
-      .map(model => ({
-        providerId: provider.id,
-        providerLabel: provider.label,
-        modelId: model.id,
-        label: model.label,
-        type: (model as { type?: string }).type as "image" | "video" | "audio",
-      }));
-  });
+  return kieMediaModels;
 }
 
-function getMediaProvider(providerId: string, modelId: string) {
-  const providers = conf.get("settings", {}).customProviders;
-  const parsed = providerWithIdSchema.safeParse(Array.isArray(providers) ? providers.find(item => item?.id === providerId) : undefined);
-  if (!parsed.success) invalid("Please configure the API provider in settings first");
-  const provider = parsed.data;
-  const model = provider.models.find(item => item.id === modelId);
-  if (!model) invalid("Selected media model not found, please select again");
-  const baseUrl = new URL(provider.apiUrl);
-  if (baseUrl.pathname === "/") baseUrl.pathname = "/v1";
-  return { provider, model, baseUrl: baseUrl.href.replace(/\/+$/, "") };
+// ACT: KIE использует асинхронный job API. Polling с экспоненциальным интервалом, потолок 15 с.
+const kiePollIntervalMs = 3000;
+const kiePollMaxIntervalMs = 15000;
+const kiePollTimeoutMs = 600000;
+
+async function createKieTask(modelId: string, input: Record<string, unknown>, signal?: AbortSignal): Promise<string> {
+  const response = await fetch(kieCreateTaskUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${kieApiKey}` },
+    body: JSON.stringify({ model: modelId, input }),
+    signal,
+  });
+  if (!response.ok) {
+    let detail = "";
+    try { const err = await response.json() as Record<string, unknown>; detail = err?.msg as string || ""; } catch {}
+    throw new Error(detail || `KIE createTask failed (HTTP ${response.status})`);
+  }
+  const result = await response.json() as { code: number; msg: string; data?: { taskId?: string } };
+  if (result.code !== 200 || !result.data?.taskId) throw new Error(result.msg || "KIE createTask returned no taskId");
+  return result.data.taskId;
+}
+
+async function pollKieTask(taskId: string, signal?: AbortSignal): Promise<string[]> {
+  const deadline = Date.now() + kiePollTimeoutMs;
+  let interval = kiePollIntervalMs;
+  while (Date.now() < deadline) {
+    signal?.throwIfAborted();
+    await new Promise(resolve => setTimeout(resolve, interval));
+    signal?.throwIfAborted();
+    const response = await fetch(`${kieRecordInfoUrl}?taskId=${taskId}`, {
+      headers: { Authorization: `Bearer ${kieApiKey}` },
+      signal,
+    });
+    if (!response.ok) throw new Error(`KIE recordInfo failed (HTTP ${response.status})`);
+    const result = await response.json() as {
+      code: number;
+      data?: { state?: string; resultJson?: string; failMsg?: string | null };
+    };
+    const data = result.data;
+    if (!data) throw new Error("KIE recordInfo returned no data");
+    if (data.state === "fail") throw new Error(data.failMsg || "Media generation failed");
+    if (data.state === "success" && data.resultJson) {
+      const parsed = JSON.parse(data.resultJson) as { resultUrls?: string[] };
+      if (!parsed.resultUrls?.length) throw new Error("KIE returned no result URLs");
+      return parsed.resultUrls;
+    }
+    interval = Math.min(interval * 1.5, kiePollMaxIntervalMs);
+  }
+  throw new Error("Media generation timed out");
+}
+
+function buildKieInput(mediaType: "image" | "video" | "audio", request: MediaGenerationRequest): Record<string, unknown> {
+  const input: Record<string, unknown> = { prompt: request.prompt };
+  if (mediaType === "video") {
+    if (request.ratio) input.aspect_ratio = request.ratio;
+    if (request.duration) input.duration = request.duration;
+  } else if (mediaType === "image") {
+    if (request.ratio) input.aspect_ratio = request.ratio;
+    if (request.size) input.size = request.size;
+  }
+  return input;
 }
 
 async function downloadAsset(url: string, signal?: AbortSignal) {
@@ -111,86 +156,6 @@ async function downloadAsset(url: string, signal?: AbortSignal) {
   return { bytes: Buffer.concat(chunks, size), mimeType: response.headers.get("content-type") ?? "" };
 }
 
-type MediaAsset = { url: string; mimeType?: string } | { b64_json: string; mimeType?: string };
-
-async function assetBytes(asset: MediaAsset, mediaType: "image" | "video" | "audio", signal?: AbortSignal) {
-  let bytes: Uint8Array;
-  let mimeType = asset.mimeType ?? "";
-  if ("url" in asset && asset.url) {
-    const result = await downloadAsset(asset.url, signal);
-    bytes = result.bytes;
-    const responseMimeType = result.mimeType.split(";")[0].trim().toLowerCase();
-    mimeType = responseMimeType && responseMimeType !== "application/octet-stream" ? result.mimeType : mimeType;
-  } else if ("b64_json" in asset && asset.b64_json) {
-    const content = asset.b64_json.replace(/\s/g, "");
-    if (content.length > Math.ceil(maxMediaSize / 3) * 4 || !/^[a-zA-Z0-9+/]*={0,2}$/.test(content) || content.length % 4 === 1) invalid("Generated result base64 content is invalid or exceeds 100 MB");
-    bytes = Buffer.from(content, "base64");
-  } else { return invalid("Provider returned an invalid media result"); }
-  if (!bytes.byteLength || bytes.byteLength > maxMediaSize) invalid("Generated file is empty or exceeds 100 MB");
-  mimeType = detectMimeType(bytes, mimeType);
-  if (!mimeType.startsWith(`${mediaType}/`) || !mediaExtensions[mimeType]) invalid("Generated result is not a supported image, video, or audio format");
-  return { bytes, mimeType };
-}
-
-async function callAggregator(
-  baseUrl: string,
-  apiKey: string,
-  mediaType: "image" | "video" | "audio",
-  request: MediaGenerationRequest,
-  signal?: AbortSignal,
-): Promise<MediaAsset[]> {
-  const endpoint = mediaType === "image" ? `${baseUrl}/images/generations`
-    : mediaType === "video" ? `${baseUrl}/videos/generations`
-    : `${baseUrl}/audio/speech`;
-  const body: Record<string, unknown> = { model: request.modelId, prompt: request.prompt };
-  if (mediaType === "image") {
-    if (request.size) body.size = request.size;
-    else if (request.ratio) body.aspect_ratio = request.ratio;
-    body.response_format = "url";
-  } else if (mediaType === "video") {
-    if (request.ratio) body.aspect_ratio = request.ratio;
-    if (request.resolution) body.resolution = request.resolution;
-    if (request.duration) body.duration = request.duration;
-    if (request.mode) body.mode = request.mode;
-  } else {
-    body.input = request.prompt;
-    if (request.voice) body.voice = request.voice;
-    if (request.speed) body.speed = request.speed;
-    if (request.format) body.response_format = request.format;
-  }
-  const headers: Record<string, string> = { "Content-Type": "application/json", Accept: "application/json" };
-  if (apiKey) headers.Authorization = `Bearer ${apiKey}`;
-  const response = await fetch(endpoint, { method: "POST", headers, body: JSON.stringify(body), signal });
-  if (!response.ok) {
-    let detail = "";
-    try { const err = await response.json() as Record<string, unknown>; detail = (err?.error as Record<string, unknown>)?.message as string || err?.message as string || ""; } catch {}
-    throw new Error(detail || `Media generation failed (HTTP ${response.status})`);
-  }
-  const contentType = response.headers.get("content-type") ?? "";
-  if (contentType.includes("application/json")) {
-    const result = await response.json() as { data?: MediaAsset[] };
-    const items = Array.isArray(result.data) ? result.data : [result as unknown as MediaAsset];
-    if (!items.length) invalid("Provider returned no results");
-    return items;
-  }
-  // ACT: audio/speech often returns binary directly
-  const reader = response.body?.getReader();
-  if (!reader) invalid("Provider returned an empty response");
-  const chunks: Uint8Array[] = [];
-  let size = 0;
-  try {
-    while (true) {
-      signal?.throwIfAborted();
-      const { done, value } = await reader.read();
-      if (done) break;
-      size += value.byteLength;
-      if (size > maxMediaSize) invalid("Generated file cannot exceed 100 MB");
-      chunks.push(value);
-    }
-  } finally { await reader.cancel(); }
-  return [{ b64_json: Buffer.concat(chunks, size).toString("base64"), mimeType: contentType.split(";")[0].trim() }];
-}
-
 export async function generateMedia(
   cwd: string,
   mediaType: "image" | "video" | "audio",
@@ -202,14 +167,38 @@ export async function generateMedia(
   const directory = await realpath(cwd);
   const outputDirectory = request.outputDirectory ?? "assets/generated";
   await resolveWorkspacePath(directory, outputDirectory, true);
-  const { provider, baseUrl } = getMediaProvider(request.providerId, request.modelId);
-  const assets = await callAggregator(baseUrl, provider.apiKey, mediaType, request, signal);
+
+  const model = kieMediaModels.find(m => m.modelId === request.modelId);
+  if (!model) invalid("Selected media model not found");
+
+  const input = buildKieInput(mediaType, request);
+  const taskId = await createKieTask(request.modelId, input, signal);
+  const resultUrls = await pollKieTask(taskId, signal);
+
   const written: string[] = [];
   const result: GeneratedMedia[] = [];
   try {
-    for (const asset of assets) {
+    for (const url of resultUrls) {
       signal?.throwIfAborted();
-      const { bytes, mimeType } = await assetBytes(asset, mediaType, signal);
+      const { bytes, mimeType: rawMimeType } = await downloadAsset(url, signal);
+      const mimeType = detectMimeType(bytes, rawMimeType);
+      const expectedPrefix = `${mediaType}/`;
+      if (!mimeType.startsWith(expectedPrefix) || !mediaExtensions[mimeType]) {
+        // ACT: KIE может вернуть MIME, не совпадающий с запрошенным типом; используем расширение из URL или fallback.
+        const ext = mediaExtensions[mimeType] ?? url.split(".").pop()?.split("?")[0] ?? "bin";
+        const file = join(outputDirectory, `${mediaType}${crypto.randomUUID()}.${ext}`);
+        const output = await resolveWorkspacePath(directory, outputDirectory, true);
+        const release = lockWorkspaceFiles([output.path]);
+        try {
+          await mkdir(output.path, { recursive: true });
+          const { path } = await resolveWorkspacePath(directory, file);
+          signal?.throwIfAborted();
+          await writeWorkspaceFile(path, bytes, true);
+          written.push(path);
+          result.push({ path: relative(directory, path).replace(/\\/g, "/"), mimeType, mediaType });
+        } finally { release(); }
+        continue;
+      }
       signal?.throwIfAborted();
       const output = await resolveWorkspacePath(directory, outputDirectory, true);
       const release = lockWorkspaceFiles([output.path]);
