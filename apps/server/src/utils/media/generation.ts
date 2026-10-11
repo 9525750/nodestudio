@@ -14,14 +14,18 @@ const mediaExtensions: Record<string, string> = {
 };
 
 
+const videoDurations = [
+  { duration: [5, 10], resolution: ["720p", "1080p"] },
+];
+
 const kieMediaModels: MediaModel[] = [
-  { providerId: "kie", providerLabel: "KIE", modelId: "kling-3.0/video", label: "Kling 3.0", type: "video" },
-  { providerId: "kie", providerLabel: "KIE", modelId: "bytedance/seedance-2-5", label: "Seedance 2.5", type: "video" },
-  { providerId: "kie", providerLabel: "KIE", modelId: "google/gemini-omni-flash-1-1", label: "Gemini Omni Flash", type: "video" },
-  { providerId: "kie", providerLabel: "KIE", modelId: "veo-3-1", label: "Veo 3.1", type: "video" },
-  { providerId: "kie", providerLabel: "KIE", modelId: "grok-imagine/text-to-video", label: "Grok Imagine", type: "video" },
-  { providerId: "kie", providerLabel: "KIE", modelId: "nano-banana-pro", label: "Nano Banana Pro", type: "image" },
-  { providerId: "kie", providerLabel: "KIE", modelId: "4o-image-api", label: "GPT Image", type: "image" },
+  { providerId: "kie", providerLabel: "KIE", modelId: "kling-3.0/video", label: "Kling 3.0", type: "video", mode: ["text", "singleImage", "endFrameOptional"], durationResolutionMap: videoDurations },
+  { providerId: "kie", providerLabel: "KIE", modelId: "bytedance/seedance-2-5", label: "Seedance 2.5", type: "video", mode: ["text", "singleImage"], durationResolutionMap: videoDurations },
+  { providerId: "kie", providerLabel: "KIE", modelId: "google/gemini-omni-flash-1-1", label: "Gemini Omni Flash", type: "video", mode: ["text"], durationResolutionMap: [{ duration: [5, 10], resolution: ["720p"] }] },
+  { providerId: "kie", providerLabel: "KIE", modelId: "veo-3-1", label: "Veo 3.1", type: "video", mode: ["text", "singleImage"], durationResolutionMap: [{ duration: [5, 10], resolution: ["720p", "1080p"] }], audio: "optional" },
+  { providerId: "kie", providerLabel: "KIE", modelId: "grok-imagine/text-to-video", label: "Grok Imagine", type: "video", mode: ["text"], durationResolutionMap: [{ duration: [5], resolution: ["720p", "1080p"] }] },
+  { providerId: "kie", providerLabel: "KIE", modelId: "nano-banana-pro", label: "Nano Banana Pro", type: "image", imageSizes: ["1024x1024", "1024x1536", "1536x1024"], imageRatios: ["1:1", "16:9", "9:16", "4:3", "3:4"] },
+  { providerId: "kie", providerLabel: "KIE", modelId: "4o-image-api", label: "GPT Image", type: "image", imageSizes: ["1024x1024", "1024x1536", "1536x1024"], imageRatios: ["1:1", "16:9", "9:16", "4:3", "3:4"] },
 ];
 
 function invalid(message: string): never {
@@ -121,7 +125,8 @@ function buildKieInput(mediaType: "image" | "video" | "audio", request: MediaGen
   const input: Record<string, unknown> = { prompt: request.prompt };
   if (mediaType === "video") {
     if (request.ratio) input.aspect_ratio = request.ratio;
-    if (request.duration) input.duration = request.duration;
+    input.duration = request.duration ?? 5;
+    if (request.resolution) input.resolution = request.resolution;
   } else if (mediaType === "image") {
     if (request.ratio) input.aspect_ratio = request.ratio;
     if (request.size) input.size = request.size;
